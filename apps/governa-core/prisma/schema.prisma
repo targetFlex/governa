@@ -1,0 +1,108 @@
+generator client {
+  provider = "prisma-client-js"
+}
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+model Tenant {
+  id        String   @id @default(uuid())
+  name      String
+  slug      String   @unique
+  plan      Plan     @default(STARTER)
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt      @map("updated_at")
+  agents      Agent[]
+  policies    Policy[]
+  auditEvents AuditEvent[]
+  @@map("tenants")
+}
+enum Plan { STARTER GROWTH ENTERPRISE }
+model Agent {
+  id           String      @id @default(uuid())
+  tenantId     String      @map("tenant_id")
+  name         String
+  description  String      @default("")
+  ownerId      String      @map("owner_id")
+  policyId     String?     @map("policy_id")
+  status       AgentStatus @default(SANDBOX)
+  modelId      String      @map("model_id")
+  tools        String[]
+  createdAt    DateTime    @default(now()) @map("created_at")
+  updatedAt    DateTime    @updatedAt      @map("updated_at")
+  lastActiveAt DateTime?   @map("last_active_at")
+  tenant         Tenant          @relation(fields: [tenantId], references: [id])
+  policy         Policy?         @relation(fields: [policyId], references: [id])
+  auditEvents    AuditEvent[]
+  pendingActions PendingAction[]
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@map("agents")
+}
+enum AgentStatus { SANDBOX ACTIVE PAUSED DEPRECATED }
+model Policy {
+  id             String        @id @default(uuid())
+  tenantId       String        @map("tenant_id")
+  name           String
+  autonomyLevel  AutonomyLevel @map("autonomy_level")
+  allowedActions String[]      @map("allowed_actions")
+  maxValueBrl    Decimal?      @map("max_value_brl")
+  timeWindowH    Int?          @map("time_window_h")
+  approvers      String[]
+  active         Boolean       @default(true)
+  version        String        @default("1.0.0")
+  createdAt      DateTime      @default(now()) @map("created_at")
+  tenant Tenant  @relation(fields: [tenantId], references: [id])
+  agents Agent[]
+  @@index([tenantId])
+  @@map("policies")
+}
+enum AutonomyLevel { CONSULTIVO ASSISTIDO AUTONOMO }
+model AuditEvent {
+  id             String   @id @default(uuid())
+  tenantId       String   @map("tenant_id")
+  agentId        String   @map("agent_id")
+  traceId        String   @map("trace_id")
+  spanId         String?  @map("span_id")
+  prevHash       String   @map("prev_hash")
+  hash           String
+  action         String
+  toolCalled     String?  @map("tool_called")
+  inputSummary   String   @map("input_summary")
+  outcome        Outcome
+  latencyMs      Int      @map("latency_ms")
+  subjectToken   String   @map("subject_token")
+  dataCategories String[] @map("data_categories")
+  legalBasis     String   @map("legal_basis")
+  purpose        String
+  retentionUntil DateTime @map("retention_until")
+  approverId     String?  @map("approver_id")
+  approvedAt     DateTime? @map("approved_at")
+  escalationReason String? @map("escalation_reason")
+  createdAt      DateTime @default(now()) @map("created_at")
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  agent  Agent  @relation(fields: [agentId], references: [id])
+  @@index([tenantId, agentId])
+  @@index([tenantId, createdAt])
+  @@index([traceId])
+  @@map("audit_events")
+}
+enum Outcome { EXECUTADO BLOQUEADO AGUARDANDO ESCALADO ERRO }
+model PendingAction {
+  id         String              @id @default(uuid())
+  tenantId   String              @map("tenant_id")
+  agentId    String              @map("agent_id")
+  toolName   String              @map("tool_name")
+  payload    Json
+  status     PendingActionStatus @default(PENDING)
+  approverId String?             @map("approver_id")
+  expiresAt  DateTime            @map("expires_at")
+  createdAt  DateTime            @default(now()) @map("created_at")
+  resolvedAt DateTime?           @map("resolved_at")
+  agent Agent @relation(fields: [agentId], references: [id])
+  @@index([tenantId, status])
+  @@index([agentId])
+  @@map("pending_actions")
+}
+enum PendingActionStatus { PENDING APPROVED REJECTED EXPIRED }
