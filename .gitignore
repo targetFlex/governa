@@ -11,3 +11,6 @@ coverage/
 .vscode/
 _skill-staging/
 *.env.save
+
+# 'skills/' É versionado — é a fonte canônica dos skills do Cowork.
+# Instalação é via cp para ~/.claude/skills/ (não comitar o destino).
