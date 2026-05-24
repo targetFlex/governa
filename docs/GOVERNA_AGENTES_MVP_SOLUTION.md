@@ -3,6 +3,17 @@
 
 ---
 
+> 🚦 **Agente Cowork retomando trabalho — NÃO leia este doc inteiro.**
+>
+> O estado da arte do projeto vive em `docs/reports/`. Para retomar:
+> 1. Abra o arquivo mais recente em `docs/reports/` (sort por nome = sort por data)
+> 2. O report contém: o que a última sessão fez, estado verificado, decisões, itens em aberto, e o que esta sessão deve atacar
+> 3. Este doc é **referência sob demanda** — só consulte as seções que o report indicar
+>
+> Detalhes do protocolo na seção 0 do skill `governa-agentes-totvs`.
+
+---
+
 ## Overview
 
 ### O que este produto faz
