@@ -53,8 +53,10 @@ export class PrismaAuditEventRepository implements AuditEventRepository {
     compute:  (prevHash: string) => AuditEventInsert,
   ): Promise<AuditEventEntity> {
     return this.prisma.$transaction(async (tx) => {
-      // Serializa acesso por par (tenantId, agentId)
-      await tx.$queryRaw`
+      // Serializa acesso por par (tenantId, agentId).
+      // $executeRaw em vez de $queryRaw: pg_advisory_xact_lock retorna void —
+      // $queryRaw tenta desserializar a coluna e lança PrismaClientKnownRequestError.
+      await tx.$executeRaw`
         SELECT pg_advisory_xact_lock(hashtext(${tenantId}), hashtext(${agentId}))
       `
 
