@@ -22,6 +22,11 @@ module.exports = {
     '**/?(*.)+(spec|test).ts',
     '**/test/edge/**/*.edge.spec.ts',
   ],
+  // Integração exige banco real — rodar via jest.integration.config.js
+  testPathIgnorePatterns: [
+    '/node_modules/',
+    '/test/integration/',
+  ],
   collectCoverageFrom: [
     'src/**/*.ts',
     '!src/**/*.types.ts',
