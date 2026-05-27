@@ -1,351 +1,233 @@
 ---
 name: governa-agentes-totvs
-description: >
-  Skill de Governança de Agentes de IA para PMEs no ecossistema TOTVS (Protheus, Fluig, Carol).
-  Use este skill sempre que o usuário quiser: (1) projetar ou evoluir a arquitetura do orquestrador
-  de governança, (2) definir políticas de autonomia para agentes (consultivo, assistido, autônomo),
-  (3) estruturar audit trail LGPD para decisões de agentes, (4) desenhar o workflow âncora de
-  atendimento ao cliente integrado ao Protheus, (5) criar ou evoluir o solution doc do MVP,
-  (6) definir integrações com TOTVS Store, Fluig BPM ou Carol. Acione também quando o usuário
-  mencionar: "agente de atendimento", "governança de IA", "orquestrador", "TOTVS", "Protheus",
-  "LGPD e agentes", "política de autonomia", "audit trail de agentes", "Target Flex", ou
-  "PME e IA". Este skill encapsula toda a narrativa, decisões de discovery e padrões técnicos
-  acumulados nas sessões de discovery do produto.
-allowed-tools: Read, Write, Edit, Bash
+description: "Governa o ciclo de sessões do agente no domínio TOTVS. Invoque ao abrir uma nova sessão (ex: 'vamos para a 1.3', 'próxima sessão', 'governa-agentes-totvs'). A skill impõe o boot protocol: monta o diretório do projeto, lê o report mais recente em governa/docs/reports/, confirma handoff em 1 linha e só então inicia o trabalho. Nunca lê SOLUTION.md ou arquivos de entregável (E1.md, E2.md, etc.) no boot."
+allowed-tools: Read, Write, Edit, Glob, Grep, Bash, AskUserQuestion, mcp__cowork__request_cowork_directory
 ---
 
-# Governança de Agentes de IA — TOTVS PME
+# Governa Agentes TOTVS
 
-Skill que encapsula o discovery, arquitetura e padrões de implementação do produto de governança
-de agentes autônomos voltado para PMEs no ecossistema TOTVS, desenvolvido sob a
-**Target Flex Patrimonial** como empresa veículo do produto.
+Skill de governança de sessões para desenvolvimento no domínio TOTVS.
+Define o **protocolo de ciclo de vida** de cada sessão: como iniciar, como trabalhar e como encerrar.
 
 ---
 
-## 0. Protocolo de Sessão — LEIA PRIMEIRO (regra crítica)
+## SEÇÃO 0 — Boot Protocol (CRÍTICO — executar antes de qualquer outra coisa)
 
-> Esta seção sobrepõe qualquer outra instrução deste skill. Não pule.
+> Esta seção é **obrigatória e inegociável**. O agente NÃO deve ler SOLUTION.md, E1.md, E2.md
+> ou qualquer outro arquivo de entregável durante o boot. O único arquivo lido no boot é o
+> report mais recente em `governa/docs/reports/`.
 
-### 0.1 Ao iniciar QUALQUER sessão nova
+### 0.1 Passos do Boot (executar nesta ordem exata)
 
-1. **Primeira ação obrigatória:** listar `docs/reports/` com `Glob` e abrir o arquivo **mais recente por nome** (a convenção `YYYY-MM-DD-sessao-X.Y.md` faz o sort lexicográfico coincidir com o cronológico).
-2. **Leia somente esse arquivo.** Não leia `docs/GOVERNA_AGENTES_MVP_SOLUTION.md`, `docs/GOVERNA_AGENTES_MVP_E1.md`, nem qualquer outro doc grande no boot.
-3. O report contém o handoff completo da sessão anterior: estado verificado, decisões, itens em aberto, e o que a sessão atual deve atacar.
-4. Confirme com o usuário em uma linha: "Li o report de [data] — sessão [X.Y]. Próximo passo: [objetivo]. Confirma?".
-5. Só carregue `SOLUTION.md` / `E1.md` / `E2.md` **sob demanda**, em seções específicas que o report indicar (ex.: "Consultar sob demanda: E1.md §1.3").
+**Passo 0 — Montar o diretório do projeto**
 
-### 0.2 Ao encerrar uma sessão
-
-Quando o usuário disser "encerrar sessão", "fim da sessão", "fecha a sessão" ou equivalente:
-
-1. Escreva um novo report em `docs/reports/YYYY-MM-DD-sessao-X.Y.md` usando o template em `docs/reports/_template.md`.
-2. Token-economy é regra: report **deve caber em poucos KB**. Marcos, não exaustividade. Aponte para arquivos/seções; não duplique conteúdo.
-3. Inclua: TL;DR (1-2 linhas), o que mudou (marcos), estado verificado (banco/testes/build), decisões com rationale curto, itens em aberto, e o **handoff explícito** para a próxima sessão (o que atacar, o que consultar sob demanda, o que NÃO tocar).
-4. Confirme o conteúdo com o usuário **antes** de encerrar.
-5. Faça commit do report junto com qualquer mudança de código pendente.
-
-### 0.3 Por que esta regra existe
-
-Sessões anteriores carregavam `SOLUTION.md` + `E1.md` no boot — consumo de tokens alto e desnecessário. O conhecimento estável vive nos docs de referência; o **estado da arte** vive nos reports. Cada nova sessão herda só do report anterior; o histórico fica preservado por data sem inflar contexto.
-
-### 0.4 Quando NÃO seguir esta regra
-
-- Se o usuário pedir explicitamente "leia o E1 inteiro" / "abra o solution doc" — atenda.
-- Se não existir nenhum report em `docs/reports/` (primeiro boot absoluto), informe o usuário e use os docs de referência como entrada inicial, criando o primeiro report ao encerrar.
-
----
-
-## 1. Contexto do Produto
-
-### 1.1 Problema central
-
-PMEs brasileiras que usam TOTVS (Protheus, Fluig, Carol) estão construindo agentes de IA de
-forma isolada — sem orquestração central, sem políticas de autonomia, sem audit trail e sem
-conformidade com LGPD. O resultado são "ilhas de decisão" que aumentam risco operacional,
-legal e reputacional.
-
-### 1.2 Solução
-
-Um **orquestrador sistêmico** — camada intermediária entre a intenção da empresa e a execução
-dos agentes — que oferece:
-
-- Motor de políticas com 3 níveis de autonomia configuráveis sem código
-- Checkpoint de aprovação humana para ações críticas
-- Audit trail imutável conforme LGPD (Art. 37)
-- Inventário de agentes com status em tempo real
-- Alertas automáticos por anomalia ou violação de política
-- Sandbox de validação antes de produção
-- Conectores nativos para Protheus, Fluig e Carol
-
-### 1.3 Posicionamento
-
-| Dimensão | Este produto | Painel Anthropic/OpenAI |
-|---|---|---|
-| Público-alvo | Gestor operacional de PME | Desenvolvedor/engenheiro |
-| Complexidade | Configuração sem código | API + SDK obrigatório |
-| Compliance | LGPD nativa, contexto BR | Genérico, foco EUA/EU |
-| Integração | TOTVS nativa | REST genérico |
-| Pricing | Reais, por agente ativo | Dólar, por token |
-| Distribuição | TOTVS Store + direto | Console/Marketplace global |
-
-### 1.4 Empresa veículo
-
-**Target Flex Patrimonial** — produto de tecnologia registrado sob esta empresa.
-Ambiente de teste piloto para validação do MVP.
-
-### 1.5 Verticais — sequência de expansão
-
-**MVP (agora):** PMEs TOTVS — qualquer vertical, foco no caso âncora de atendimento.
-**Fase 2:** Advocacia (compliance OAB, sigilo profissional, Res. CFJ 215/2021).
-**Fase 3:** Imobiliárias e construtoras (CRECI, SPE, contratos de permuta).
-
-> Não expandir verticais antes de 3–5 clientes ativos validando o modelo base.
-
----
-
-## 2. Arquitetura do Orquestrador
-
-### 2.1 Camadas
+Antes de qualquer Glob ou Read, garantir que o diretório `/Users/fabiogomes/dev` está conectado:
 
 ```
-┌─────────────────────────────────────────────────┐
-│  UPSTREAM — fontes TOTVS + externas              │
-│  Protheus REST · Fluig BPM · Carol · APIs BR     │
-└────────────────┬────────────────────────────────┘
-                 │ webhook / REST / polling
-┌────────────────▼────────────────────────────────┐
-│  GATEWAY DE INTEGRAÇÃO                          │
-│  Auth · Rate limiting · Schema validation        │
-│  OpenAPI contracts · Error dictionary           │
-└────────────────┬────────────────────────────────┘
-                 │
-┌────────────────▼────────────────────────────────┐
-│  NÚCLEO DO ORQUESTRADOR  ← produto MVP          │
-│                                                  │
-│  ┌──────────────┐  ┌──────────────┐             │
-│  │ Motor de     │  │ Checkpoint   │             │
-│  │ políticas    │  │ humano       │             │
-│  └──────────────┘  └──────────────┘             │
-│  ┌──────────────┐  ┌──────────────┐             │
-│  │ Audit trail  │  │ Inventário   │             │
-│  │ LGPD         │  │ de agentes   │             │
-│  └──────────────┘  └──────────────┘             │
-│  ┌──────────────┐  ┌──────────────┐             │
-│  │ Sandbox      │  │ Alertas RT   │             │
-│  └──────────────┘  └──────────────┘             │
-└────────────────┬────────────────────────────────┘
-                 │ ToolScope por nível
-┌────────────────▼────────────────────────────────┐
-│  RUNTIME DE AGENTES                             │
-│  Consultivo · Assistido · Autônomo              │
-└────────────────┬────────────────────────────────┘
-                 │ abstração agnóstica
-┌────────────────▼────────────────────────────────┐
-│  CAMADA DE MODELOS                              │
-│  Claude · OpenAI · Gemini · modelos locais      │
-└─────────────────────────────────────────────────┘
+mcp__cowork__request_cowork_directory({ path: '/Users/fabiogomes/dev' })
 ```
 
-### 2.2 Módulos do núcleo — detalhes
+> Esta chamada é idempotente: se o diretório já estiver montado, retorna imediatamente sem pedir
+> nova aprovação ao usuário.
+> **NUNCA pular este passo** — sem ele o Glob retorna vazio e o boot falha silenciosamente.
 
-Leia `references/core-modules.md` para especificações técnicas completas de cada módulo.
+**Passo 1 — Localizar o report mais recente**
 
-### 2.3 Stack técnica
-
-- **Backend:** Node.js + TypeScript (decisão do agente de desenvolvimento — pode ser revisada)
-- **ORM/Query:** Prisma + PostgreSQL
-- **Queue:** BullMQ (Redis) para checkpoints assíncronos
-- **Audit store:** PostgreSQL append-only + S3 Object Lock (arquivo)
-- **Hash:** SHA-256 com `pgcrypto` (cadeia encadeada)
-- **API:** REST + OpenAPI 3.1
-- **Auth:** OAuth 2.0 / JWT — integração SSO TOTVS quando disponível
-- **Observabilidade:** OpenTelemetry → SigNoz (self-hosted) ou Sentry
-
----
-
-## 3. Níveis de Autonomia
-
-### 3.1 Definição técnica por nível
-
-```typescript
-enum AutonomyLevel {
-  CONSULTIVO = 'consultivo',  // ToolScope: read_* apenas
-  ASSISTIDO  = 'assistido',   // ToolScope: read_* + write_* (gated)
-  AUTONOMO   = 'autonomo',    // ToolScope: read_* + write_* (dentro de limites)
-}
+```
+Glob: governa/docs/reports/*.md   (path base: /Users/fabiogomes/dev)
+→ ordenar por nome (YYYY-MM-DD garante ordem cronológica)
+→ selecionar o mais recente (excluir _template.md)
 ```
 
-### 3.2 ToolScope — como o orquestrador monta o contexto
+Se `governa/docs/reports/` não existir ou estiver vazia → perguntar ao usuário:
+> "Não encontrei nenhum report em governa/docs/reports/. Esta é a primeira sessão? Se sim, me diga o número da sessão (ex: 1.1) e o contexto inicial."
 
-```typescript
-const TOOL_SCOPES = {
-  consultivo: (tools) => tools.filter(t => t.name.startsWith('read_')),
-  assistido:  (tools) => tools.map(t =>
-    t.name.startsWith('write_') ? wrapWithCheckpoint(t) : t
-  ),
-  autonomo:   (tools, policy) => tools.filter(t =>
-    withinPolicyLimits(t, policy)
-  ),
-}
+**Passo 2 — Ler o report mais recente**
+
+```
+Read: /Users/fabiogomes/dev/governa/docs/reports/{arquivo-mais-recente}.md
 ```
 
-**Princípio:** a restrição é estrutural, não instrucional. O agente consultivo não executa
-porque as tools de execução não existem no seu contexto — não porque foi pedido para não usá-las.
+**Passo 3 — Confirmar em UMA linha antes de qualquer trabalho**
 
-### 3.3 Tabela de referência rápida
+Formato obrigatório:
+> "Li o report de {YYYY-MM-DD} — sessão {X.Y}. Próximo: {handoff em até 10 palavras}. Confirma?"
 
-| Nível | Tools disponíveis | Execução | Aprovação | Caso de uso típico |
-|---|---|---|---|---|
-| Consultivo | `read_*` apenas | Nunca | N/A | Análise, relatório, diagnóstico |
-| Assistido | `read_*` + `write_*` gated | Após aprovação | Obrigatória | Ações de moderado impacto |
-| Autônomo | `read_*` + `write_*` limitado | Dentro de limites | Não necessária | Tickets N1, status, FAQ |
+Exemplos válidos:
+> "Li o report de 2026-05-23 — sessão 1.2. Próximo: AuditService + AuditVerifier. Confirma?"
+> "Li o report de 2026-05-26 — sessão 2.3. Próximo: conector read_protheus_produto. Confirma?"
+
+**Passo 4 — Aguardar confirmação explícita do usuário**
+
+Só avançar após "sim", "confirma", "pode ir", ou equivalente.
+Se o usuário corrigir o handoff → atualizar entendimento e confirmar novamente.
+
+### 0.2 O que NUNCA fazer no boot
+
+- NÃO pular o Passo 0 (mount) — causa Glob vazio e boot silenciosamente quebrado
+- NÃO ler `SOLUTION.md` (nenhuma variante)
+- NÃO ler `E1.md`, `E2.md` ou qualquer arquivo de entregável
+- NÃO ler arquivos de código antes da confirmação
+- NÃO iniciar trabalho antes da confirmação do usuário
+- NÃO resumir a sessão anterior "de memória" — sempre ler o report
+
+### 0.3 Checklist de Boot (auto-verificação interna)
+
+Antes de começar a trabalhar, confirmar internamente:
+
+- [ ] Chamei `mcp__cowork__request_cowork_directory({ path: '/Users/fabiogomes/dev' })`
+- [ ] Li o arquivo `/Users/fabiogomes/dev/governa/docs/reports/{mais-recente}.md`
+- [ ] Confirmei com o usuário em 1 linha
+- [ ] Recebi confirmação explícita
+- [ ] NÃO abri SOLUTION.md ou E{N}.md
+
+Se qualquer item falhar → parar e corrigir antes de prosseguir.
 
 ---
 
-## 4. Audit Trail LGPD
+## SEÇÃO 1 — Durante a Sessão
 
-### 4.1 Estrutura do AuditEvent
+### 1.1 Fonte de verdade
 
-```typescript
-interface AuditEvent {
-  // Rastreio
-  trace_id:        string   // UUID v4, gerado no gateway
-  span_id:         string   // para rastreio distribuído
-  prev_hash:       string   // SHA-256 do evento anterior (gênesis = '0'.repeat(64))
-  hash:            string   // SHA-256(this sem o campo hash)
+O **report da sessão anterior** é a única fonte de verdade no início.
+O agente só abre outros arquivos (SOLUTION.md, E1.md, código, etc.) se:
+- O report indicar explicitamente que deve fazê-lo, **ou**
+- O usuário pedir durante a sessão
 
-  // Agente
-  agent_id:        string
-  agent_version:   string
-  model_id:        string   // ex: 'claude-sonnet-4-6'
-  policy_version:  string
+### 1.2 Regras de trabalho
 
-  // Ação
-  action:          string   // ex: 'consultar_pedido', 'cancelar_pedido'
-  tool_called:     string | null
-  input_summary:   string   // resumo sem PII
-  outcome:         'executado' | 'bloqueado' | 'aguardando' | 'erro'
-  latency_ms:      number
+- Trabalhar **apenas no escopo do handoff confirmado**
+- Se surgir escopo novo fora do handoff → perguntar antes de expandir:
+  > "Isso está fora do handoff da sessão. Posso incluir ou preferes registrar para a próxima?"
+- Decisões relevantes → registrar mentalmente para o report de fechamento
+- Desvios do plano → comunicar imediatamente, não silenciosamente
 
-  // LGPD (Art. 37)
-  subject_token:   string   // HMAC(CPF/CNPJ, chave_rotacionada) — nunca PII raw
-  data_categories: string[] // ex: ['pedidos', 'status_entrega']
-  legal_basis:     'legitimate_interest' | 'contract_execution' | 'consent'
-  purpose:         string   // finalidade específica
-  retention_until: Date     // 5 anos padrão
+### 1.3 Nomenclatura de sessões
 
-  // Aprovação humana (se aplicável)
-  approver_id:     string | null
-  approved_at:     Date | null
+Formato: `X.Y`
+- `X` = ciclo / épico principal
+- `Y` = sessão sequencial dentro do ciclo
+- Exemplos: `1.1`, `1.2`, `1.3`, `2.1`
 
-  // Timestamp
-  created_at:      Date     // imutável após gravação
-}
+---
+
+## SEÇÃO 2 — Protocolo de Encerramento
+
+Ativado quando o usuário disser: **"encerrar sessão"**, **"fecha a sessão"**, **"vamos encerrar"** ou equivalente.
+
+### 2.1 Estrutura do Report
+
+Criar em: `/Users/fabiogomes/dev/governa/docs/reports/YYYY-MM-DD-sessao-X.Y.md`
+
+```markdown
+# Report — Sessão {X.Y} — {YYYY-MM-DD}
+
+## TL;DR
+{2-3 frases: o que foi feito, resultado, estado final}
+
+## Estado
+{Concluída | Parcial | Bloqueada}
+
+Motivo (se Parcial ou Bloqueada):
+{explicar o que impediu a conclusão}
+
+## O que foi feito
+- {item 1}
+- {item 2}
+
+## Decisões tomadas
+- {decisão 1}: {motivação em 1 linha}
+- {decisão 2}: {motivação em 1 linha}
+
+## Desvios do plano
+- {desvio 1 ou "Nenhum"}
+
+## Handoff — próxima sessão {X.Z}
+{Instrução direta: o que o próximo agente deve fazer primeiro.
+Máximo 2 frases. Sem ambiguidade.}
+
+## Arquivos modificados
+- `{caminho/arquivo.ts}` — {o que mudou em 5 palavras}
+
+## Pendências / alertas para sessões futuras
+- {alerta 1 ou "Nenhum"}
 ```
 
-### 4.2 Imutabilidade
+### 2.2 Fluxo de encerramento
 
-- Tabela PostgreSQL com `GENERATED ALWAYS AS` para `hash`
-- Role de banco sem permissão `UPDATE` ou `DELETE`
-- Exportação mensal para S3 com Object Lock (WORM)
-- Verificação periódica da cadeia: recalcula hashes sequencialmente
+1. Escrever o report em `/Users/fabiogomes/dev/governa/docs/reports/YYYY-MM-DD-sessao-X.Y.md`
+2. Mostrar o conteúdo ao usuário e perguntar:
+   > "Report pronto. Confirmas ou queres ajustar algo antes de commitar?"
+3. Aguardar confirmação
+4. Após confirmação → commitar a partir de `governa/`:
+   ```bash
+   cd /Users/fabiogomes/dev/governa
+   git add docs/reports/YYYY-MM-DD-sessao-X.Y.md
+   git commit -m "chore: report sessão X.Y — {TL;DR em 1 linha}"
+   git push
+   ```
+5. Confirmar commit com hash e branch.
 
-### 4.3 Pseudonimização
+### 2.3 O que NUNCA fazer no encerramento
 
-- `subject_token = HMAC(identificador, chave_rotacionada_anual)`
-- Chave de pseudonimização separada do banco de audit — acesso restrito ao DPO
-- Reversível para responder solicitações de titulares (LGPD Art. 18)
+- NÃO commitar sem confirmação do usuário
+- NÃO escrever report vago — o handoff deve ser acionável
+- NÃO omitir desvios ou decisões relevantes
+- NÃO criar múltiplos reports para a mesma sessão
 
 ---
 
-## 5. Caso de Uso Âncora — Agente de Atendimento Protheus
+## SEÇÃO 3 — Estrutura de Diretórios Esperada
 
-### 5.1 Descrição
-
-Agente consultivo/assistido integrado ao Protheus que:
-1. Recebe tickets de clientes (via webhook Fluig ou API direta)
-2. Consulta status de pedido no Protheus
-3. Responde ao cliente com informação estruturada
-4. Escalona para humano quando fora do escopo configurado
-
-### 5.2 Tools disponíveis (nível consultivo padrão)
-
-```typescript
-const ATENDIMENTO_TOOLS = [
-  'read_protheus_pedido',      // GET /api/pedidos/{id}
-  'read_protheus_cliente',     // GET /api/clientes/{id}
-  'read_protheus_nf',          // GET /api/nf/{id}
-  'read_politica_atendimento', // base de conhecimento interna
-  // write_* bloqueadas no nível consultivo
-]
+```
+/Users/fabiogomes/dev/          ← diretório montado via request_cowork_directory
+  governa/
+    docs/
+      reports/
+        YYYY-MM-DD-sessao-1.1.md   ← mais antigo
+        YYYY-MM-DD-sessao-1.2.md
+        YYYY-MM-DD-sessao-2.3.md   ← mais recente (lido no boot)
+        _template.md               ← ignorar no Glob (não é report)
+    apps/
+      governa-gateway/
+        src/connectors/
+      governa-core/
+    skills/
+      governa-agentes-totvs/
+        SKILL.md                   ← fonte editável desta skill (aqui)
 ```
 
-### 5.3 Critérios de escalonamento para humano
-
-- Solicitação de cancelamento (ação irreversível)
-- Reclamação com menção a processo judicial ou Procon
-- Cliente VIP (flag no Protheus)
-- Consulta sem resultado no Protheus (pedido não encontrado)
-- Confiança do agente < 0.7 na resposta
-
-### 5.4 Piloto — Target Flex Patrimonial
-
-Ambiente sandbox isolado. Dados de teste — não usar dados de clientes reais antes de:
-- [ ] DPA (Data Processing Agreement) assinado
-- [ ] Política de retenção definida
-- [ ] Equipe treinada nos procedimentos de escalonamento
+> **Caminhos corretos:**
+> - Glob base path: `/Users/fabiogomes/dev`
+> - Pattern: `governa/docs/reports/*.md`
+> - Read: `/Users/fabiogomes/dev/governa/docs/reports/{arquivo}.md`
 
 ---
 
-## 6. Integrações TOTVS
+## SEÇÃO 4 — Diagnóstico de Protocolo
 
-### 6.1 Protheus
+Se o agente perceber que violou o protocolo (ex: leu SOLUTION.md no boot):
 
-- **Auth:** OAuth 2.0 via TOTVS Fluig Identity (ou Basic em ambientes legados)
-- **Endpoint base:** `https://{host}/rest/`
-- **Recursos MVP:** `/PEDIDO/`, `/CLIENTE/`, `/NF/`
-- **Rate limiting upstream:** 100 req/min por tenant (configurável)
-- **Retry policy:** exponential backoff, 3 tentativas, timeout 10s
-
-### 6.2 Fluig
-
-- Webhooks de eventos de processo (novo ticket, aprovação)
-- Formulários de aprovação de checkpoint mapeados para processos BPM existentes
-- SSO via Fluig Identity para autenticação do painel
-
-### 6.3 Carol (Fase 2)
-
-- Fonte de dados consolidados para agentes com visão cross-sistema
-- Evita acesso direto ao banco transacional do Protheus
+1. Parar imediatamente
+2. Reportar ao usuário:
+   > "Protocolo violado: abri {arquivo} antes da confirmação do boot. Isso indica falha na seção 0 do SKILL.md. Reportar na próxima sessão para correção."
+3. Não continuar sem confirmação do usuário
+4. Registrar o desvio no report de encerramento
 
 ---
 
-## 7. Referências internas
+## SEÇÃO 5 — Auto-Aprimoramento
 
-- `references/core-modules.md` — especificação técnica dos módulos do núcleo
-- `references/solution-doc-mvp.md` — documento de escopo do MVP com entregáveis e sessões
-- `references/workflow-ancora.md` — esboço funcional do workflow âncora ponta a ponta
+Se durante a sessão surgir uma regra ou padrão que deveria ser permanente:
 
----
+> "Identifiquei que {padrão} seria útil como regra permanente nesta skill. Queres que eu atualize a skill `governa-agentes-totvs`?"
 
-## 8. Regras de Desenvolvimento
+Só atualizar após aprovação explícita. O arquivo fonte editável está em:
+`/Users/fabiogomes/dev/governa/skills/governa-agentes-totvs/SKILL.md`
 
-### Princípios inegociáveis
-
-1. **Restrição estrutural antes de instrucional** — ToolScope no contexto, não no prompt
-2. **Audit trail em toda decisão** — sem exceção, mesmo em sandbox
-3. **PII nunca em log** — subject_token pseudonimizado sempre
-4. **Aprovação humana explícita** — nunca inferida por conteúdo de função
-5. **Agnóstico ao modelo** — abstração de LLM obrigatória desde o início
-
-### Quando consultar este skill
-
-- Antes de qualquer nova sessão de desenvolvimento do orquestrador
-- Ao evoluir políticas de autonomia ou audit trail
-- Ao adicionar novo conector TOTVS
-- Ao propor expansão para nova vertical
-
-### Atualização do skill
-
-Ao final de cada sessão significativa de discovery ou desenvolvimento, avaliar se decisões
-novas devem ser incorporadas. Propor atualização ao usuário antes de gravar.
+Após editar, empacotar e reinstalar:
+```bash
+cd /Users/fabiogomes/dev/governa/skills
+zip -r governa-agentes-totvs.skill governa-agentes-totvs/
+# Apresentar o .skill ao usuário → botão "Save skill" instala a nova versão
+```
