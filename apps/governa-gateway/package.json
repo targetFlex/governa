@@ -7,8 +7,10 @@
     "build": "tsc --project tsconfig.json",
     "test": "jest --config jest.config.js --passWithNoTests",
     "test:coverage": "jest --config jest.config.js --coverage --passWithNoTests",
-    "test:edge": "jest --config jest.config.js --testPathPattern=test/edge --passWithNoTests",
-    "typecheck": "tsc --noEmit"
+    "test:edge":     "jest --config jest.config.js --testPathPattern=test/edge --passWithNoTests",
+    "typecheck":     "tsc --noEmit",
+    "pact:test":     "jest --config jest.pact.config.js --runInBand --passWithNoTests",
+    "pact:publish":  "node -e \"const { Publisher } = require('@pact-foundation/pact'); new Publisher({ pactFilesOrDirs: ['test/pact/pacts'], pactBroker: 'http://localhost:9292', pactBrokerUsername: 'pact', pactBrokerPassword: 'pact_dev_pw', consumerVersion: require('./package.json').version, tags: ['main'] }).publishPacts().then(() => console.log('Pacts publicados')).catch(e => { console.error(e); process.exit(1); })\""
   },
   "dependencies": {
     "axios": "^1.7.9",

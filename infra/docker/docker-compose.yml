@@ -39,6 +39,47 @@ services:
       - "8080:8080"
     depends_on:
       - postgres
+
+  # ── Pact broker ─────────────────────────────────────────────
+  # Banco dedicado para o broker (isola do governa_dev)
+  pact_postgres:
+    image: postgres:16-alpine
+    container_name: governa_pact_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER:     pact
+      POSTGRES_PASSWORD: pact_dev_pw
+      POSTGRES_DB:       pact_broker
+    volumes:
+      - pact_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL","pg_isready -U pact -d pact_broker"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  pact-broker:
+    image: pactfoundation/pact-broker:latest
+    container_name: governa_pact_broker
+    restart: unless-stopped
+    ports:
+      - "9292:9292"
+    environment:
+      PACT_BROKER_DATABASE_URL:         "postgres://pact:pact_dev_pw@pact_postgres/pact_broker"
+      PACT_BROKER_BASIC_AUTH_USERNAME:  pact
+      PACT_BROKER_BASIC_AUTH_PASSWORD:  pact_dev_pw
+      PACT_BROKER_ALLOW_PUBLIC_READ:    "true"
+      PACT_BROKER_LOG_LEVEL:            INFO
+    depends_on:
+      pact_postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL","wget -q --spider http://localhost:9292/diagnostic/status || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+
 volumes:
   postgres_data:
   redis_data:
+  pact_postgres_data:

@@ -1,0 +1,437 @@
+{
+  "consumer": {
+    "name": "governa-gateway"
+  },
+  "interactions": [
+    {
+      "description": "GET /PEDIDO/ com C5_NUM=000002",
+      "providerState": "Protheus em erro interno ao buscar pedido",
+      "request": {
+        "method": "GET",
+        "path": "/PEDIDO/",
+        "query": "C5_NUM=000002"
+      },
+      "response": {
+        "body": {
+          "message": "Internal Server Error",
+          "status": 500
+        },
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "status": 500
+      }
+    },
+    {
+      "description": "GET /CLIENTE/ com A1_COD=CLI001",
+      "providerState": "cliente CLI001 existe no Protheus",
+      "request": {
+        "method": "GET",
+        "path": "/CLIENTE/",
+        "query": "A1_COD=CLI001"
+      },
+      "response": {
+        "body": [
+          {
+            "A1_ATIVO": "S",
+            "A1_CEP": "01310100",
+            "A1_CGC": "12345678000195",
+            "A1_COD": "CLI001",
+            "A1_EMAIL": "contato@empresa.com",
+            "A1_END": "Rua das Flores, 123",
+            "A1_EST": "SP",
+            "A1_LOJA": "01",
+            "A1_MUN": "São Paulo",
+            "A1_NOME": "Empresa Teste LTDA",
+            "A1_TEL": "11999999999",
+            "A1_TIPO": "J"
+          }
+        ],
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "matchingRules": {
+          "$.body[0].A1_ATIVO": {
+            "match": "regex",
+            "regex": "^(S|N)$"
+          },
+          "$.body[0].A1_CEP": {
+            "match": "regex",
+            "regex": "^\\d{8}$"
+          },
+          "$.body[0].A1_CGC": {
+            "match": "type"
+          },
+          "$.body[0].A1_COD": {
+            "match": "type"
+          },
+          "$.body[0].A1_EMAIL": {
+            "match": "type"
+          },
+          "$.body[0].A1_END": {
+            "match": "type"
+          },
+          "$.body[0].A1_EST": {
+            "match": "type"
+          },
+          "$.body[0].A1_LOJA": {
+            "match": "type"
+          },
+          "$.body[0].A1_MUN": {
+            "match": "type"
+          },
+          "$.body[0].A1_NOME": {
+            "match": "type"
+          },
+          "$.body[0].A1_TEL": {
+            "match": "type"
+          },
+          "$.body[0].A1_TIPO": {
+            "match": "regex",
+            "regex": "^(F|J)$"
+          }
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "GET /PEDIDO/ com C5_CLIENTE=CLI001",
+      "providerState": "cliente CLI001 tem pedidos no Protheus",
+      "request": {
+        "method": "GET",
+        "path": "/PEDIDO/",
+        "query": "C5_CLIENTE=CLI001"
+      },
+      "response": {
+        "body": [
+          {
+            "C5_CLIENTE": "CLI001",
+            "C5_EMISSAO": "20260524",
+            "C5_ITENS": [
+              {
+                "D2_COD": "PROD01",
+                "D2_PRCVEN": 750,
+                "D2_QUANT": 2
+              }
+            ],
+            "C5_LOJA": "01",
+            "C5_NUM": "000001",
+            "C5_STATUS": "A",
+            "C5_VALOR": 1500
+          }
+        ],
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "matchingRules": {
+          "$.body": {
+            "match": "type",
+            "min": 1
+          },
+          "$.body[*].C5_CLIENTE": {
+            "match": "type"
+          },
+          "$.body[*].C5_EMISSAO": {
+            "match": "regex",
+            "regex": "^\\d{8}$"
+          },
+          "$.body[*].C5_ITENS": {
+            "match": "type",
+            "min": 1
+          },
+          "$.body[*].C5_ITENS[*].D2_COD": {
+            "match": "type"
+          },
+          "$.body[*].C5_ITENS[*].D2_PRCVEN": {
+            "match": "type"
+          },
+          "$.body[*].C5_ITENS[*].D2_QUANT": {
+            "match": "type"
+          },
+          "$.body[*].C5_LOJA": {
+            "match": "type"
+          },
+          "$.body[*].C5_NUM": {
+            "match": "type"
+          },
+          "$.body[*].C5_STATUS": {
+            "match": "regex",
+            "regex": "^(A|B|E|L)$"
+          },
+          "$.body[*].C5_VALOR": {
+            "match": "type"
+          }
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "GET /CLIENTE/ com A1_COD=ZZZ999",
+      "providerState": "cliente ZZZ999 não existe no Protheus",
+      "request": {
+        "method": "GET",
+        "path": "/CLIENTE/",
+        "query": "A1_COD=ZZZ999"
+      },
+      "response": {
+        "body": {
+          "message": "Cliente não encontrado",
+          "status": 404
+        },
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "status": 404
+      }
+    },
+    {
+      "description": "GET /CLIENTE/ com A1_CGC=12345678000195",
+      "providerState": "cliente com CNPJ 12345678000195 existe no Protheus",
+      "request": {
+        "method": "GET",
+        "path": "/CLIENTE/",
+        "query": "A1_CGC=12345678000195"
+      },
+      "response": {
+        "body": [
+          {
+            "A1_ATIVO": "S",
+            "A1_CEP": "01310100",
+            "A1_CGC": "12345678000195",
+            "A1_COD": "CLI001",
+            "A1_EMAIL": "contato@empresa.com",
+            "A1_END": "Rua das Flores, 123",
+            "A1_EST": "SP",
+            "A1_LOJA": "01",
+            "A1_MUN": "São Paulo",
+            "A1_NOME": "Empresa Teste LTDA",
+            "A1_TEL": "11999999999",
+            "A1_TIPO": "J"
+          }
+        ],
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "matchingRules": {
+          "$.body[0].A1_ATIVO": {
+            "match": "regex",
+            "regex": "^(S|N)$"
+          },
+          "$.body[0].A1_CEP": {
+            "match": "regex",
+            "regex": "^\\d{8}$"
+          },
+          "$.body[0].A1_CGC": {
+            "match": "type"
+          },
+          "$.body[0].A1_COD": {
+            "match": "type"
+          },
+          "$.body[0].A1_EMAIL": {
+            "match": "type"
+          },
+          "$.body[0].A1_END": {
+            "match": "type"
+          },
+          "$.body[0].A1_EST": {
+            "match": "type"
+          },
+          "$.body[0].A1_LOJA": {
+            "match": "type"
+          },
+          "$.body[0].A1_MUN": {
+            "match": "type"
+          },
+          "$.body[0].A1_NOME": {
+            "match": "type"
+          },
+          "$.body[0].A1_TEL": {
+            "match": "type"
+          },
+          "$.body[0].A1_TIPO": {
+            "match": "regex",
+            "regex": "^(F|J)$"
+          }
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "GET /CLIENTE/ com A1_ATIVO=S",
+      "providerState": "existem clientes ativos no Protheus",
+      "request": {
+        "method": "GET",
+        "path": "/CLIENTE/",
+        "query": "A1_ATIVO=S"
+      },
+      "response": {
+        "body": [
+          {
+            "A1_ATIVO": "S",
+            "A1_CEP": "01310100",
+            "A1_CGC": "12345678000195",
+            "A1_COD": "CLI001",
+            "A1_EMAIL": "contato@empresa.com",
+            "A1_END": "Rua das Flores, 123",
+            "A1_EST": "SP",
+            "A1_LOJA": "01",
+            "A1_MUN": "São Paulo",
+            "A1_NOME": "Empresa Teste LTDA",
+            "A1_TEL": "11999999999",
+            "A1_TIPO": "J"
+          }
+        ],
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "matchingRules": {
+          "$.body[0].A1_ATIVO": {
+            "match": "regex",
+            "regex": "^(S|N)$"
+          },
+          "$.body[0].A1_CEP": {
+            "match": "regex",
+            "regex": "^\\d{8}$"
+          },
+          "$.body[0].A1_CGC": {
+            "match": "type"
+          },
+          "$.body[0].A1_COD": {
+            "match": "type"
+          },
+          "$.body[0].A1_EMAIL": {
+            "match": "type"
+          },
+          "$.body[0].A1_END": {
+            "match": "type"
+          },
+          "$.body[0].A1_EST": {
+            "match": "type"
+          },
+          "$.body[0].A1_LOJA": {
+            "match": "type"
+          },
+          "$.body[0].A1_MUN": {
+            "match": "type"
+          },
+          "$.body[0].A1_NOME": {
+            "match": "type"
+          },
+          "$.body[0].A1_TEL": {
+            "match": "type"
+          },
+          "$.body[0].A1_TIPO": {
+            "match": "regex",
+            "regex": "^(F|J)$"
+          }
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "GET /PEDIDO/ com C5_NUM=000001",
+      "providerState": "pedido 000001 existe no Protheus",
+      "request": {
+        "method": "GET",
+        "path": "/PEDIDO/",
+        "query": "C5_NUM=000001"
+      },
+      "response": {
+        "body": [
+          {
+            "C5_CLIENTE": "CLI001",
+            "C5_EMISSAO": "20260524",
+            "C5_ITENS": [
+              {
+                "D2_COD": "PROD01",
+                "D2_PRCVEN": 750,
+                "D2_QUANT": 2
+              }
+            ],
+            "C5_LOJA": "01",
+            "C5_NUM": "000001",
+            "C5_STATUS": "A",
+            "C5_VALOR": 1500
+          }
+        ],
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "matchingRules": {
+          "$.body": {
+            "match": "type",
+            "min": 1
+          },
+          "$.body[*].C5_CLIENTE": {
+            "match": "type"
+          },
+          "$.body[*].C5_EMISSAO": {
+            "match": "regex",
+            "regex": "^\\d{8}$"
+          },
+          "$.body[*].C5_ITENS": {
+            "match": "type",
+            "min": 1
+          },
+          "$.body[*].C5_ITENS[*].D2_COD": {
+            "match": "type"
+          },
+          "$.body[*].C5_ITENS[*].D2_PRCVEN": {
+            "match": "type"
+          },
+          "$.body[*].C5_ITENS[*].D2_QUANT": {
+            "match": "type"
+          },
+          "$.body[*].C5_LOJA": {
+            "match": "type"
+          },
+          "$.body[*].C5_NUM": {
+            "match": "type"
+          },
+          "$.body[*].C5_STATUS": {
+            "match": "regex",
+            "regex": "^(A|B|E|L)$"
+          },
+          "$.body[*].C5_VALOR": {
+            "match": "type"
+          }
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "GET /PEDIDO/ com C5_NUM=999999",
+      "providerState": "pedido 999999 não existe no Protheus",
+      "request": {
+        "method": "GET",
+        "path": "/PEDIDO/",
+        "query": "C5_NUM=999999"
+      },
+      "response": {
+        "body": {
+          "message": "Pedido não encontrado",
+          "status": 404
+        },
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "status": 404
+      }
+    }
+  ],
+  "metadata": {
+    "pact-js": {
+      "version": "12.5.2"
+    },
+    "pactRust": {
+      "ffi": "0.4.20",
+      "models": "1.2.0"
+    },
+    "pactSpecification": {
+      "version": "2.0.0"
+    }
+  },
+  "provider": {
+    "name": "protheus-rest"
+  }
+}
