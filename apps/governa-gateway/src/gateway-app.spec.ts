@@ -5,13 +5,14 @@
 // Connectors injetados como mocks — sem Protheus real.
 //
 // Cobertura:
-//   GET /pedidos  — CC1 (200), CC2 (404 vazio), CC2b (UpstreamError NOT_FOUND)
-//   GET /clientes — CC3 (200), CC4 (404 vazio), CC4b (UpstreamError NOT_FOUND)
-//   Erros:        upstream 502, ZodError/genérico 500
+//   POST /auth/login — AL-OK (200), AL-400 (body inválido), AL-401 (credenciais erradas), AL-502
+//   GET  /pedidos    — CC1 (200), CC2 (404 vazio), CC2b (UpstreamError NOT_FOUND)
+//   GET  /clientes   — CC3 (200), CC4 (404 vazio), CC4b (UpstreamError NOT_FOUND)
+//   Erros:           upstream 502, ZodError/genérico 500
 // ============================================================
 
 import http from 'http'
-import { GatewayHttpServer, IPedidoConnector, IClienteConnector } from './gateway-app'
+import { GatewayHttpServer, IPedidoConnector, IClienteConnector, IAuthLoginConnector } from './gateway-app'
 import { UpstreamError } from './connectors/shared/upstream-error.handler'
 import { PedidoInterno } from './connectors/pedido/pedido.schema'
 import { ClienteInterno } from './connectors/cliente/cliente.schema'
@@ -31,6 +32,40 @@ function get(port: number, path: string): Promise<{ status: number; body: unknow
         }
       })
     }).on('error', reject)
+  })
+}
+
+function post(
+  port: number,
+  path: string,
+  body: unknown,
+): Promise<{ status: number; body: unknown }> {
+  return new Promise((resolve, reject) => {
+    const payload = JSON.stringify(body)
+    const options: http.RequestOptions = {
+      hostname: 'localhost',
+      port,
+      path,
+      method: 'POST',
+      headers: {
+        'Content-Type':   'application/json',
+        'Content-Length': Buffer.byteLength(payload),
+      },
+    }
+    const req = http.request(options, (res) => {
+      let raw = ''
+      res.on('data', (chunk) => { raw += chunk })
+      res.on('end', () => {
+        try {
+          resolve({ status: res.statusCode ?? 0, body: JSON.parse(raw) })
+        } catch {
+          resolve({ status: res.statusCode ?? 0, body: raw })
+        }
+      })
+    })
+    req.on('error', reject)
+    req.write(payload)
+    req.end()
   })
 }
 
@@ -70,19 +105,92 @@ describe('GatewayHttpServer', () => {
   let port: number
   let mockPedido: jest.MockedFunction<IPedidoConnector['execute']>
   let mockCliente: jest.MockedFunction<IClienteConnector['execute']>
+  let mockAuth: jest.MockedFunction<IAuthLoginConnector['execute']>
 
   beforeEach(async () => {
     mockPedido  = jest.fn()
     mockCliente = jest.fn()
+    mockAuth    = jest.fn()
     server = new GatewayHttpServer(
       { execute: mockPedido  },
       { execute: mockCliente },
+      { execute: mockAuth    },
     )
     port = await server.listen(0) // porta aleatória
   })
 
   afterEach(async () => {
     await server.close()
+  })
+
+  // ── POST /auth/login ─────────────────────────────────────────
+
+  describe('POST /auth/login', () => {
+    it('AL-OK: 200 com token e expiresIn quando credenciais válidas', async () => {
+      mockAuth.mockResolvedValueOnce({ token: 'jwt-abc', expiresIn: 3600 })
+      const res = await post(port, '/auth/login', { email: 'admin@empresa.com', password: 'sec' })
+
+      expect(res.status).toBe(200)
+      const body = res.body as { token: string; expiresIn: number }
+      expect(body.token).toBe('jwt-abc')
+      expect(body.expiresIn).toBe(3600)
+    })
+
+    it('AL-400: body sem email → 400 VALIDATION_ERROR', async () => {
+      const res = await post(port, '/auth/login', { password: 'sec' })
+
+      expect(res.status).toBe(400)
+      expect((res.body as any).code).toBe('VALIDATION_ERROR')
+    })
+
+    it('AL-400: body sem password → 400 VALIDATION_ERROR', async () => {
+      const res = await post(port, '/auth/login', { email: 'admin@empresa.com' })
+
+      expect(res.status).toBe(400)
+      expect((res.body as any).code).toBe('VALIDATION_ERROR')
+    })
+
+    it('AL-400: email vazio (só espaços) → 400 VALIDATION_ERROR', async () => {
+      const res = await post(port, '/auth/login', { email: '   ', password: 'sec' })
+
+      expect(res.status).toBe(400)
+      expect((res.body as any).code).toBe('VALIDATION_ERROR')
+    })
+
+    it('AL-401: credenciais rejeitadas pelo Protheus → 401 UNAUTHORIZED', async () => {
+      mockAuth.mockRejectedValueOnce(
+        new UpstreamError('PROTHEUS_UNAUTHORIZED', 'Credenciais rejeitadas', 401, 'auth_login'),
+      )
+      const res = await post(port, '/auth/login', { email: 'user@empresa.com', password: 'wrong' })
+
+      expect(res.status).toBe(401)
+      expect((res.body as any).code).toBe('UNAUTHORIZED')
+    })
+
+    it('AL-502: Protheus indisponível → 502 com código upstream', async () => {
+      mockAuth.mockRejectedValueOnce(
+        new UpstreamError('PROTHEUS_AUTH_UNAVAILABLE', 'Protheus fora do ar', 503, 'auth_login'),
+      )
+      const res = await post(port, '/auth/login', { email: 'admin@empresa.com', password: 'sec' })
+
+      expect(res.status).toBe(502)
+      expect((res.body as any).code).toBe('PROTHEUS_AUTH_UNAVAILABLE')
+    })
+
+    it('AL-500: erro inesperado → 500 INTERNAL_ERROR', async () => {
+      mockAuth.mockRejectedValueOnce(new Error('Erro catastrófico'))
+      const res = await post(port, '/auth/login', { email: 'admin@empresa.com', password: 'sec' })
+
+      expect(res.status).toBe(500)
+      expect((res.body as any).code).toBe('INTERNAL_ERROR')
+    })
+
+    it('repassa email (sem espaços) e password corretos para o conector', async () => {
+      mockAuth.mockResolvedValueOnce({ token: 'tok', expiresIn: 1800 })
+      await post(port, '/auth/login', { email: '  admin@empresa.com  ', password: 'abc123' })
+
+      expect(mockAuth).toHaveBeenCalledWith({ email: 'admin@empresa.com', password: 'abc123' })
+    })
   })
 
   // ── GET /pedidos ────────────────────────────────────────────
@@ -213,7 +321,7 @@ describe('GatewayHttpServer', () => {
     })
 
     it('close() sem server iniciado resolve imediatamente', async () => {
-      const s = new GatewayHttpServer({ execute: jest.fn() }, { execute: jest.fn() })
+      const s = new GatewayHttpServer({ execute: jest.fn() }, { execute: jest.fn() }, { execute: jest.fn() })
       await expect(s.close()).resolves.toBeUndefined()
     })
   })

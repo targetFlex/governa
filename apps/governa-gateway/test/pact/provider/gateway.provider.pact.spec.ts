@@ -185,7 +185,7 @@ beforeAll(async () => {
   pedidoExecute  = jest.fn().mockResolvedValue([])
   clienteExecute = jest.fn().mockResolvedValue([])
 
-  gatewayServer = new GatewayHttpServer(pedidoConnector, clienteConnector)
+  gatewayServer = new GatewayHttpServer(pedidoConnector, clienteConnector, { execute: jest.fn() })
   gatewayPort   = await gatewayServer.listen(0)
 })
 
