@@ -85,7 +85,8 @@ describe('AuditService', () => {
       const fixed = new Date('2026-01-01T00:00:00.000Z')
       const { service } = makeService({ now: () => fixed })
       const event = await service.createEvent(makeInput())
-      expect(event.retentionUntil.getFullYear()).toBe(2031)
+      // getUTCFullYear() garante consistência independente do fuso do runner de CI.
+      expect(event.retentionUntil.getUTCFullYear()).toBe(2031)
     })
 
     it('When optional spanId is provided, Then it is preserved in the event', async () => {

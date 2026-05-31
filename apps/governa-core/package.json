@@ -9,7 +9,13 @@
     "test":          "jest --config jest.config.js --passWithNoTests",
     "test:edge":     "jest --config jest.config.js --testPathPattern=test/edge --passWithNoTests",
     "test:unit":     "jest --config jest.config.js --testPathIgnorePatterns=test/edge --passWithNoTests",
-    "test:coverage": "jest --config jest.config.js --coverage --passWithNoTests",
+    "test:coverage":              "jest --config jest.config.js --coverage --passWithNoTests",
+    "test:integration":           "jest --config jest.integration.config.js --passWithNoTests",
+    "test:integration:coverage":  "jest --config jest.integration.config.js --coverage --passWithNoTests",
+    "test:all":                   "pnpm test:coverage && pnpm test:integration",
+    "pact:test":                  "jest --config jest.pact.config.js --runInBand --passWithNoTests",
+    "pact:verify":                "jest --config jest.pact.config.js --testPathPattern=provider --runInBand --passWithNoTests",
+    "pact:publish":               "node -e \"const { Publisher } = require('@pact-foundation/pact'); new Publisher({ pactFilesOrDirs: ['test/pact/pacts'], pactBroker: 'http://localhost:9292', pactBrokerUsername: 'pact', pactBrokerPassword: 'pact_dev_pw', consumerVersion: require('./package.json').version, tags: ['main'] }).publishPacts().then(() => console.log('Pacts publicados')).catch(e => { console.error(e); process.exit(1); })\"",
     "typecheck":     "tsc --noEmit",
     "lint":          "eslint src --ext .ts",
     "db:migrate":    "prisma migrate dev",
@@ -32,6 +38,8 @@
     "dotenv":            "^16.4.5"
   },
   "devDependencies": {
+    "@pact-foundation/pact": "^12.5.2",
+    "axios":             "^1.7.2",
     "prisma":            "^5.14.0",
     "typescript":        "^5.4.5",
     "tsx":               "^4.11.0",
