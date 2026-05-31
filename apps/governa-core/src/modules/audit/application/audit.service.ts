@@ -115,7 +115,9 @@ export class AuditService {
 
   private addYears(date: Date, years: number): Date {
     const d = new Date(date.getTime())
-    d.setFullYear(d.getFullYear() + years)
+    // Usa UTC para evitar bug de fuso horário: datas próximas à virada do ano
+    // em UTC-3 (Brasil) têm getFullYear() ≠ getUTCFullYear().
+    d.setUTCFullYear(d.getUTCFullYear() + years)
     return d
   }
 }
