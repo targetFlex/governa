@@ -60,6 +60,7 @@ export class GatewayHttpServer {
   // ── Rotas ────────────────────────────────────────────────────
 
   private setupRoutes(): void {
+    this.app.get('/health', (_req, res) => { res.json({ status: 'ok' }) })
     this.app.post('/auth/login', this.handleLogin.bind(this))
     this.app.get('/pedidos',     this.handlePedidos.bind(this))
     this.app.get('/clientes',    this.handleClientes.bind(this))
