@@ -1,17 +1,26 @@
 # ============================================================
 # governa-gateway — Dockerfile (multi-stage)
 # ============================================================
+# Usa pnpm para consistência com o workspace monorepo.
+# Build context: apps/governa-gateway  (sem acesso ao root lockfile)
+# pnpm install sem lockfile é equivalente a npm install aqui — aceitável
+# para dev/staging. Em prod, gere package-lock.json no app e use npm ci.
+# ============================================================
+
 # Stage 1: build TypeScript → JS
 FROM node:20-alpine AS builder
 WORKDIR /app
 
-# Instalar dependências de build
+# Habilita corepack para usar a versão de pnpm definida no workspace
+RUN corepack enable && corepack prepare pnpm@9.0.0 --activate
+
+# Instalar dependências (inclui devDeps para tsc + tsx)
 COPY package.json ./
-RUN npm install --ignore-scripts
+RUN pnpm install --ignore-scripts
 
 COPY tsconfig.json ./
 COPY src/ ./src/
-RUN npm run build
+RUN pnpm run build
 
 # ============================================================
 # Stage 2: imagem mínima de produção
@@ -20,9 +29,11 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 
+RUN corepack enable && corepack prepare pnpm@9.0.0 --activate
+
 # Copiar apenas dependências de produção
 COPY package.json ./
-RUN npm install --omit=dev --ignore-scripts
+RUN pnpm install --prod --ignore-scripts
 
 # Copiar build compilado
 COPY --from=builder /app/dist ./dist
