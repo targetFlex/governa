@@ -5,6 +5,8 @@
   "private": true,
   "scripts": {
     "build": "tsc --project tsconfig.json",
+    "start": "node dist/src/server.js",
+    "dev":   "tsx watch src/server.ts",
     "test": "jest --config jest.config.js --passWithNoTests",
     "test:coverage": "jest --config jest.config.js --coverage --passWithNoTests",
     "test:edge":     "jest --config jest.config.js --testPathPattern=test/edge --passWithNoTests",

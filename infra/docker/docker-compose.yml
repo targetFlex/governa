@@ -40,6 +40,39 @@ services:
     depends_on:
       - postgres
 
+  # ── governa-gateway ──────────────────────────────────────────
+  # Proxy HTTP entre governa-core e o Protheus REST.
+  # Build: apps/governa-gateway/Dockerfile (multi-stage TypeScript)
+  # Porta local: 3100 → container: 3100
+  governa-gateway:
+    build:
+      context: ../../apps/governa-gateway
+      dockerfile: Dockerfile
+    container_name: governa_gateway
+    restart: unless-stopped
+    ports:
+      - "3100:3100"
+    environment:
+      NODE_ENV: development
+      GATEWAY_PORT: "3100"
+      # Preencher com valores reais (ou usar .env no host via env_file)
+      PROTHEUS_BASE_URL:          ${PROTHEUS_BASE_URL:-https://protheus.targetflex.com.br/rest}
+      PROTHEUS_AUTH_MODE:         ${PROTHEUS_AUTH_MODE:-oauth2}
+      PROTHEUS_CLIENT_ID:         ${PROTHEUS_CLIENT_ID:-governa_client}
+      PROTHEUS_CLIENT_SECRET:     ${PROTHEUS_CLIENT_SECRET:-change_me}
+      PROTHEUS_BASIC_USER:        ${PROTHEUS_BASIC_USER:-governa_api}
+      PROTHEUS_BASIC_PASS:        ${PROTHEUS_BASIC_PASS:-change_me}
+      PROTHEUS_TIMEOUT_MS:        "10000"
+      PROTHEUS_MAX_RETRIES:       "3"
+      PROTHEUS_TOKEN_TTL_BUFFER_S: "30"
+      PII_HMAC_SECRET:            ${PII_HMAC_SECRET:-change_me_min_32_chars_for_dev_only}
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:3100/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
   # ── Pact broker ─────────────────────────────────────────────
   # Banco dedicado para o broker (isola do governa_dev)
   pact_postgres:
