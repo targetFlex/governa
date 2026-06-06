@@ -1,0 +1,167 @@
+// ============================================================
+// styles.scss — Governa UI
+//
+// Design tokens globais + reset + utilitários base.
+// Todas as variáveis seguem o padrão --gov-* para evitar
+// colisões com bibliotecas de terceiros.
+// ============================================================
+
+// ── Design Tokens ─────────────────────────────────────────────
+
+:root {
+  // Paleta primária (azul corporativo TargetFlex)
+  --gov-color-primary-900:   #0a1628;
+  --gov-color-primary-800:   #112240;
+  --gov-color-primary-700:   #1a3560;
+  --gov-color-primary-600:   #1e4080;
+  --gov-color-primary-500:   #2351a4;
+  --gov-color-primary-400:   #3b6fd4;
+  --gov-color-primary-300:   #6b9be8;
+  --gov-color-primary-200:   #a8c4f5;
+  --gov-color-primary-100:   #dce9fd;
+  --gov-color-primary-50:    #f0f6ff;
+
+  // Paleta de suporte (verde sucesso, vermelho erro, amarelo alerta)
+  --gov-color-success-700:   #166534;
+  --gov-color-success-500:   #22c55e;
+  --gov-color-success-100:   #dcfce7;
+
+  --gov-color-error-700:     #991b1b;
+  --gov-color-error-500:     #ef4444;
+  --gov-color-error-100:     #fee2e2;
+
+  --gov-color-warning-700:   #854d0e;
+  --gov-color-warning-500:   #eab308;
+  --gov-color-warning-100:   #fef9c3;
+
+  // Neutros
+  --gov-color-neutral-900:   #111827;
+  --gov-color-neutral-800:   #1f2937;
+  --gov-color-neutral-700:   #374151;
+  --gov-color-neutral-500:   #6b7280;
+  --gov-color-neutral-300:   #d1d5db;
+  --gov-color-neutral-100:   #f3f4f6;
+  --gov-color-neutral-50:    #f9fafb;
+  --gov-color-white:         #ffffff;
+
+  // Semânticos (mapeiam para primitivos acima)
+  --gov-color-bg:            var(--gov-color-neutral-50);
+  --gov-color-surface:       var(--gov-color-white);
+  --gov-color-border:        var(--gov-color-neutral-300);
+  --gov-color-text-primary:  var(--gov-color-neutral-900);
+  --gov-color-text-secondary:var(--gov-color-neutral-500);
+  --gov-color-text-inverse:  var(--gov-color-white);
+  --gov-color-brand:         var(--gov-color-primary-500);
+  --gov-color-brand-hover:   var(--gov-color-primary-600);
+
+  // Tipografia
+  --gov-font-family-sans:    'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --gov-font-family-mono:    'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+
+  --gov-font-size-xs:    0.75rem;   // 12px
+  --gov-font-size-sm:    0.875rem;  // 14px
+  --gov-font-size-base:  1rem;      // 16px
+  --gov-font-size-lg:    1.125rem;  // 18px
+  --gov-font-size-xl:    1.25rem;   // 20px
+  --gov-font-size-2xl:   1.5rem;    // 24px
+  --gov-font-size-3xl:   1.875rem;  // 30px
+  --gov-font-size-4xl:   2.25rem;   // 36px
+
+  --gov-font-weight-regular:  400;
+  --gov-font-weight-medium:   500;
+  --gov-font-weight-semibold: 600;
+  --gov-font-weight-bold:     700;
+
+  --gov-line-height-tight:  1.25;
+  --gov-line-height-normal: 1.5;
+  --gov-line-height-relaxed:1.75;
+
+  // Espaçamento (escala 4px)
+  --gov-space-1:  0.25rem;  // 4px
+  --gov-space-2:  0.5rem;   // 8px
+  --gov-space-3:  0.75rem;  // 12px
+  --gov-space-4:  1rem;     // 16px
+  --gov-space-5:  1.25rem;  // 20px
+  --gov-space-6:  1.5rem;   // 24px
+  --gov-space-8:  2rem;     // 32px
+  --gov-space-10: 2.5rem;   // 40px
+  --gov-space-12: 3rem;     // 48px
+  --gov-space-16: 4rem;     // 64px
+
+  // Bordas
+  --gov-radius-sm:  0.25rem;
+  --gov-radius-md:  0.5rem;
+  --gov-radius-lg:  0.75rem;
+  --gov-radius-xl:  1rem;
+  --gov-radius-full:9999px;
+
+  // Sombras
+  --gov-shadow-sm:  0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --gov-shadow-md:  0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --gov-shadow-lg:  0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+
+  // Transições
+  --gov-transition-fast:   150ms ease-in-out;
+  --gov-transition-normal: 250ms ease-in-out;
+  --gov-transition-slow:   400ms ease-in-out;
+
+  // Z-index
+  --gov-z-dropdown: 100;
+  --gov-z-modal:    200;
+  --gov-z-toast:    300;
+}
+
+// ── Reset ─────────────────────────────────────────────────────
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  font-family: var(--gov-font-family-sans);
+  font-size: var(--gov-font-size-base);
+  font-weight: var(--gov-font-weight-regular);
+  line-height: var(--gov-line-height-normal);
+  color: var(--gov-color-text-primary);
+  background-color: var(--gov-color-bg);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+a {
+  color: var(--gov-color-brand);
+  text-decoration: none;
+
+  &:hover {
+    color: var(--gov-color-brand-hover);
+    text-decoration: underline;
+  }
+}
+
+img,
+svg {
+  display: block;
+  max-width: 100%;
+}
+
+button {
+  cursor: pointer;
+  font-family: inherit;
+}
+
+input,
+textarea,
+select {
+  font-family: inherit;
+  font-size: inherit;
+}

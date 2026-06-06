@@ -1,4 +1,3 @@
-version: "3.9"
 services:
   postgres:
     image: postgres:16-alpine
@@ -39,6 +38,112 @@ services:
       - "8080:8080"
     depends_on:
       - postgres
+
+  # ── governa-gateway ──────────────────────────────────────────
+  # Proxy HTTP entre governa-core e o Protheus REST.
+  # Build: apps/governa-gateway/Dockerfile (multi-stage TypeScript)
+  # Porta local: 3100 → container: 3100
+  governa-gateway:
+    build:
+      context: ../../apps/governa-gateway
+      dockerfile: Dockerfile
+    container_name: governa_gateway
+    restart: unless-stopped
+    ports:
+      - "3100:3100"
+    environment:
+      NODE_ENV: development
+      GATEWAY_PORT: "3100"
+      # Preencher com valores reais (ou usar .env no host via env_file)
+      PROTHEUS_BASE_URL:          ${PROTHEUS_BASE_URL:-https://protheus.targetflex.com.br/rest}
+      PROTHEUS_AUTH_MODE:         ${PROTHEUS_AUTH_MODE:-oauth2}
+      PROTHEUS_CLIENT_ID:         ${PROTHEUS_CLIENT_ID:-governa_client}
+      PROTHEUS_CLIENT_SECRET:     ${PROTHEUS_CLIENT_SECRET:-change_me}
+      PROTHEUS_BASIC_USER:        ${PROTHEUS_BASIC_USER:-governa_api}
+      PROTHEUS_BASIC_PASS:        ${PROTHEUS_BASIC_PASS:-change_me}
+      PROTHEUS_TIMEOUT_MS:        "10000"
+      PROTHEUS_MAX_RETRIES:       "3"
+      PROTHEUS_TOKEN_TTL_BUFFER_S: "30"
+      PII_HMAC_SECRET:            ${PII_HMAC_SECRET:-change_me_min_32_chars_for_dev_only}
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:3100/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # ── governa-core ─────────────────────────────────────────────
+  # API principal: Express + Prisma + BullMQ.
+  # Build: apps/governa-core/Dockerfile (multi-stage TypeScript)
+  # Porta local: 3000 → container: 3000
+  # Aguarda postgres e governa-gateway estarem healthy antes de subir.
+  governa-core:
+    build:
+      context: ../../apps/governa-core
+      dockerfile: Dockerfile
+    container_name: governa_core
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: development
+      PORT: "3000"
+      DATABASE_URL: "postgresql://governa:governa_dev_pw@postgres:5432/governa_dev?schema=public"
+      GATEWAY_BASE_URL: "http://governa-gateway:3100"
+      JWT_SECRET: ${JWT_SECRET:-change_me_min_32_chars_for_dev_only}
+      REDIS_URL: "redis://redis:6379"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      governa-gateway:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:3000/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # ── Pact broker ─────────────────────────────────────────────
+  # Banco dedicado para o broker (isola do governa_dev)
+  pact_postgres:
+    image: postgres:16-alpine
+    container_name: governa_pact_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER:     pact
+      POSTGRES_PASSWORD: pact_dev_pw
+      POSTGRES_DB:       pact_broker
+    volumes:
+      - pact_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL","pg_isready -U pact -d pact_broker"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  pact-broker:
+    image: pactfoundation/pact-broker:latest
+    container_name: governa_pact_broker
+    restart: unless-stopped
+    ports:
+      - "9292:9292"
+    environment:
+      PACT_BROKER_DATABASE_URL:         "postgres://pact:pact_dev_pw@pact_postgres/pact_broker"
+      PACT_BROKER_BASIC_AUTH_USERNAME:  pact
+      PACT_BROKER_BASIC_AUTH_PASSWORD:  pact_dev_pw
+      PACT_BROKER_ALLOW_PUBLIC_READ:    "true"
+      PACT_BROKER_LOG_LEVEL:            INFO
+    depends_on:
+      pact_postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL","wget -q --spider http://localhost:9292/diagnostic/status || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+
 volumes:
   postgres_data:
   redis_data:
+  pact_postgres_data:

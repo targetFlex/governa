@@ -1,0 +1,38 @@
+{
+  "name": "governa-gateway",
+  "version": "0.1.0",
+  "description": "Gateway TOTVS — integração HTTP com Protheus (Target Flex Patrimonial)",
+  "private": true,
+  "scripts": {
+    "build": "tsc --project tsconfig.json",
+    "start": "node dist/src/server.js",
+    "dev":   "tsx watch src/server.ts",
+    "test": "jest --config jest.config.js --passWithNoTests",
+    "test:coverage": "jest --config jest.config.js --coverage --passWithNoTests",
+    "test:edge":     "jest --config jest.config.js --testPathPattern=test/edge --passWithNoTests",
+    "typecheck":     "tsc --noEmit",
+    "lint":          "eslint src --ext .ts",
+    "pact:test":     "jest --config jest.pact.config.js --runInBand --passWithNoTests",
+    "pact:publish":  "node -e \"const { Publisher } = require('@pact-foundation/pact'); new Publisher({ pactFilesOrDirs: ['test/pact/pacts'], pactBroker: 'http://localhost:9292', pactBrokerUsername: 'pact', pactBrokerPassword: 'pact_dev_pw', consumerVersion: require('./package.json').version, tags: ['main'] }).publishPacts().then(() => console.log('Pacts publicados')).catch(e => { console.error(e); process.exit(1); })\""
+  },
+  "dependencies": {
+    "axios": "^1.7.9",
+    "dotenv": "^16.4.5",
+    "express": "^4.22.2",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@pact-foundation/pact": "^12.3.0",
+    "@typescript-eslint/eslint-plugin": "^7.11.0",
+    "@typescript-eslint/parser":        "^7.11.0",
+    "@types/express": "^4.17.25",
+    "eslint":         "^8.57.0",
+    "@types/jest": "^29.5.12",
+    "@types/node": "^20.14.0",
+    "axios-mock-adapter": "^2.0.0",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.2.2",
+    "tsx": "^4.7.0",
+    "typescript": "^5.4.5"
+  }
+}
