@@ -2,10 +2,11 @@
 // clientes-list.component.spec.ts
 //
 // Testes unitários do ClientesListComponent.
-// Cobertura: loading / error / empty / lista / retry / a11y
+// Padrão: TestBed configurado em beforeEach; estado controlado
+// via WritableSignal.set() antes de fixture.detectChanges().
 // ============================================================
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { signal, computed } from '@angular/core';
+import { signal, WritableSignal, computed } from '@angular/core';
 import { axe, toHaveNoViolations } from 'jest-axe';
 
 import { ClientesListComponent } from './clientes-list.component';
@@ -18,176 +19,169 @@ expect.extend(toHaveNoViolations);
 
 function makeCliente(override: Partial<Cliente> = {}): Cliente {
   return {
-    id: '1',
-    codigo: 'CLI001',
-    nome: 'Acme Ltda',
-    tipoPessoa: 'PJ',
-    documento: '12.345.678/0001-99',
-    email: 'contato@acme.com',
-    telefone: '(11) 99999-9999',
-    ativo: true,
-    limiteCredito: 50000,
-    saldoDevedor: 1000,
-    moeda: 'BRL',
-    criadoEm: '2024-01-01T00:00:00Z',
-    atualizadoEm: '2024-01-01T00:00:00Z',
+    id: '1', codigo: 'CLI001', nome: 'Acme Ltda', tipoPessoa: 'PJ',
+    documento: '12.345.678/0001-99', email: 'contato@acme.com',
+    telefone: '(11) 99999-9999', ativo: true,
+    limiteCredito: 50000, saldoDevedor: 1000, moeda: 'BRL',
+    criadoEm: '2024-01-01T00:00:00Z', atualizadoEm: '2024-01-01T00:00:00Z',
     ...override,
-  };
-}
-
-interface MockStoreOptions {
-  clientes?: Cliente[];
-  loading?: boolean;
-  error?: string | null;
-  total?: number;
-}
-
-function createMockStore(opts: MockStoreOptions = {}) {
-  const clientes = signal<Cliente[]>(opts.clientes ?? []);
-  const loading  = signal<boolean>(opts.loading ?? false);
-  const error    = signal<string | null>(opts.error ?? null);
-  const total    = signal<number>(opts.total ?? 0);
-
-  const isEmpty  = computed(() => !loading() && clientes().length === 0);
-  const hasError = computed(() => error() !== null);
-
-  return {
-    clientes,
-    loading,
-    error,
-    total,
-    isEmpty,
-    hasError,
-    loadClientes: jest.fn(),
-    clearError:   jest.fn(),
   };
 }
 
 // ── Suite ─────────────────────────────────────────────────────
 
 describe('ClientesListComponent', () => {
-  let fixture: ComponentFixture<ClientesListComponent>;
+  let fixture:   ComponentFixture<ClientesListComponent>;
   let component: ClientesListComponent;
-  let mockStore: ReturnType<typeof createMockStore>;
 
-  function setup(opts: MockStoreOptions = {}) {
-    mockStore = createMockStore(opts);
+  // Signals mutáveis — alterados por cada teste antes de detectChanges()
+  let clientes: WritableSignal<Cliente[]>;
+  let loading:  WritableSignal<boolean>;
+  let error:    WritableSignal<string | null>;
+  let total:    WritableSignal<number>;
+  let loadClientesMock: jest.Mock;
+  let clearErrorMock:   jest.Mock;
+
+  beforeEach(() => {
+    clientes         = signal<Cliente[]>([]);
+    loading          = signal<boolean>(false);
+    error            = signal<string | null>(null);
+    total            = signal<number>(0);
+    loadClientesMock = jest.fn();
+    clearErrorMock   = jest.fn();
+
+    const mockStore = {
+      clientes,
+      loading,
+      error,
+      total,
+      isEmpty:  computed(() => !loading() && clientes().length === 0),
+      hasError: computed(() => error() !== null),
+      loadClientes: loadClientesMock,
+      clearError:   clearErrorMock,
+    };
 
     TestBed.configureTestingModule({
       imports: [ClientesListComponent],
-      providers: [
-        { provide: ClientesStore, useValue: mockStore },
-      ],
+      providers: [{ provide: ClientesStore, useValue: mockStore }],
     });
 
     fixture   = TestBed.createComponent(ClientesListComponent);
     component = fixture.componentInstance;
-    fixture.detectChanges();
-  }
+    // NÃO chamar detectChanges() aqui — cada teste controla o estado antes
+  });
+
+  afterEach(() => jest.clearAllMocks());
 
   // ── Inicialização ─────────────────────────────────────────
 
-  describe('ngOnInit', () => {
-    it('deve chamar store.loadClientes() ao inicializar', () => {
-      setup();
-      expect(mockStore.loadClientes).toHaveBeenCalledTimes(1);
-    });
+  it('deve chamar store.loadClientes() ao inicializar', () => {
+    fixture.detectChanges();
+    expect(loadClientesMock).toHaveBeenCalledTimes(1);
   });
 
-  // ── Estado: loading ───────────────────────────────────────
+  // ── Loading ──────────────────────────────────────────────
 
   describe('loading state', () => {
+    beforeEach(() => loading.set(true));
+
     it('deve exibir skeletons quando loading=true', () => {
-      setup({ loading: true });
+      fixture.detectChanges();
       const skeletons = fixture.nativeElement.querySelectorAll('.clientes-list__skeleton');
       expect(skeletons.length).toBe(6);
     });
 
-    it('deve ter texto sr-only para leitores de tela durante loading', () => {
-      setup({ loading: true });
+    it('deve ter texto sr-only durante loading', () => {
+      fixture.detectChanges();
       const srOnly = fixture.nativeElement.querySelector('.sr-only');
       expect(srOnly?.textContent?.trim()).toBe('Carregando clientes…');
     });
 
-    it('não deve exibir grid de clientes durante loading', () => {
-      setup({ loading: true, clientes: [makeCliente()] });
+    it('não deve exibir grid durante loading', () => {
+      clientes.set([makeCliente()]);
+      fixture.detectChanges();
       const grid = fixture.nativeElement.querySelector('.clientes-list__grid');
       expect(grid).toBeNull();
     });
   });
 
-  // ── Estado: erro ──────────────────────────────────────────
+  // ── Erro ─────────────────────────────────────────────────
 
   describe('error state', () => {
-    it('deve exibir banner de erro com role=alert', () => {
-      setup({ error: 'Falha na conexão com o servidor.' });
+    beforeEach(() => error.set('Falha na conexão.'));
+
+    it('deve exibir banner com role=alert', () => {
+      fixture.detectChanges();
       const alert = fixture.nativeElement.querySelector('[role="alert"]');
       expect(alert).not.toBeNull();
-      expect(alert.textContent).toContain('Falha na conexão com o servidor.');
+      expect(alert.textContent).toContain('Falha na conexão.');
     });
 
     it('deve exibir botão "Tentar novamente"', () => {
-      setup({ error: 'Erro' });
+      fixture.detectChanges();
       const btn = fixture.nativeElement.querySelector('.clientes-list__retry-btn');
       expect(btn?.textContent?.trim()).toBe('Tentar novamente');
     });
 
-    it('deve chamar clearError + loadClientes ao clicar em retry', () => {
-      setup({ error: 'Erro' });
+    it('deve chamar clearError + loadClientes ao clicar retry', () => {
+      fixture.detectChanges();
       const btn = fixture.nativeElement.querySelector<HTMLButtonElement>('.clientes-list__retry-btn');
       btn?.click();
-      expect(mockStore.clearError).toHaveBeenCalledTimes(1);
-      expect(mockStore.loadClientes).toHaveBeenCalledTimes(2); // ngOnInit + retry
+      expect(clearErrorMock).toHaveBeenCalledTimes(1);
+      expect(loadClientesMock).toHaveBeenCalledTimes(2); // ngOnInit + retry
     });
 
-    it('não deve exibir banner de erro enquanto loading=true', () => {
-      setup({ loading: true, error: 'Erro anterior' });
+    it('não deve exibir erro quando loading=true', () => {
+      loading.set(true);
+      fixture.detectChanges();
       const alert = fixture.nativeElement.querySelector('[role="alert"]');
       expect(alert).toBeNull();
     });
   });
 
-  // ── Estado: vazio ─────────────────────────────────────────
+  // ── Empty ────────────────────────────────────────────────
 
   describe('empty state', () => {
-    it('deve exibir mensagem de vazio quando lista está vazia', () => {
-      setup({ clientes: [], loading: false });
+    it('deve exibir mensagem de vazio', () => {
+      fixture.detectChanges();
       const empty = fixture.nativeElement.querySelector('.clientes-list__empty');
       expect(empty?.textContent?.trim()).toBe('Nenhum cliente encontrado.');
     });
 
     it('deve ter role=status na mensagem de vazio', () => {
-      setup({ clientes: [] });
+      fixture.detectChanges();
       const empty = fixture.nativeElement.querySelector('.clientes-list__empty');
       expect(empty?.getAttribute('role')).toBe('status');
     });
   });
 
-  // ── Estado: lista ─────────────────────────────────────────
+  // ── Lista ────────────────────────────────────────────────
 
   describe('list state', () => {
-    it('deve renderizar um ClienteCard para cada cliente', () => {
-      const clientes = [
+    beforeEach(() => {
+      clientes.set([
         makeCliente({ id: '1', nome: 'Acme' }),
         makeCliente({ id: '2', nome: 'Beta' }),
         makeCliente({ id: '3', nome: 'Gama' }),
-      ];
-      setup({ clientes, total: 3 });
+      ]);
+      total.set(3);
+    });
 
+    it('deve renderizar um ClienteCard por cliente', () => {
+      fixture.detectChanges();
       const cards = fixture.nativeElement.querySelectorAll('app-cliente-card');
       expect(cards.length).toBe(3);
     });
 
     it('deve exibir contagem de clientes', () => {
-      const clientes = [makeCliente({ id: '1' }), makeCliente({ id: '2' })];
-      setup({ clientes, total: 50 });
-
+      total.set(50);
+      fixture.detectChanges();
       const count = fixture.nativeElement.querySelector('.clientes-list__count');
-      expect(count?.textContent).toContain('2 de 50');
+      expect(count?.textContent).toContain('3 de 50');
     });
 
     it('não deve exibir mensagem de vazio quando há clientes', () => {
-      setup({ clientes: [makeCliente()] });
+      fixture.detectChanges();
       const empty = fixture.nativeElement.querySelector('.clientes-list__empty');
       expect(empty).toBeNull();
     });
@@ -196,26 +190,22 @@ describe('ClientesListComponent', () => {
   // ── Acessibilidade ────────────────────────────────────────
 
   describe('acessibilidade (axe-core)', () => {
-    it('estado de loading não deve ter violações WCAG', async () => {
-      setup({ loading: true });
+    it('estado loading não deve ter violações WCAG', async () => {
+      loading.set(true);
+      fixture.detectChanges();
       const results = await axe(fixture.nativeElement);
       expect(results).toHaveNoViolations();
     });
 
-    it('estado de erro não deve ter violações WCAG', async () => {
-      setup({ error: 'Falha ao carregar.' });
+    it('estado erro não deve ter violações WCAG', async () => {
+      error.set('Falha ao carregar.');
+      fixture.detectChanges();
       const results = await axe(fixture.nativeElement);
       expect(results).toHaveNoViolations();
     });
 
     it('estado vazio não deve ter violações WCAG', async () => {
-      setup({ clientes: [] });
-      const results = await axe(fixture.nativeElement);
-      expect(results).toHaveNoViolations();
-    });
-
-    it('estado de lista não deve ter violações WCAG', async () => {
-      setup({ clientes: [makeCliente()], total: 1 });
+      fixture.detectChanges();
       const results = await axe(fixture.nativeElement);
       expect(results).toHaveNoViolations();
     });
