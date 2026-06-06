@@ -7,7 +7,7 @@
 // ============================================================
 import type { Meta, StoryObj } from '@storybook/angular';
 import { ClienteCardComponent } from './cliente-card.component';
-import type { Cliente } from '../../../models/cliente.model';
+import type { Cliente } from '../../models/cliente.model';
 
 // ── Fixture helpers ───────────────────────────────────────────
 const clienteBase: Cliente = {

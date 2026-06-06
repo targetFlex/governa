@@ -14,7 +14,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { axe, toHaveNoViolations } from 'jest-axe';
 import { ClienteCardComponent } from './cliente-card.component';
-import type { Cliente } from '../../../models/cliente.model';
+import type { Cliente } from '../../models/cliente.model';
 
 expect.extend(toHaveNoViolations);
 

@@ -12,7 +12,7 @@
 // ============================================================
 import { Component, Input } from '@angular/core';
 import { CommonModule, CurrencyPipe } from '@angular/common';
-import { Cliente } from '../../../models/cliente.model';
+import { Cliente } from '../../models/cliente.model';
 
 @Component({
   selector: 'app-cliente-card',
