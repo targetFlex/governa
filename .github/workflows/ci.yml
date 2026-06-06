@@ -38,6 +38,11 @@ jobs:
       - name: Install dependencies (workspace)
         run: pnpm install --frozen-lockfile
 
+      # ── Prisma Client generate (governa-core only) ────────────────────────────
+      - name: Generate Prisma Client
+        if: matrix.app == 'governa-core'
+        run: pnpm --filter governa-core exec prisma generate
+
       # ── Lint ──────────────────────────────────────────────────────────────────
       - name: "[${{ matrix.app }}] Lint"
         run: pnpm --filter ${{ matrix.app }} lint
