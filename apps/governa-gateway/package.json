@@ -11,6 +11,7 @@
     "test:coverage": "jest --config jest.config.js --coverage --passWithNoTests",
     "test:edge":     "jest --config jest.config.js --testPathPattern=test/edge --passWithNoTests",
     "typecheck":     "tsc --noEmit",
+    "lint":          "eslint src --ext .ts",
     "pact:test":     "jest --config jest.pact.config.js --runInBand --passWithNoTests",
     "pact:publish":  "node -e \"const { Publisher } = require('@pact-foundation/pact'); new Publisher({ pactFilesOrDirs: ['test/pact/pacts'], pactBroker: 'http://localhost:9292', pactBrokerUsername: 'pact', pactBrokerPassword: 'pact_dev_pw', consumerVersion: require('./package.json').version, tags: ['main'] }).publishPacts().then(() => console.log('Pacts publicados')).catch(e => { console.error(e); process.exit(1); })\""
   },
@@ -22,7 +23,10 @@
   },
   "devDependencies": {
     "@pact-foundation/pact": "^12.3.0",
+    "@typescript-eslint/eslint-plugin": "^7.11.0",
+    "@typescript-eslint/parser":        "^7.11.0",
     "@types/express": "^4.17.25",
+    "eslint":         "^8.57.0",
     "@types/jest": "^29.5.12",
     "@types/node": "^20.14.0",
     "axios-mock-adapter": "^2.0.0",
