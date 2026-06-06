@@ -18,7 +18,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        app: [governa-core, governa-gateway]
+        app: [governa-core, governa-gateway, governa-ui]
+        include:
+          # governa-ui: @angular-eslint not yet installed — lint skipped until setup
+          - app: governa-ui
+            skip_lint: true
 
     steps:
       - name: Checkout
@@ -45,6 +49,7 @@ jobs:
 
       # ── Lint ──────────────────────────────────────────────────────────────────
       - name: "[${{ matrix.app }}] Lint"
+        if: ${{ !matrix.skip_lint }}
         run: pnpm --filter ${{ matrix.app }} lint
 
       # ── Typecheck ─────────────────────────────────────────────────────────────
