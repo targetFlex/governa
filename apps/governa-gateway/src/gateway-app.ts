@@ -17,8 +17,8 @@
 
 import express, { Application, Request, Response } from 'express'
 import { Server } from 'http'
-import { ReadProtheusPedidoConnector, ReadPedidoParams } from './connectors/pedido/read-protheus-pedido.connector'
-import { ReadProtheusCilenteConnector, ReadClienteParams } from './connectors/cliente/read-protheus-cliente.connector'
+import { ReadPedidoParams } from './connectors/pedido/read-protheus-pedido.connector'
+import { ReadClienteParams } from './connectors/cliente/read-protheus-cliente.connector'
 import { IAuthLoginConnector, LoginResult } from './connectors/auth/auth-login.connector'
 import { UpstreamError } from './connectors/shared/upstream-error.handler'
 

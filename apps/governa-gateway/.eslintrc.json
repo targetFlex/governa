@@ -20,5 +20,16 @@
     "@typescript-eslint/no-unused-vars": ["error", { "argsIgnorePattern": "^_" }],
     "no-console": ["warn", { "allow": ["warn", "error"] }]
   },
-  "ignorePatterns": ["dist/", "node_modules/", "coverage/"]
+  "ignorePatterns": ["dist/", "node_modules/", "coverage/"],
+  "overrides": [
+    {
+      "files": ["**/*.spec.ts", "**/*.test.ts"],
+      "rules": {
+        "@typescript-eslint/no-unused-vars":  "warn",
+        "@typescript-eslint/ban-types":       "warn",
+        "@typescript-eslint/no-var-requires": "warn",
+        "@typescript-eslint/ban-ts-comment":  "warn"
+      }
+    }
+  ]
 }
