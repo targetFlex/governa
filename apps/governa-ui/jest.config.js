@@ -21,6 +21,8 @@ module.exports = {
     '<rootDir>/node_modules/',
     '<rootDir>/e2e/',
   ],
+  // jest-axe@9 é ESM-only — precisa ser transformado pelo jest-preset-angular
+  transformIgnorePatterns: ['node_modules/(?!(jest-axe)/)'],
   collectCoverageFrom: [
     'src/app/**/*.ts',
     // Arquivos de bootstrap/config — não são testáveis isoladamente

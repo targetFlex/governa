@@ -196,7 +196,7 @@ describe('LoginComponent', () => {
     }));
 
     it('deve navegar para /dashboard após login bem-sucedido', fakeAsync(() => {
-      const navigateSpy = jest.spyOn(router, 'navigate');
+      const navigateSpy = jest.spyOn(router, 'navigate').mockResolvedValue(true);
 
       fixture.componentInstance['form'].setValue({
         email:    'admin@governa.com',
@@ -245,6 +245,25 @@ describe('LoginComponent', () => {
 
       const btn: HTMLButtonElement = fixture.nativeElement.querySelector('button[type="submit"]');
       expect(btn.disabled).toBe(false);
+    }));
+
+    it('deve usar mensagem padrão quando err.error.message está ausente', fakeAsync(() => {
+      // Cobre o branch ?? 'Credenciais inválidas. Tente novamente.' (linha 315)
+      authMock.login.mockReturnValueOnce(throwError(() => ({ error: null })));
+
+      fixture.componentInstance['form'].setValue({
+        email:    'x@x.com',
+        password: 'wrongpass',
+      });
+
+      const form: HTMLFormElement = fixture.nativeElement.querySelector('form');
+      form.dispatchEvent(new Event('submit'));
+      tick();
+      fixture.detectChanges();
+
+      const banner: HTMLElement = fixture.nativeElement.querySelector('.auth-error');
+      expect(banner).toBeTruthy();
+      expect(banner.textContent).toContain('Credenciais inválidas. Tente novamente.');
     }));
   });
 });

@@ -7,7 +7,9 @@
 // ============================================================
 
 import { TestBed } from '@angular/core/testing';
+import { HttpClient } from '@angular/common/http';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
+import { throwError } from 'rxjs';
 import { PedidosService, PedidosStore } from './pedidos.service';
 import { Pedido, PedidosResponse } from '../../shared/models/pedido.model';
 import { environment } from '@env/environment';
@@ -184,5 +186,22 @@ describe('PedidosService', () => {
     );
     expect(req).toBeTruthy();
     req.flush({ data: [], total: 0, page: 2, pageSize: 10 });
+  });
+
+  // ── Fallback de mensagem de erro ───────────────────────────
+
+  it('deve usar mensagem de fallback quando err não tem error.message nem message', () => {
+    // Cobre o branch ?? 'Erro ao carregar pedidos...' — inalcançável via HttpTestingController
+    // pois HttpErrorResponse.message é sempre preenchida.
+    const http = TestBed.inject(HttpClient);
+    const spy = jest.spyOn(http, 'get').mockReturnValueOnce(
+      throwError(() => ({ error: null, message: null })),
+    );
+
+    service.loadPedidos();
+
+    expect(service.error()).toBe('Erro ao carregar pedidos. Tente novamente.');
+    expect(service.hasError()).toBe(true);
+    spy.mockRestore();
   });
 });
