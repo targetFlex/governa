@@ -12,9 +12,8 @@
 // ============================================================
 
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
-import { RouterTestingModule } from '@angular/router/testing';
-import { provideRouter } from '@angular/router';
-import { Router } from '@angular/router';
+import { provideLocationMocks } from '@angular/common/testing';
+import { provideRouter, Router } from '@angular/router';
 import { of, throwError } from 'rxjs';
 
 import { LoginComponent } from './login.component';
@@ -49,11 +48,10 @@ describe('LoginComponent', () => {
     authMock = makeAuthServiceMock(options);
 
     TestBed.configureTestingModule({
-      imports: [
-        LoginComponent,
-        RouterTestingModule.withRoutes([]),
-      ],
+      imports: [LoginComponent],
       providers: [
+        provideRouter([]),
+        provideLocationMocks(),
         { provide: AuthService, useValue: authMock },
       ],
     }).compileComponents();
