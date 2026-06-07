@@ -15,14 +15,14 @@ module.exports = {
   },
   moduleNameMapper: {
     '^@env/(.*)$': '<rootDir>/src/environments/$1',
+    // jest-axe@9 é ESM-only: usar mock CJS local para evitar falha de import
+    '^jest-axe$': '<rootDir>/src/__mocks__/jest-axe.js',
   },
   // Exclui Playwright e2e (runner separado) e node_modules do Jest
   testPathIgnorePatterns: [
     '<rootDir>/node_modules/',
     '<rootDir>/e2e/',
   ],
-  // jest-axe@9 é ESM-only — precisa ser transformado pelo jest-preset-angular
-  transformIgnorePatterns: ['node_modules/(?!(jest-axe)/)'],
   collectCoverageFrom: [
     'src/app/**/*.ts',
     // Arquivos de bootstrap/config — não são testáveis isoladamente
