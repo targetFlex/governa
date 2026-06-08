@@ -21,6 +21,10 @@ module.exports = {
     '^@env/(.*)$': '<rootDir>/src/environments/$1',
     // jest-axe@9 é ESM-only: usar mock CJS local para evitar falha de import
     '^jest-axe$': '<rootDir>/src/__mocks__/jest-axe.js',
+    // pnpm não hoista @angular/common/locales/* para o resolver padrão do Jest
+    // (subpath exports do package.json são ignorados via symlink pnpm).
+    // Mapeamento direto bypassa a resolução de exports e acessa o arquivo real.
+    '^@angular/common/locales/(.*)$': '<rootDir>/node_modules/@angular/common/locales/$1',
   },
   // Exclui Playwright e2e (runner separado) e node_modules do Jest
   testPathIgnorePatterns: [
