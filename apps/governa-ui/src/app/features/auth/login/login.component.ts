@@ -18,7 +18,6 @@ import {
   Component,
   inject,
   signal,
-  computed,
   ElementRef,
   viewChild,
 } from '@angular/core';
@@ -55,12 +54,12 @@ import { AuthService } from '../../../core/auth/auth.service';
               formControlName="email"
               autocomplete="email"
               aria-label="Endereço de e-mail"
-              [attr.aria-invalid]="emailInvalid() ? 'true' : null"
+              [attr.aria-invalid]="emailInvalid ? 'true' : null"
               class="field-input"
-              [class.field-input--error]="emailInvalid()"
+              [class.field-input--error]="emailInvalid"
               placeholder="seu@email.com"
             />
-            @if (emailInvalid()) {
+            @if (emailInvalid) {
               <span class="field-error" role="alert">
                 Informe um e-mail válido.
               </span>
@@ -76,12 +75,12 @@ import { AuthService } from '../../../core/auth/auth.service';
               formControlName="password"
               autocomplete="current-password"
               aria-label="Senha de acesso"
-              [attr.aria-invalid]="passwordInvalid() ? 'true' : null"
+              [attr.aria-invalid]="passwordInvalid ? 'true' : null"
               class="field-input"
-              [class.field-input--error]="passwordInvalid()"
+              [class.field-input--error]="passwordInvalid"
               placeholder="••••••••"
             />
-            @if (passwordInvalid()) {
+            @if (passwordInvalid) {
               <span class="field-error" role="alert">
                 Informe sua senha.
               </span>
@@ -280,17 +279,22 @@ export class LoginComponent {
     password: ['', [Validators.required, Validators.minLength(6)]],
   });
 
-  // ── Computed (validação inline) ────────────────────────────
+  // ── Getters de validação inline ───────────────────────────
+  // Usamos getters (não computed signals) porque Angular 17 reavalia
+  // getters em cada ciclo de change detection (zone-based), enquanto
+  // computed signals só atualizam quando dependências REATIVAS mudam.
+  // AbstractControl.invalid / .touched não são signals → computed cachearia
+  // o valor inicial e nunca atualizaria após markAsTouched / setValue.
 
-  protected readonly emailInvalid = computed(() => {
+  protected get emailInvalid(): boolean {
     const ctrl = this.form.get('email');
-    return !!(ctrl?.invalid && ctrl.touched);
-  });
+    return !!(ctrl?.invalid && ctrl?.touched);
+  }
 
-  protected readonly passwordInvalid = computed(() => {
+  protected get passwordInvalid(): boolean {
     const ctrl = this.form.get('password');
-    return !!(ctrl?.invalid && ctrl.touched);
-  });
+    return !!(ctrl?.invalid && ctrl?.touched);
+  }
 
   // ── Submit ────────────────────────────────────────────────
 

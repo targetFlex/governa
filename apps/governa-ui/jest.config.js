@@ -10,6 +10,10 @@ module.exports = {
       {
         tsconfig: '<rootDir>/tsconfig.spec.json',
         stringifyContentPathRegex: '\\.(html|svg)$',
+        // Desativa checagem de tipos no Jest — specs são testadas em runtime,
+        // não em compilação; erros TS2307/2339/2347 em spec files são falsos-positivos
+        // causados pelo moduleNameMapper redirecionar jest-axe para mock CJS.
+        diagnostics: false,
       },
     ],
   },

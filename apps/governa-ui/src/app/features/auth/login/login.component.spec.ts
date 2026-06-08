@@ -178,6 +178,9 @@ describe('LoginComponent', () => {
     beforeEach(() => setup({ loginResult: 'success' }));
 
     it('deve chamar AuthService.login com as credenciais', fakeAsync(() => {
+      // Spy no router para evitar NG04002 quando login bem-sucedido navega para /dashboard
+      jest.spyOn(router, 'navigate').mockResolvedValue(true);
+
       fixture.componentInstance['form'].setValue({
         email:    'admin@governa.com',
         password: 'secret123',
