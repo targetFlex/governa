@@ -59,11 +59,11 @@ import { Cliente } from '../../models/cliente.model';
         }
         <div class="cliente-card__row">
           <dt>Limite de Crédito</dt>
-          <dd>{{ cliente.limiteCredito | currency: cliente.moeda : 'symbol-narrow' : '1.2-2' : 'pt-BR' }}</dd>
+          <dd>{{ cliente.limiteCredito | currency: cliente.moeda : 'symbol-narrow' : '1.2-2' }}</dd>
         </div>
         <div class="cliente-card__row">
           <dt>Saldo Devedor</dt>
-          <dd>{{ cliente.saldoDevedor | currency: cliente.moeda : 'symbol-narrow' : '1.2-2' : 'pt-BR' }}</dd>
+          <dd>{{ cliente.saldoDevedor | currency: cliente.moeda : 'symbol-narrow' : '1.2-2' }}</dd>
         </div>
       </dl>
 
