@@ -5,15 +5,10 @@
 // Padrão: TestBed configurado em beforeEach; estado controlado
 // via WritableSignal.set() antes de fixture.detectChanges().
 // ============================================================
-import { registerLocaleData } from '@angular/common';
-import localePtBr from '@angular/common/locales/pt-BR';
 import { LOCALE_ID } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { signal, WritableSignal, computed } from '@angular/core';
 import { axe, toHaveNoViolations } from 'jest-axe';
-
-// Registrar locale pt-BR (ClienteCardComponent usa CurrencyPipe com 'pt-BR')
-registerLocaleData(localePtBr);
 
 import { ClientesListComponent } from './clientes-list.component';
 import { ClientesStore } from '../clientes.service';
@@ -71,7 +66,7 @@ describe('ClientesListComponent', () => {
       imports: [ClientesListComponent],
       providers: [
         { provide: ClientesStore, useValue: mockStore },
-        { provide: LOCALE_ID, useValue: 'pt-BR' },
+        { provide: LOCALE_ID, useValue: 'en' },
       ],
     });
 

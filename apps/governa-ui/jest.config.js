@@ -1,13 +1,4 @@
 /** @type {import('jest').Config} */
-const path = require('path');
-
-// pnpm v9 não hoista @angular/common para node_modules local de apps/governa-ui.
-// O arquivo real está no virtual store (.pnpm/). require.resolve() segue os
-// symlinks do pnpm em runtime e retorna o caminho absoluto correto,
-// independente da versão ou estrutura do store.
-const angularCommonDir = path.dirname(
-  require.resolve('@angular/common/package.json'),
-);
 
 module.exports = {
   preset: 'jest-preset-angular',
@@ -31,9 +22,6 @@ module.exports = {
     '^@env/(.*)$': '<rootDir>/src/environments/$1',
     // jest-axe@9 é ESM-only: usar mock CJS local para evitar falha de import
     '^jest-axe$': '<rootDir>/src/__mocks__/jest-axe.js',
-    // pnpm v9: locale files ficam no virtual store, não no node_modules local.
-    // angularCommonDir resolve via require.resolve() para o caminho real no .pnpm/.
-    '^@angular/common/locales/(.*)$': `${angularCommonDir}/locales/$1`,
   },
   // Exclui Playwright e2e (runner separado) e node_modules do Jest
   testPathIgnorePatterns: [

@@ -11,16 +11,11 @@
 //   - aria-label no article e no badge
 //   - Zero violações axe-core (WCAG 2.1 AA)
 // ============================================================
-import { registerLocaleData } from '@angular/common';
-import localePtBr from '@angular/common/locales/pt-BR';
 import { LOCALE_ID } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { axe, toHaveNoViolations } from 'jest-axe';
 import { ClienteCardComponent } from './cliente-card.component';
 import type { Cliente } from '../../models/cliente.model';
-
-// Registrar locale pt-BR (exigido pelo CurrencyPipe com moeda BRL)
-registerLocaleData(localePtBr);
 
 expect.extend(toHaveNoViolations);
 
@@ -66,7 +61,7 @@ describe('ClienteCardComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [ClienteCardComponent],
-      providers: [{ provide: LOCALE_ID, useValue: 'pt-BR' }],
+      providers: [{ provide: LOCALE_ID, useValue: 'en' }],
     }).compileComponents();
   });
 
