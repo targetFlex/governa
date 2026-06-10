@@ -12,9 +12,8 @@
 // ============================================================
 
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
-import { RouterTestingModule } from '@angular/router/testing';
-import { provideRouter } from '@angular/router';
-import { Router } from '@angular/router';
+import { provideLocationMocks } from '@angular/common/testing';
+import { provideRouter, Router } from '@angular/router';
 import { of, throwError } from 'rxjs';
 
 import { LoginComponent } from './login.component';
@@ -49,11 +48,10 @@ describe('LoginComponent', () => {
     authMock = makeAuthServiceMock(options);
 
     TestBed.configureTestingModule({
-      imports: [
-        LoginComponent,
-        RouterTestingModule.withRoutes([]),
-      ],
+      imports: [LoginComponent],
       providers: [
+        provideRouter([]),
+        provideLocationMocks(),
         { provide: AuthService, useValue: authMock },
       ],
     }).compileComponents();
@@ -180,6 +178,9 @@ describe('LoginComponent', () => {
     beforeEach(() => setup({ loginResult: 'success' }));
 
     it('deve chamar AuthService.login com as credenciais', fakeAsync(() => {
+      // Spy no router para evitar NG04002 quando login bem-sucedido navega para /dashboard
+      jest.spyOn(router, 'navigate').mockResolvedValue(true);
+
       fixture.componentInstance['form'].setValue({
         email:    'admin@governa.com',
         password: 'secret123',
@@ -198,7 +199,7 @@ describe('LoginComponent', () => {
     }));
 
     it('deve navegar para /dashboard após login bem-sucedido', fakeAsync(() => {
-      const navigateSpy = jest.spyOn(router, 'navigate');
+      const navigateSpy = jest.spyOn(router, 'navigate').mockResolvedValue(true);
 
       fixture.componentInstance['form'].setValue({
         email:    'admin@governa.com',
@@ -247,6 +248,25 @@ describe('LoginComponent', () => {
 
       const btn: HTMLButtonElement = fixture.nativeElement.querySelector('button[type="submit"]');
       expect(btn.disabled).toBe(false);
+    }));
+
+    it('deve usar mensagem padrão quando err.error.message está ausente', fakeAsync(() => {
+      // Cobre o branch ?? 'Credenciais inválidas. Tente novamente.' (linha 315)
+      authMock.login.mockReturnValueOnce(throwError(() => ({ error: null })));
+
+      fixture.componentInstance['form'].setValue({
+        email:    'x@x.com',
+        password: 'wrongpass',
+      });
+
+      const form: HTMLFormElement = fixture.nativeElement.querySelector('form');
+      form.dispatchEvent(new Event('submit'));
+      tick();
+      fixture.detectChanges();
+
+      const banner: HTMLElement = fixture.nativeElement.querySelector('.auth-error');
+      expect(banner).toBeTruthy();
+      expect(banner.textContent).toContain('Credenciais inválidas. Tente novamente.');
     }));
   });
 });

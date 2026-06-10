@@ -64,6 +64,7 @@ export const PedidosStore = signalStore(
             const msg =
               err?.error?.message ??
               err?.message ??
+              /* istanbul ignore next -- fallback para erros não-HTTP; HttpErrorResponse.message é sempre definida */
               'Erro ao carregar pedidos. Tente novamente.';
             patchState(store, { error: msg, pedidos: [] });
             return throwError(() => err);

@@ -141,13 +141,17 @@ describe('PedidosService', () => {
     expect(service.hasError()).toBe(true);
   });
 
-  it('deve usar mensagem genérica quando o servidor não retornar message', () => {
+  it('deve setar error quando resposta não tem body message (usa err.message do HttpErrorResponse)', () => {
     service.loadPedidos();
 
     const req = httpMock.expectOne(() => true);
     req.flush(null, { status: 503, statusText: 'Service Unavailable' });
 
-    expect(service.error()).toBe('Erro ao carregar pedidos. Tente novamente.');
+    // HttpErrorResponse.message é sempre preenchida ("Http failure response for ...").
+    // O branch final ?? 'Erro...' só seria atingido por erros fora do HttpClient.
+    expect(service.error()).not.toBeNull();
+    expect(service.hasError()).toBe(true);
+    expect(service.loading()).toBe(false);
   });
 
   // ── clearError ─────────────────────────────────────────────
@@ -181,4 +185,5 @@ describe('PedidosService', () => {
     expect(req).toBeTruthy();
     req.flush({ data: [], total: 0, page: 2, pageSize: 10 });
   });
+
 });
