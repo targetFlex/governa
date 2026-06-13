@@ -39,6 +39,14 @@ export const APP_ROUTES: Routes = [
       ),
   },
   {
+    path: 'agentes',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/agentes/agentes-list/agentes-list.component').then(
+        (m) => m.AgentesListComponent,
+      ),
+  },
+  {
     path: '**',
     redirectTo: 'dashboard',
   },
