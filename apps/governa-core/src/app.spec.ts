@@ -15,6 +15,7 @@ import { createApp }        from './app'
 import type { AgentService }                from './modules/agents/application/agent.service'
 import type { ConsultarPedidoUseCase }      from './modules/pedidos/application/consultar-pedido.use-case'
 import type { ConsultarClienteUseCase }     from './modules/clientes/application/consultar-cliente.use-case'
+import type { PolicyService }               from './modules/policies/application/policy.service'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -58,6 +59,12 @@ const mockClienteUseCase = {
   execute: jest.fn(),
 } as unknown as ConsultarClienteUseCase
 
+const mockPolicyService = {
+  getPolicy:     jest.fn(),
+  listPolicies:  jest.fn().mockResolvedValue([]),
+  updatePolicy:  jest.fn(),
+} as unknown as PolicyService
+
 // ─── Testes ───────────────────────────────────────────────────────────────────
 
 describe('App — wiring', () => {
@@ -65,6 +72,7 @@ describe('App — wiring', () => {
     agentService:            mockAgentService,
     consultarPedidoUseCase:  mockPedidoUseCase,
     consultarClienteUseCase: mockClienteUseCase,
+    policyService:           mockPolicyService,
   })
 
   beforeEach(() => {

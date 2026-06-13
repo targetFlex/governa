@@ -47,6 +47,14 @@ export const APP_ROUTES: Routes = [
       ),
   },
   {
+    path: 'politicas/:id',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/politicas/politica-form/politica-form.component').then(
+        (m) => m.PoliticaFormComponent,
+      ),
+  },
+  {
     path: '**',
     redirectTo: 'dashboard',
   },
