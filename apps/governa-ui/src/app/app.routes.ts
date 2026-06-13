@@ -23,6 +23,22 @@ export const APP_ROUTES: Routes = [
       ),
   },
   {
+    path: 'clientes',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/clientes/clientes-list/clientes-list.component').then(
+        (m) => m.ClientesListComponent,
+      ),
+  },
+  {
+    path: 'pedidos',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/pedidos/pedidos-list/pedidos-list.component').then(
+        (m) => m.PedidosListComponent,
+      ),
+  },
+  {
     path: '**',
     redirectTo: 'dashboard',
   },
