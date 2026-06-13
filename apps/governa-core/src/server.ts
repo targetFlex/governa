@@ -25,11 +25,16 @@ import { PrismaAgentInventoryRepository }   from './modules/agents/infrastructur
 import { PrismaAuditEventRepository }       from './modules/audit/infrastructure/prisma-audit-event.repository'
 import { HttpGatewayClient }                from './shared/infrastructure/http-gateway-client'
 
+// ── Infra adicional ──────────────────────────────────────────────────────────
+import { PrismaPolicyRepository }           from './modules/policies/infrastructure/prisma-policy.repository'
+
 // ── Application ──────────────────────────────────────────────────────────────
 import { AgentService }                     from './modules/agents/application/agent.service'
 import { AuditService }                     from './modules/audit/application/audit.service'
+import { AuditQueryService }                from './modules/audit/application/audit.query.service'
 import { ConsultarPedidoUseCase }           from './modules/pedidos/application/consultar-pedido.use-case'
 import { ConsultarClienteUseCase }          from './modules/clientes/application/consultar-cliente.use-case'
+import { PolicyService }                    from './modules/policies/application/policy.service'
 
 // ─── Validação de variáveis obrigatórias ─────────────────────────────────────
 
@@ -57,12 +62,15 @@ async function bootstrap(): Promise<void> {
   // ── Adaptadores de infra ────────────────────────────────────────────────────
   const agentInventoryRepo = new PrismaAgentInventoryRepository(prisma)
   const auditEventRepo     = new PrismaAuditEventRepository(prisma)
+  const policyRepo         = new PrismaPolicyRepository(prisma)
   const gatewayClient      = new HttpGatewayClient(gatewayBaseUrl)
 
   // ── Serviços de aplicação ───────────────────────────────────────────────────
-  const agentService           = new AgentService(agentInventoryRepo)
-  const auditService           = new AuditService(auditEventRepo)
-  const consultarPedidoUseCase = new ConsultarPedidoUseCase(gatewayClient, auditService)
+  const agentService            = new AgentService(agentInventoryRepo)
+  const auditService            = new AuditService(auditEventRepo)
+  const auditQueryService       = new AuditQueryService(auditEventRepo)
+  const policyService           = new PolicyService(policyRepo)
+  const consultarPedidoUseCase  = new ConsultarPedidoUseCase(gatewayClient, auditService)
   const consultarClienteUseCase = new ConsultarClienteUseCase(gatewayClient, auditService)
 
   // ── App Express ─────────────────────────────────────────────────────────────
@@ -70,6 +78,8 @@ async function bootstrap(): Promise<void> {
     agentService,
     consultarPedidoUseCase,
     consultarClienteUseCase,
+    policyService,
+    auditQueryService,
   })
 
   // ── HTTP Server ─────────────────────────────────────────────────────────────

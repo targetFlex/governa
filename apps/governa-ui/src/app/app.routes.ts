@@ -55,6 +55,14 @@ export const APP_ROUTES: Routes = [
       ),
   },
   {
+    path: 'auditoria',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/auditoria/auditoria-list/auditoria-list.component').then(
+        (m) => m.AuditoriaListComponent,
+      ),
+  },
+  {
     path: '**',
     redirectTo: 'dashboard',
   },
