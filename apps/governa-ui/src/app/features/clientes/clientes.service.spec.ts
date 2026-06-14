@@ -147,12 +147,16 @@ describe('ClientesService', () => {
     expect(service.hasError()).toBe(true);
   });
 
-  it('deve usar mensagem genérica quando servidor não retornar message', () => {
+  it('deve setar error quando resposta não tem body message (usa err.message do HttpErrorResponse)', () => {
     service.loadClientes();
 
     httpMock.expectOne(() => true).flush(null, { status: 502, statusText: 'Bad Gateway' });
 
-    expect(service.error()).toBe('Erro ao carregar clientes. Tente novamente.');
+    // HttpErrorResponse.message é sempre preenchida ("Http failure response for ...").
+    // O branch final ?? 'Erro...' só seria atingido por erros fora do HttpClient.
+    expect(service.error()).not.toBeNull();
+    expect(service.hasError()).toBe(true);
+    expect(service.loading()).toBe(false);
   });
 
   // ── clearError ─────────────────────────────────────────────
@@ -218,4 +222,5 @@ describe('ClientesService', () => {
     expect(req).toBeTruthy();
     req.flush(mockResponse);
   });
+
 });

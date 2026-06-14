@@ -10,15 +10,15 @@
 import { TestBed } from '@angular/core/testing';
 import { Router, UrlTree } from '@angular/router';
 import { ActivatedRouteSnapshot, RouterStateSnapshot } from '@angular/router';
-import { signal } from '@angular/core';
+import { signal, WritableSignal } from '@angular/core';
 
 import { authGuard } from './auth.guard';
 import { AuthService } from './auth.service';
 
 // ── Helpers ───────────────────────────────────────────────────
 
-const mockRoute   = {} as ActivatedRouteSnapshot;
-const mockState   = {} as RouterStateSnapshot;
+const mockRoute = {} as ActivatedRouteSnapshot;
+const mockState = {} as RouterStateSnapshot;
 
 function runGuard(): ReturnType<typeof authGuard> {
   return TestBed.runInInjectionContext(() => authGuard(mockRoute, mockState));
@@ -27,11 +27,13 @@ function runGuard(): ReturnType<typeof authGuard> {
 // ── Testes ───────────────────────────────────────────────────
 
 describe('authGuard', () => {
-  let routerSpy: jest.SpyInstance;
+  let routerSpy: jest.Mock;
   let loginUrlTree: UrlTree;
+  let isAuthenticated: WritableSignal<boolean>;
 
   beforeEach(() => {
-    loginUrlTree = {} as UrlTree;
+    loginUrlTree    = {} as UrlTree;
+    isAuthenticated = signal(true); // valor padrão; cada describe ajusta com .set()
 
     TestBed.configureTestingModule({
       providers: [
@@ -39,8 +41,12 @@ describe('authGuard', () => {
           provide: Router,
           useValue: {
             createUrlTree: jest.fn().mockReturnValue(loginUrlTree),
-            navigate: jest.fn(),
+            navigate:      jest.fn(),
           },
+        },
+        {
+          provide:  AuthService,
+          useValue: { isAuthenticated },
         },
       ],
     });
@@ -50,13 +56,10 @@ describe('authGuard', () => {
 
   afterEach(() => jest.clearAllMocks());
 
+  // ── Autenticado ───────────────────────────────────────────
+
   describe('quando o usuário está autenticado', () => {
-    beforeEach(() => {
-      const isAuthenticated = signal(true);
-      TestBed.overrideProvider(AuthService, {
-        useValue: { isAuthenticated },
-      });
-    });
+    beforeEach(() => isAuthenticated.set(true));
 
     it('deve retornar true', () => {
       expect(runGuard()).toBe(true);
@@ -68,13 +71,10 @@ describe('authGuard', () => {
     });
   });
 
+  // ── Não autenticado ──────────────────────────────────────
+
   describe('quando o usuário NÃO está autenticado', () => {
-    beforeEach(() => {
-      const isAuthenticated = signal(false);
-      TestBed.overrideProvider(AuthService, {
-        useValue: { isAuthenticated },
-      });
-    });
+    beforeEach(() => isAuthenticated.set(false));
 
     it('deve retornar um UrlTree', () => {
       const result = runGuard();

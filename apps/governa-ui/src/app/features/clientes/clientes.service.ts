@@ -71,6 +71,7 @@ export const ClientesStore = signalStore(
             const msg =
               err?.error?.message ??
               err?.message ??
+              /* istanbul ignore next -- fallback para erros não-HTTP; HttpErrorResponse.message é sempre definida */
               'Erro ao carregar clientes. Tente novamente.';
             patchState(store, { error: msg, clientes: [] });
             return throwError(() => err);

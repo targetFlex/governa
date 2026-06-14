@@ -2,44 +2,37 @@
 // auth.interceptor.spec.ts
 //
 // Testes unitários do AuthInterceptor (functional).
-// Cenários cobertos:
-//   - requisição ao gateway COM token → injeta Authorization header
-//   - requisição ao gateway SEM token → não injeta header
-//   - requisição para domínio externo → não injeta header
+// Usa provideHttpClient(withInterceptors) + provideHttpClientTesting()
+// — API moderna Angular 15+, compatível com functional interceptors.
 // ============================================================
 
 import { TestBed } from '@angular/core/testing';
-import {
-  HttpClientTestingModule,
-  HttpTestingController,
-} from '@angular/common/http/testing';
 import { HttpClient, provideHttpClient, withInterceptors } from '@angular/common/http';
+import {
+  HttpTestingController,
+  provideHttpClientTesting,
+} from '@angular/common/http/testing';
 import { signal } from '@angular/core';
 
 import { authInterceptor } from './auth.interceptor';
 import { AuthService } from '../auth/auth.service';
 import { environment } from '@env/environment';
 
-const GATEWAY_URL = `${environment.gatewayBaseUrl}/pedidos`;
+const GATEWAY_URL  = `${environment.gatewayBaseUrl}/pedidos`;
 const EXTERNAL_URL = 'https://external.api.com/data';
 
 describe('authInterceptor', () => {
-  let http:        HttpClient;
-  let httpMock:    HttpTestingController;
-  let tokenSignal: ReturnType<typeof signal<string | null>>;
+  let http:     HttpClient;
+  let httpMock: HttpTestingController;
 
   function setup(token: string | null) {
-    tokenSignal = signal(token);
-
     TestBed.configureTestingModule({
-      imports: [HttpClientTestingModule],
       providers: [
         provideHttpClient(withInterceptors([authInterceptor])),
+        provideHttpClientTesting(),
         {
-          provide: AuthService,
-          useValue: {
-            getToken: () => tokenSignal(),
-          },
+          provide:  AuthService,
+          useValue: { getToken: () => token },
         },
       ],
     });
@@ -49,7 +42,7 @@ describe('authInterceptor', () => {
   }
 
   afterEach(() => {
-    httpMock.verify();
+    httpMock?.verify();
     jest.clearAllMocks();
   });
 
