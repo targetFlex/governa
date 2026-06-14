@@ -7,7 +7,6 @@
 // ============================================================
 
 import { PrismaAlertRepository } from './prisma-alert.repository'
-import type { Alert, AlertThreshold } from '../domain/alert.types'
 import { ALERT_KINDS } from '../domain/alert.types'
 
 // ─── Helpers de fixtures ───────────────────────────────────────────────────

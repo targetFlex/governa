@@ -52,6 +52,7 @@ const TENANT = 'tenant-test'
 
 function makeJwt(): string {
   // JWT mínimo: tenantId + userId obrigatórios pelo tenantMiddleware
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
   const { sign } = require('jsonwebtoken') as typeof import('jsonwebtoken')
   return sign(
     { tenantId: TENANT, userId: 'user-test' },

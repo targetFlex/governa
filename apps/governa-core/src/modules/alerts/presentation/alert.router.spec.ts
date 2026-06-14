@@ -54,6 +54,7 @@ const TENANT = 'tenant-test'
 const AGENT  = '00000000-0000-0000-0000-000000000001'
 
 function makeJwt(): string {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
   const { sign } = require('jsonwebtoken') as typeof import('jsonwebtoken')
   return sign(
     { tenantId: TENANT, userId: 'user-test' },
