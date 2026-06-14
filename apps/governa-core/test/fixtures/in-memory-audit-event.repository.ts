@@ -1,7 +1,13 @@
 import { v4 as uuidv4 } from 'uuid'
 
 import type { AuditEventEntity }                        from '../../src/modules/audit/domain/audit-event.entity'
-import type { AuditEventInsert, AuditEventRepository }  from '../../src/modules/audit/domain/audit-event-repository.port'
+import type {
+  AuditEventInsert,
+  AuditEventFilter,
+  AuditEventPage,
+  AuditEventRepository,
+} from '../../src/modules/audit/domain/audit-event-repository.port'
+import type { Outcome } from '../../src/modules/audit/domain/outcome'
 
 import { GENESIS_PREV_HASH } from '../../src/modules/audit/application/hash-chain'
 
@@ -83,6 +89,47 @@ export class InMemoryAuditEventRepository implements AuditEventRepository {
     for (const e of this.eventsFor(tenantId, agentId)) {
       yield e
     }
+  }
+
+  // ---------------------------------------------------------------------------
+  // list — leitura paginada com filtros (implementação in-memory para testes)
+  // ---------------------------------------------------------------------------
+
+  async list(tenantId: string, filter: AuditEventFilter): Promise<AuditEventPage> {
+    const page  = Math.max(1, filter.page  ?? 1)
+    const limit = Math.min(100, Math.max(1, filter.limit ?? 20))
+
+    let events = this.store.filter(e => e.tenantId === tenantId)
+
+    if (filter.agentId) events = events.filter(e => e.agentId  === filter.agentId)
+    if (filter.outcome) events = events.filter(e => e.outcome   === filter.outcome as Outcome)
+    if (filter.from)    events = events.filter(e => e.createdAt >= filter.from!)
+    if (filter.to)      events = events.filter(e => e.createdAt <= filter.to!)
+
+    events = events.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+
+    const total = events.length
+    const data  = events.slice((page - 1) * limit, page * limit)
+
+    return { data, total, page, limit }
+  }
+
+  // ---------------------------------------------------------------------------
+  // listForExport — lista completa sem paginação (in-memory)
+  // ---------------------------------------------------------------------------
+
+  async listForExport(
+    tenantId: string,
+    filter:   Omit<AuditEventFilter, 'page' | 'limit'>,
+  ): Promise<AuditEventEntity[]> {
+    let events = this.store.filter(e => e.tenantId === tenantId)
+
+    if (filter.agentId) events = events.filter(e => e.agentId  === filter.agentId)
+    if (filter.outcome) events = events.filter(e => e.outcome   === filter.outcome as Outcome)
+    if (filter.from)    events = events.filter(e => e.createdAt >= filter.from!)
+    if (filter.to)      events = events.filter(e => e.createdAt <= filter.to!)
+
+    return events.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
   }
 
   // ---------------------------------------------------------------------------

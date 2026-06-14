@@ -54,6 +54,8 @@ services:
     environment:
       NODE_ENV: development
       GATEWAY_PORT: "3100"
+      OTEL_SERVICE_NAME:                "governa-gateway"
+      OTEL_EXPORTER_OTLP_ENDPOINT:      "http://otel-collector:4318"
       # Preencher com valores reais (ou usar .env no host via env_file)
       PROTHEUS_BASE_URL:          ${PROTHEUS_BASE_URL:-https://protheus.targetflex.com.br/rest}
       PROTHEUS_AUTH_MODE:         ${PROTHEUS_AUTH_MODE:-oauth2}
@@ -92,11 +94,15 @@ services:
       GATEWAY_BASE_URL: "http://governa-gateway:3100"
       JWT_SECRET: ${JWT_SECRET:-change_me_min_32_chars_for_dev_only}
       REDIS_URL: "redis://redis:6379"
+      OTEL_SERVICE_NAME:                "governa-core"
+      OTEL_EXPORTER_OTLP_ENDPOINT:      "http://otel-collector:4318"
     depends_on:
       postgres:
         condition: service_healthy
       governa-gateway:
         condition: service_healthy
+      otel-collector:
+        condition: service_started
     healthcheck:
       test: ["CMD-SHELL", "wget -q --spider http://localhost:3000/health || exit 1"]
       interval: 15s
@@ -142,6 +148,22 @@ services:
       interval: 15s
       timeout: 10s
       retries: 5
+
+  # ── OpenTelemetry Collector ─────────────────────────────────────────────────
+  # Recebe traces e metrics de governa-core e governa-gateway via OTLP HTTP.
+  # Prometheus scrape em :8889/metrics.
+  # Para SigNoz em produção: descomentar exporter otlp/signoz em otel-collector-config.yaml.
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.103.0
+    container_name: governa_otel_collector
+    restart: unless-stopped
+    command: ["--config=/etc/otel/config.yaml"]
+    volumes:
+      - ./otel-collector-config.yaml:/etc/otel/config.yaml:ro
+    ports:
+      - "4317:4317"    # OTLP gRPC
+      - "4318:4318"    # OTLP HTTP
+      - "8889:8889"    # Prometheus metrics
 
 volumes:
   postgres_data:

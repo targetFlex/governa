@@ -1,4 +1,23 @@
 import type { AuditEventEntity } from './audit-event.entity'
+import type { Outcome }           from './outcome'
+
+// ─── Filtros de consulta ───────────────────────────────────────────────────────
+
+export interface AuditEventFilter {
+  agentId?: string
+  from?:    Date
+  to?:      Date
+  outcome?: Outcome
+  page?:    number   // 1-based, default 1
+  limit?:   number   // default 20, max 100
+}
+
+export interface AuditEventPage {
+  data:  AuditEventEntity[]
+  total: number
+  page:  number
+  limit: number
+}
 
 /**
  * Dados para INSERT — espelha o AuditEventEntity menos os campos
@@ -53,4 +72,19 @@ export interface AuditEventRepository {
     agentId:   string,
     batchSize: number,
   ): AsyncIterable<AuditEventEntity>
+
+  /**
+   * Lista eventos com filtros e paginação — uso de leitura (UI / DPO).
+   * Sempre filtra por tenantId. Retorna página + total.
+   */
+  list(tenantId: string, filter: AuditEventFilter): Promise<AuditEventPage>
+
+  /**
+   * Retorna todos os eventos (sem paginação) para exportação.
+   * Limita internamente a 10 000 registros para proteger memória.
+   */
+  listForExport(
+    tenantId: string,
+    filter:   Omit<AuditEventFilter, 'page' | 'limit'>,
+  ): Promise<AuditEventEntity[]>
 }

@@ -151,3 +151,58 @@ enum PendingActionStatus {
   REJECTED
   EXPIRED
 }
+
+// ─── Alertas ──────────────────────────────────────────────────────────────────
+
+enum AlertKind {
+  TOOL_BLOCKED
+  ERROR_RATE
+  CHECKPOINT_EXPIRED
+  VOLUME_ANOMALY
+}
+
+enum AlertSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum AlertStatus {
+  OPEN
+  ACKNOWLEDGED
+  RESOLVED
+}
+
+model Alert {
+  id        String        @id @default(uuid())
+  tenantId  String        @map("tenant_id")
+  agentId   String        @map("agent_id")
+  kind      AlertKind
+  severity  AlertSeverity
+  status    AlertStatus   @default(OPEN)
+  message   String
+  metadata  Json          @default("{}")
+  createdAt DateTime      @default(now()) @map("created_at")
+  updatedAt DateTime      @updatedAt      @map("updated_at")
+
+  @@index([tenantId, status])
+  @@index([tenantId, createdAt])
+  @@index([tenantId, agentId])
+  @@map("alerts")
+}
+
+model AlertThreshold {
+  id                  String    @id @default(uuid())
+  tenantId            String    @map("tenant_id")
+  kind                AlertKind
+  enabled             Boolean   @default(true)
+  errorRatePercent    Float?    @map("error_rate_percent")
+  volumePerHour       Int?      @map("volume_per_hour")
+  checkpointExpiryMin Int?      @map("checkpoint_expiry_min")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
+
+  @@unique([tenantId, kind])
+  @@index([tenantId])
+  @@map("alert_thresholds")
+}

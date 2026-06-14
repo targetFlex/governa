@@ -15,6 +15,10 @@
  *   PORT                  — Porta HTTP (default: 3000)
  */
 
+// ── OpenTelemetry — DEVE ser o primeiro import (monkey-patching antecipado) ──
+import './infra/telemetry/tracer'
+import { shutdownTelemetry }                from './infra/telemetry'
+
 import 'dotenv/config'
 import { PrismaClient }                     from '@prisma/client'
 
@@ -25,11 +29,18 @@ import { PrismaAgentInventoryRepository }   from './modules/agents/infrastructur
 import { PrismaAuditEventRepository }       from './modules/audit/infrastructure/prisma-audit-event.repository'
 import { HttpGatewayClient }                from './shared/infrastructure/http-gateway-client'
 
+// ── Infra adicional ──────────────────────────────────────────────────────────
+import { PrismaPolicyRepository }           from './modules/policies/infrastructure/prisma-policy.repository'
+import { PrismaAlertRepository }            from './modules/alerts/infrastructure/prisma-alert.repository'
+
 // ── Application ──────────────────────────────────────────────────────────────
 import { AgentService }                     from './modules/agents/application/agent.service'
 import { AuditService }                     from './modules/audit/application/audit.service'
+import { AuditQueryService }                from './modules/audit/application/audit.query.service'
 import { ConsultarPedidoUseCase }           from './modules/pedidos/application/consultar-pedido.use-case'
 import { ConsultarClienteUseCase }          from './modules/clientes/application/consultar-cliente.use-case'
+import { PolicyService }                    from './modules/policies/application/policy.service'
+import { AlertService }                     from './modules/alerts/application/alert.service'
 
 // ─── Validação de variáveis obrigatórias ─────────────────────────────────────
 
@@ -57,19 +68,27 @@ async function bootstrap(): Promise<void> {
   // ── Adaptadores de infra ────────────────────────────────────────────────────
   const agentInventoryRepo = new PrismaAgentInventoryRepository(prisma)
   const auditEventRepo     = new PrismaAuditEventRepository(prisma)
+  const policyRepo         = new PrismaPolicyRepository(prisma)
   const gatewayClient      = new HttpGatewayClient(gatewayBaseUrl)
 
   // ── Serviços de aplicação ───────────────────────────────────────────────────
-  const agentService           = new AgentService(agentInventoryRepo)
-  const auditService           = new AuditService(auditEventRepo)
-  const consultarPedidoUseCase = new ConsultarPedidoUseCase(gatewayClient, auditService)
+  const agentService            = new AgentService(agentInventoryRepo)
+  const auditService            = new AuditService(auditEventRepo)
+  const auditQueryService       = new AuditQueryService(auditEventRepo)
+  const policyService           = new PolicyService(policyRepo)
+  const consultarPedidoUseCase  = new ConsultarPedidoUseCase(gatewayClient, auditService)
   const consultarClienteUseCase = new ConsultarClienteUseCase(gatewayClient, auditService)
+  const alertRepo               = new PrismaAlertRepository(prisma)
+  const alertService            = new AlertService(alertRepo)
 
   // ── App Express ─────────────────────────────────────────────────────────────
   const app = createApp({
     agentService,
     consultarPedidoUseCase,
     consultarClienteUseCase,
+    policyService,
+    auditQueryService,
+    alertService,
   })
 
   // ── HTTP Server ─────────────────────────────────────────────────────────────
@@ -81,6 +100,7 @@ async function bootstrap(): Promise<void> {
   // ── Graceful shutdown ───────────────────────────────────────────────────────
   const shutdown = async (signal: string): Promise<void> => {
     console.log(`[governa-core] ${signal} recebido — encerrando...`)
+    await shutdownTelemetry()
     await prisma.$disconnect()
     process.exit(0)
   }
