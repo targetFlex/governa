@@ -1,7 +1,7 @@
 ---
 name: governa-agentes-totvs
 description: "Governa o ciclo de sessões do agente no domínio TOTVS. Invoque ao abrir uma nova sessão (ex: 'vamos para a 1.3', 'próxima sessão', 'governa-agentes-totvs'). A skill impõe o boot protocol: monta o diretório do projeto, lê o report mais recente em governa/docs/reports/, confirma handoff em 1 linha e só então inicia o trabalho. Nunca lê SOLUTION.md ou arquivos de entregável (E1.md, E2.md, etc.) no boot."
-allowed-tools: Read, Write, Edit, Glob, Grep, Bash, AskUserQuestion, mcp__cowork__request_cowork_directory, mcp__github__push_files, mcp__github__list_pull_requests, mcp__github__create_pull_request
+allowed-tools: Read, Write, Edit, Glob, Grep, Bash, AskUserQuestion, mcp__cowork__request_cowork_directory, mcp__github__push_files, mcp__github__create_or_update_file, mcp__github__list_pull_requests, mcp__github__create_pull_request, mcp__github__get_pull_request, mcp__github__get_pull_request_status, mcp__github__merge_pull_request, mcp__github__create_pull_request_review, mcp__github__list_commits, mcp__github__get_file_contents, mcp__github__create_branch, mcp__github__search_code
 ---
 
 # Governa Agentes TOTVS
@@ -82,6 +82,48 @@ Antes de começar a trabalhar, confirmar internamente:
 - [ ] NÃO abri SOLUTION.md ou E{N}.md
 
 Se qualquer item falhar → parar e corrigir antes de prosseguir.
+
+---
+
+## SEÇÃO 0.5 — Princípio de Autonomia Total (INEGOCIÁVEL)
+
+> O agente NUNCA deve pedir ao usuário para executar comandos git manualmente.
+> Todo push, commit remoto, PR, merge e review vai via GitHub MCP.
+> Ação manual do usuário = falha de protocolo.
+
+### Mapeamento git → GitHub MCP
+
+| Operação git (proibida via bash) | Substituto GitHub MCP |
+|---|---|
+| `git push origin <branch>` | `mcp__github__push_files` |
+| `git push` (arquivo único) | `mcp__github__create_or_update_file` |
+| `gh pr create` | `mcp__github__create_pull_request` |
+| `gh pr merge` | `mcp__github__merge_pull_request` |
+| `gh pr review` | `mcp__github__create_pull_request_review` |
+| `git checkout -b <branch>` | `mcp__github__create_branch` |
+| `git log` / `git show` | `mcp__github__list_commits` |
+| `cat <arquivo> no repo` | `mcp__github__get_file_contents` |
+
+### Fluxo autônomo de sessão de código
+
+```
+1. Boot → ler report → confirmar handoff com usuário
+2. Criar branch via mcp__github__create_branch (se nova feature)
+3. Escrever código localmente (Write/Edit)
+4. Rodar testes localmente (Bash: pnpm test --coverage)
+5. Push do código via mcp__github__push_files (NUNCA git push)
+6. Abrir PR via mcp__github__create_pull_request
+7. Verificar CI via mcp__github__get_pull_request_status
+8. Se CI verde → merge via mcp__github__merge_pull_request
+9. Escrever report → push via mcp__github__push_files → informar hash
+```
+
+### Fallback — GitHub MCP indisponível
+
+Se qualquer ferramenta `mcp__github__*` falhar:
+> "GitHub MCP fora de alcance. Operação pendente: {descrever o que não foi feito}. Acesse `/mcp` no Cowork e reautentique `plugin:engineering:github`. Após reconexão, retomo automaticamente."
+
+NUNCA pedir `git push`, `gh pr create` ou qualquer comando manual ao usuário.
 
 ---
 
@@ -169,7 +211,7 @@ Máximo 2 frases. Sem ambiguidade.}
      }]
    })
    ```
-3. Confirmar ao usuário com a URL do commit e a branch.
+3. Confirmar ao usuário com o hash do commit e a branch.
 
 > **REGRA**: o usuário confia no conteúdo do report — NÃO perguntar "Confirmas?" antes de commitar.
 > Escrever → push via GitHub MCP → informar. Sem etapa de aprovação intermediária. Sem `git push` manual.
