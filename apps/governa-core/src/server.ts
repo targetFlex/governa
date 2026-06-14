@@ -31,6 +31,7 @@ import { HttpGatewayClient }                from './shared/infrastructure/http-g
 
 // ── Infra adicional ──────────────────────────────────────────────────────────
 import { PrismaPolicyRepository }           from './modules/policies/infrastructure/prisma-policy.repository'
+import { PrismaAgentRepository }            from './modules/policies/infrastructure/prisma-agent.repository'
 import { PrismaAlertRepository }            from './modules/alerts/infrastructure/prisma-alert.repository'
 
 // ── Application ──────────────────────────────────────────────────────────────
@@ -40,7 +41,14 @@ import { AuditQueryService }                from './modules/audit/application/au
 import { ConsultarPedidoUseCase }           from './modules/pedidos/application/consultar-pedido.use-case'
 import { ConsultarClienteUseCase }          from './modules/clientes/application/consultar-cliente.use-case'
 import { PolicyService }                    from './modules/policies/application/policy.service'
+import { PolicyEngine }                     from './modules/policies/application/policy.engine'
+import { ToolScopeBuilder }                 from './modules/policies/application/tool-scope.builder'
+import { ALL_TOOLS }                        from './shared/tools/tool-registry'
 import { AlertService }                     from './modules/alerts/application/alert.service'
+import { PolicyViolationAlertService }      from './modules/alerts/application/policy-violation-alert.service'
+import { BlockedToolDetector }              from './modules/alerts/application/detectors/blocked-tool.detector'
+import { ErrorRateDetector }               from './modules/alerts/application/detectors/error-rate.detector'
+import { VolumeAnomalyDetector }           from './modules/alerts/application/detectors/volume-anomaly.detector'
 
 // ─── Validação de variáveis obrigatórias ─────────────────────────────────────
 
@@ -69,17 +77,34 @@ async function bootstrap(): Promise<void> {
   const agentInventoryRepo = new PrismaAgentInventoryRepository(prisma)
   const auditEventRepo     = new PrismaAuditEventRepository(prisma)
   const policyRepo         = new PrismaPolicyRepository(prisma)
+  const policyAgentRepo    = new PrismaAgentRepository(prisma)
   const gatewayClient      = new HttpGatewayClient(gatewayBaseUrl)
 
-  // ── Serviços de aplicação ───────────────────────────────────────────────────
+  // ── Infra de alertas ────────────────────────────────────────────────────────
+  const alertRepo    = new PrismaAlertRepository(prisma)
+  const alertService = new AlertService(alertRepo)
+
+  // ── E5.2: PolicyViolationAlertService com detectores ──────────────────────
+  const policyViolationAlertService = new PolicyViolationAlertService(
+    alertService,
+    alertRepo,
+    [
+      new BlockedToolDetector(),
+      new ErrorRateDetector(auditEventRepo),
+      new VolumeAnomalyDetector(auditEventRepo),
+    ],
+  )
+
+  // ── E5.3: serviços que recebem policyViolationAlertService ─────────────────
   const agentService            = new AgentService(agentInventoryRepo)
-  const auditService            = new AuditService(auditEventRepo)
+  // AuditService recebe policyViolationAlertSvc para disparar AUDIT_RECORDED automaticamente
+  const auditService            = new AuditService(auditEventRepo, undefined, undefined, policyViolationAlertService)
   const auditQueryService       = new AuditQueryService(auditEventRepo)
   const policyService           = new PolicyService(policyRepo)
+  // PolicyEngine recebe policyViolationAlertSvc para disparar TOOL_BLOCKED em assertToolAllowed()
+  const policyEngine            = new PolicyEngine(policyAgentRepo, new ToolScopeBuilder(ALL_TOOLS), policyViolationAlertService)
   const consultarPedidoUseCase  = new ConsultarPedidoUseCase(gatewayClient, auditService)
   const consultarClienteUseCase = new ConsultarClienteUseCase(gatewayClient, auditService)
-  const alertRepo               = new PrismaAlertRepository(prisma)
-  const alertService            = new AlertService(alertRepo)
 
   // ── App Express ─────────────────────────────────────────────────────────────
   const app = createApp({
@@ -87,8 +112,10 @@ async function bootstrap(): Promise<void> {
     consultarPedidoUseCase,
     consultarClienteUseCase,
     policyService,
+    policyEngine,
     auditQueryService,
     alertService,
+    policyViolationAlertService,
   })
 
   // ── HTTP Server ─────────────────────────────────────────────────────────────

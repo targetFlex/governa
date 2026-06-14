@@ -22,23 +22,29 @@ import { createClientesRouter }                         from './modules/clientes
 import { createPolicyRouter }                           from './modules/policies/presentation/policy.router'
 import { createAuditRouter }                            from './modules/audit/presentation/audit.router'
 import { createAlertRouter }                            from './modules/alerts/presentation/alert.router'
+import { createViolationRouter }                        from './modules/alerts/presentation/violation.router'
 
 import type { AgentService }                            from './modules/agents/application/agent.service'
 import type { ConsultarPedidoUseCase }                  from './modules/pedidos/application/consultar-pedido.use-case'
 import type { ConsultarClienteUseCase }                 from './modules/clientes/application/consultar-cliente.use-case'
 import type { PolicyService }                           from './modules/policies/application/policy.service'
+import type { PolicyEngine }                            from './modules/policies/application/policy.engine'
 import type { AuditQueryService }                       from './modules/audit/application/audit.query.service'
 import type { AlertService }                            from './modules/alerts/application/alert.service'
+import type { PolicyViolationAlertService }             from './modules/alerts/application/policy-violation-alert.service'
 
 // ─── Contrato de dependências injetadas ───────────────────────────────────────
 
 export interface AppDependencies {
-  agentService:            AgentService
-  consultarPedidoUseCase:  ConsultarPedidoUseCase
-  consultarClienteUseCase: ConsultarClienteUseCase
-  policyService:           PolicyService
-  auditQueryService:       AuditQueryService
-  alertService:            AlertService
+  agentService:                 AgentService
+  consultarPedidoUseCase:       ConsultarPedidoUseCase
+  consultarClienteUseCase:      ConsultarClienteUseCase
+  policyService:                PolicyService
+  /** E5.3 — PolicyEngine com assertToolAllowed() wired com policyViolationAlertService */
+  policyEngine?:                PolicyEngine
+  auditQueryService:            AuditQueryService
+  alertService:                 AlertService
+  policyViolationAlertService:  PolicyViolationAlertService
 }
 
 // ─── Factory ──────────────────────────────────────────────────────────────────
@@ -66,6 +72,7 @@ export function createApp(deps: AppDependencies): Application {
   app.use('/policies',      createPolicyRouter(deps.policyService))
   app.use('/audit-events',  createAuditRouter(deps.auditQueryService))
   app.use('/alerts',        createAlertRouter(deps.alertService))
+  app.use('/violations',    createViolationRouter(deps.policyViolationAlertService))
 
   // ── Erro global (deve ser o último middleware) ───────────────────────────────
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
