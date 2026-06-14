@@ -17,6 +17,8 @@
 module.exports = {
   preset: 'ts-jest',
   testEnvironment: 'node',
+  // Desabilita SDK OTel antes de qualquer teste (evita conexão real ao collector)
+  setupFiles: ['<rootDir>/src/infra/telemetry/jest.setup.ts'],
   roots: ['<rootDir>/src', '<rootDir>/test'],
   testMatch: [
     '**/?(*.)+(spec|test).ts',
@@ -33,6 +35,7 @@ module.exports = {
     '!src/**/index.ts',
     '!src/server.ts',
     '!src/**/infrastructure/prisma-*.ts',
+    '!src/infra/telemetry/jest.setup.ts',
   ],
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'text-summary', 'lcov', 'html'],

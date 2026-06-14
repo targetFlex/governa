@@ -1,7 +1,12 @@
 import type { PrismaClient } from '@prisma/client'
 
 import type { AuditEventEntity }                    from '../domain/audit-event.entity'
-import type { AuditEventInsert, AuditEventRepository } from '../domain/audit-event-repository.port'
+import type {
+  AuditEventInsert,
+  AuditEventFilter,
+  AuditEventPage,
+  AuditEventRepository,
+} from '../domain/audit-event-repository.port'
 import type { Outcome }                              from '../domain/outcome'
 
 import { GENESIS_PREV_HASH } from '../application/hash-chain'
@@ -135,6 +140,75 @@ export class PrismaAuditEventRepository implements AuditEventRepository {
 
       if (batch.length < batchSize) break
       cursor = batch[batch.length - 1].id
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // list — leitura paginada com filtros (UI / DPO)
+  // ---------------------------------------------------------------------------
+
+  async list(tenantId: string, filter: AuditEventFilter): Promise<AuditEventPage> {
+    const page  = Math.max(1, filter.page  ?? 1)
+    const limit = Math.min(100, Math.max(1, filter.limit ?? 20))
+    const skip  = (page - 1) * limit
+
+    const where = this.buildWhere(tenantId, filter)
+
+    const [rows, total] = await Promise.all([
+      this.prisma.auditEvent.findMany({
+        where,
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        skip,
+        take: limit,
+      }),
+      this.prisma.auditEvent.count({ where }),
+    ])
+
+    return {
+      data:  rows.map((r) => this.mapToEntity(r)),
+      total,
+      page,
+      limit,
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // listForExport — sem paginação, máx 10 000 linhas para exportação PDF
+  // ---------------------------------------------------------------------------
+
+  async listForExport(
+    tenantId: string,
+    filter:   Omit<AuditEventFilter, 'page' | 'limit'>,
+  ): Promise<AuditEventEntity[]> {
+    const where = this.buildWhere(tenantId, filter)
+
+    const rows = await this.prisma.auditEvent.findMany({
+      where,
+      orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+      take: 10_000,
+    })
+
+    return rows.map((r) => this.mapToEntity(r))
+  }
+
+  // ---------------------------------------------------------------------------
+  // buildWhere — monta cláusula where Prisma com isolamento tenantId
+  // ---------------------------------------------------------------------------
+
+  private buildWhere(
+    tenantId: string,
+    filter:   Omit<AuditEventFilter, 'page' | 'limit'>,
+  ) {
+    return {
+      tenantId,
+      ...(filter.agentId ? { agentId: filter.agentId } : {}),
+      ...(filter.outcome ? { outcome: filter.outcome } : {}),
+      ...((filter.from || filter.to) ? {
+        createdAt: {
+          ...(filter.from ? { gte: filter.from } : {}),
+          ...(filter.to   ? { lte: filter.to   } : {}),
+        },
+      } : {}),
     }
   }
 

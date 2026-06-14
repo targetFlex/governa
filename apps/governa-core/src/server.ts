@@ -15,6 +15,10 @@
  *   PORT                  — Porta HTTP (default: 3000)
  */
 
+// ── OpenTelemetry — DEVE ser o primeiro import (monkey-patching antecipado) ──
+import './infra/telemetry/tracer'
+import { shutdownTelemetry }                from './infra/telemetry'
+
 import 'dotenv/config'
 import { PrismaClient }                     from '@prisma/client'
 
@@ -96,6 +100,7 @@ async function bootstrap(): Promise<void> {
   // ── Graceful shutdown ───────────────────────────────────────────────────────
   const shutdown = async (signal: string): Promise<void> => {
     console.log(`[governa-core] ${signal} recebido — encerrando...`)
+    await shutdownTelemetry()
     await prisma.$disconnect()
     process.exit(0)
   }
