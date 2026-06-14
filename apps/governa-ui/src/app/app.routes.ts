@@ -47,6 +47,30 @@ export const APP_ROUTES: Routes = [
       ),
   },
   {
+    path: 'politicas/:id',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/politicas/politica-form/politica-form.component').then(
+        (m) => m.PoliticaFormComponent,
+      ),
+  },
+  {
+    path: 'auditoria',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/auditoria/auditoria-list/auditoria-list.component').then(
+        (m) => m.AuditoriaListComponent,
+      ),
+  },
+  {
+    path: 'alertas',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/alertas/alertas-list/alertas-list.component').then(
+        (m) => m.AlertasListComponent,
+      ),
+  },
+  {
     path: '**',
     redirectTo: 'dashboard',
   },

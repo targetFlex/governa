@@ -1,0 +1,54 @@
+# otel-collector-config.yaml — Configuração do OpenTelemetry Collector para dev.
+#
+# Recebe traces e metrics via OTLP HTTP/gRPC de governa-core e governa-gateway.
+# Em desenvolvimento: exporta para console (logging) e expõe Prometheus em :8889.
+# Para produção com SigNoz: trocar exporters por otlp apontando ao SigNoz OTel endpoint.
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  batch:
+    timeout: 10s
+    send_batch_size: 512
+
+  # Remove atributos com PII potencial antes de exportar
+  attributes/remove_pii:
+    actions:
+      - key: http.request.header.authorization
+        action: delete
+      - key: http.request.header.cookie
+        action: delete
+
+exporters:
+  # Console — útil para debug local
+  debug:
+    verbosity: normal
+
+  # Prometheus — métricas scraped em :8889/metrics
+  prometheus:
+    endpoint: "0.0.0.0:8889"
+    namespace: governa
+
+  # Para SigNoz (descomentar e configurar em produção):
+  # otlp/signoz:
+  #   endpoint: ${SIGNOZ_OTLP_ENDPOINT:-http://signoz:4317}
+  #   tls:
+  #     insecure: true
+
+service:
+  pipelines:
+    traces:
+      receivers:  [otlp]
+      processors: [attributes/remove_pii, batch]
+      exporters:  [debug]
+
+    metrics:
+      receivers:  [otlp]
+      processors: [batch]
+      exporters:  [debug, prometheus]

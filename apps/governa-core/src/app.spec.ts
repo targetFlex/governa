@@ -15,6 +15,9 @@ import { createApp }        from './app'
 import type { AgentService }                from './modules/agents/application/agent.service'
 import type { ConsultarPedidoUseCase }      from './modules/pedidos/application/consultar-pedido.use-case'
 import type { ConsultarClienteUseCase }     from './modules/clientes/application/consultar-cliente.use-case'
+import type { PolicyService }               from './modules/policies/application/policy.service'
+import type { AuditQueryService }           from './modules/audit/application/audit.query.service'
+import type { AlertService }               from './modules/alerts/application/alert.service'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -58,6 +61,26 @@ const mockClienteUseCase = {
   execute: jest.fn(),
 } as unknown as ConsultarClienteUseCase
 
+const mockPolicyService = {
+  getPolicy:     jest.fn(),
+  listPolicies:  jest.fn().mockResolvedValue([]),
+  updatePolicy:  jest.fn(),
+} as unknown as PolicyService
+
+const mockAuditQueryService = {
+  listEvents:   jest.fn().mockResolvedValue({ data: [], total: 0, page: 1, limit: 20 }),
+  exportEvents: jest.fn().mockResolvedValue([]),
+} as unknown as AuditQueryService
+
+const mockAlertService = {
+  listAlerts:      jest.fn().mockResolvedValue({ data: [], total: 0, page: 1, limit: 20 }),
+  listThresholds:  jest.fn().mockResolvedValue([]),
+  upsertThreshold: jest.fn(),
+  triggerAlert:    jest.fn(),
+  updateStatus:    jest.fn(),
+  subscribe:       jest.fn().mockReturnValue(() => {}),
+} as unknown as AlertService
+
 // ─── Testes ───────────────────────────────────────────────────────────────────
 
 describe('App — wiring', () => {
@@ -65,6 +88,9 @@ describe('App — wiring', () => {
     agentService:            mockAgentService,
     consultarPedidoUseCase:  mockPedidoUseCase,
     consultarClienteUseCase: mockClienteUseCase,
+    policyService:           mockPolicyService,
+    auditQueryService:       mockAuditQueryService,
+    alertService:            mockAlertService,
   })
 
   beforeEach(() => {

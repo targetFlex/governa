@@ -2,12 +2,14 @@
 module.exports = {
   preset: 'ts-jest',
   testEnvironment: 'node',
+  setupFiles: ['<rootDir>/src/infra/telemetry/jest.setup.ts'],
   roots: ['<rootDir>/src', '<rootDir>/test'],
   testMatch: ['**/*.spec.ts'],
   collectCoverageFrom: [
     'src/**/*.ts',
     '!src/**/*.spec.ts',
     '!src/**/index.ts',
+    '!src/infra/telemetry/jest.setup.ts',
   ],
   coverageThreshold: {
     global: {
