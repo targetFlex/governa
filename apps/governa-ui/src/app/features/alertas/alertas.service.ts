@@ -91,7 +91,7 @@ export const AlertasStore = signalStore(
   })),
 
   withMethods((store, http = inject(HttpClient)) => {
-    const BASE = `${environment.apiUrl}/alerts`;
+    const BASE = `${environment.coreBaseUrl}/alerts`;
 
     // ── SSE ──────────────────────────────────────────────────
 
