@@ -1,0 +1,19 @@
+{
+  "name": "governa-agentes",
+  "version": "0.1.0",
+  "description": "Orquestrador de governança de agentes de IA — Target Flex Patrimonial",
+  "private": true,
+  "packageManager": "pnpm@9.0.0",
+  "workspaces": ["apps/*", "packages/*"],
+  "scripts": {
+    "dev":          "pnpm --filter governa-core dev",
+    "build":        "pnpm -r build",
+    "test":         "pnpm -r test",
+    "lint":         "pnpm -r lint",
+    "db:migrate":   "pnpm --filter governa-core db:migrate",
+    "db:studio":    "pnpm --filter governa-core db:studio",
+    "docker:up":    "docker compose -f infra/docker/docker-compose.yml up -d",
+    "docker:down":  "docker compose -f infra/docker/docker-compose.yml down",
+    "docker:reset": "docker compose -f infra/docker/docker-compose.yml down -v && docker compose -f infra/docker/docker-compose.yml up -d"
+  }
+}
