@@ -27,10 +27,7 @@ import { HttpGatewayClient }                from './shared/infrastructure/http-g
 
 // ── Infra adicional ──────────────────────────────────────────────────────────
 import { PrismaPolicyRepository }           from './modules/policies/infrastructure/prisma-policy.repository'
-import {
-  PrismaAlertRepository,
-  type AlertPrismaClient,
-}                                           from './modules/alerts/infrastructure/prisma-alert.repository'
+import { PrismaAlertRepository }            from './modules/alerts/infrastructure/prisma-alert.repository'
 
 // ── Application ──────────────────────────────────────────────────────────────
 import { AgentService }                     from './modules/agents/application/agent.service'
@@ -77,8 +74,7 @@ async function bootstrap(): Promise<void> {
   const policyService           = new PolicyService(policyRepo)
   const consultarPedidoUseCase  = new ConsultarPedidoUseCase(gatewayClient, auditService)
   const consultarClienteUseCase = new ConsultarClienteUseCase(gatewayClient, auditService)
-  // Cast temporário até `prisma generate` rodar pós-migration (sandbox sem acesso à rede)
-  const alertRepo               = new PrismaAlertRepository(prisma as unknown as AlertPrismaClient)
+  const alertRepo               = new PrismaAlertRepository(prisma)
   const alertService            = new AlertService(alertRepo)
 
   // ── App Express ─────────────────────────────────────────────────────────────
