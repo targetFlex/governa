@@ -63,6 +63,14 @@ export const APP_ROUTES: Routes = [
       ),
   },
   {
+    path: 'alertas',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/alertas/alertas-list/alertas-list.component').then(
+        (m) => m.AlertasListComponent,
+      ),
+  },
+  {
     path: '**',
     redirectTo: 'dashboard',
   },

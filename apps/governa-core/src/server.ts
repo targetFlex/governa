@@ -35,6 +35,10 @@ import { AuditQueryService }                from './modules/audit/application/au
 import { ConsultarPedidoUseCase }           from './modules/pedidos/application/consultar-pedido.use-case'
 import { ConsultarClienteUseCase }          from './modules/clientes/application/consultar-cliente.use-case'
 import { PolicyService }                    from './modules/policies/application/policy.service'
+import { AlertService }                     from './modules/alerts/application/alert.service'
+// NOTE: InMemoryAlertRepository temporário — substituir por PrismaAlertRepository
+//       após migration de schema Prisma para a tabela `alerts` + `alert_thresholds`.
+import { InMemoryAlertRepository }          from '../test/fixtures/in-memory-alert.repository'
 
 // ─── Validação de variáveis obrigatórias ─────────────────────────────────────
 
@@ -72,6 +76,7 @@ async function bootstrap(): Promise<void> {
   const policyService           = new PolicyService(policyRepo)
   const consultarPedidoUseCase  = new ConsultarPedidoUseCase(gatewayClient, auditService)
   const consultarClienteUseCase = new ConsultarClienteUseCase(gatewayClient, auditService)
+  const alertService            = new AlertService(new InMemoryAlertRepository())
 
   // ── App Express ─────────────────────────────────────────────────────────────
   const app = createApp({
@@ -80,6 +85,7 @@ async function bootstrap(): Promise<void> {
     consultarClienteUseCase,
     policyService,
     auditQueryService,
+    alertService,
   })
 
   // ── HTTP Server ─────────────────────────────────────────────────────────────
