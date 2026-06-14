@@ -11,6 +11,10 @@
 //   NODE_ENV            — environment
 // ============================================================
 
+// ── OpenTelemetry — DEVE ser o primeiro import (monkey-patching antecipado) ──
+import './infra/telemetry/tracer'
+import { shutdownTelemetry }               from './infra/telemetry'
+
 import 'dotenv/config'
 import axios from 'axios'
 import { GatewayHttpServer } from './gateway-app'
@@ -66,6 +70,7 @@ server.listen(PORT).then((effectivePort) => {
 
 async function shutdown(signal: string): Promise<void> {
   console.log(`[governa-gateway] ${signal} recebido — encerrando graciosamente…`)
+  await shutdownTelemetry()
   await server.close()
   process.exit(0)
 }

@@ -55,6 +55,22 @@ export const APP_ROUTES: Routes = [
       ),
   },
   {
+    path: 'auditoria',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/auditoria/auditoria-list/auditoria-list.component').then(
+        (m) => m.AuditoriaListComponent,
+      ),
+  },
+  {
+    path: 'alertas',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/alertas/alertas-list/alertas-list.component').then(
+        (m) => m.AlertasListComponent,
+      ),
+  },
+  {
     path: '**',
     redirectTo: 'dashboard',
   },

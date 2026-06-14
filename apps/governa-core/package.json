@@ -36,7 +36,13 @@
     "jsonwebtoken":      "^9.0.2",
     "helmet":            "^7.1.0",
     "cors":              "^2.8.5",
-    "dotenv":            "^16.4.5"
+    "dotenv":            "^16.4.5",
+    "@opentelemetry/api":                        "^1.9.0",
+    "@opentelemetry/sdk-node":                   "^0.53.0",
+    "@opentelemetry/auto-instrumentations-node": "^0.53.0",
+    "@opentelemetry/exporter-trace-otlp-http":   "^0.53.0",
+    "@opentelemetry/exporter-metrics-otlp-http": "^0.53.0",
+    "@opentelemetry/sdk-metrics":                "^1.26.0"
   },
   "devDependencies": {
     "@pact-foundation/pact": "^12.5.2",
