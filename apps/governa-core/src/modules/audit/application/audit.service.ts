@@ -10,6 +10,7 @@ import type { CreateAuditEventInput } from '../domain/create-audit-event-input'
 import { InvalidAuditInputError } from './audit.errors'
 import { GENESIS_PREV_HASH, computeHash } from './hash-chain'
 import { PiiDetector } from './pii-detector'
+import type { PolicyViolationAlertService } from '../../alerts/application/policy-violation-alert.service'
 
 /**
  * AuditService — caso de uso de gravação de evento de auditoria.
@@ -34,9 +35,10 @@ const RETENTION_YEARS = 5
 
 export class AuditService {
   constructor(
-    private readonly repo:        AuditEventRepository,
-    private readonly piiDetector: PiiDetector = new PiiDetector(),
-    private readonly clock:       AuditServiceClock = defaultClock,
+    private readonly repo:                       AuditEventRepository,
+    private readonly piiDetector:                PiiDetector = new PiiDetector(),
+    private readonly clock:                      AuditServiceClock = defaultClock,
+    private readonly policyViolationAlertSvc?:   PolicyViolationAlertService,
   ) {}
 
   async createEvent(input: CreateAuditEventInput): Promise<AuditEventEntity> {
@@ -47,7 +49,7 @@ export class AuditService {
     const retentionUntil = this.addYears(createdAt, RETENTION_YEARS)
     const traceId        = uuidv4()
 
-    return this.repo.appendInChain(
+    const event = await this.repo.appendInChain(
       input.tenantId,
       input.agentId,
       (prevHash: string): AuditEventInsert => {
@@ -97,6 +99,20 @@ export class AuditService {
         return { ...insert, hash }
       },
     )
+
+    // E5.3 — disparo automático best-effort (não bloqueia nem falha o audit)
+    void this.policyViolationAlertSvc?.evaluate({
+      kind:      'AUDIT_RECORDED',
+      tenantId:  input.tenantId,
+      agentId:   input.agentId,
+      outcome:   input.outcome,
+      timestamp: this.clock.now(),
+    }).catch((err) => {
+      // alertas são best-effort — nunca devem impedir o registro de auditoria
+      console.error('[AuditService] policyViolationAlertSvc.evaluate falhou', err)
+    })
+
+    return event
   }
 
   private validate(input: CreateAuditEventInput): void {

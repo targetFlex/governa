@@ -1,10 +1,12 @@
-import type { AgentRepository } from '../domain/agent-repository.port'
-import type { ToolScope } from '../domain/tool-scope.types'
+import type { AgentRepository }              from '../domain/agent-repository.port'
+import type { ToolScope }                     from '../domain/tool-scope.types'
 import {
   AgentNotFoundError,
   AgentWithoutPolicyError,
+  ToolBlockedError,
 } from './policy.errors'
-import { ToolScopeBuilder } from './tool-scope.builder'
+import { ToolScopeBuilder }                   from './tool-scope.builder'
+import type { PolicyViolationAlertService }   from '../../alerts/application/policy-violation-alert.service'
 
 /**
  * PolicyEngine — caso de uso central de governança.
@@ -21,8 +23,9 @@ import { ToolScopeBuilder } from './tool-scope.builder'
  */
 export class PolicyEngine {
   constructor(
-    private readonly agents:       AgentRepository,
-    private readonly scopeBuilder: ToolScopeBuilder,
+    private readonly agents:                   AgentRepository,
+    private readonly scopeBuilder:             ToolScopeBuilder,
+    private readonly policyViolationAlertSvc?: PolicyViolationAlertService,
   ) {}
 
   async buildScope(agentId: string, tenantId: string): Promise<ToolScope> {
@@ -44,5 +47,39 @@ export class PolicyEngine {
       policyId:       agent.policy.id,
       policyVersion:  agent.policy.version,
     })
+  }
+
+  /**
+   * E5.3 — Verifica se uma tool está no escopo de uma política.
+   *
+   * Se a tool NÃO estiver no escopo:
+   *   1. Dispara PolicyViolationAlertService.evaluate() (TOOL_BLOCKED) — best-effort
+   *   2. Lança ToolBlockedError para interromper o fluxo do orquestrador
+   *
+   * Se estiver no escopo: retorna sem efeitos.
+   *
+   * @param scope    ToolScope já construído via buildScope()
+   * @param toolName nome exato da tool solicitada pelo agente
+   */
+  async assertToolAllowed(scope: ToolScope, toolName: string): Promise<void> {
+    const allowed = scope.tools.some((t) => t.name === toolName)
+    if (allowed) return
+
+    const reason = `tool '${toolName}' não está no escopo da política (autonomyLevel: ${scope.autonomyLevel})`
+
+    // disparo best-effort — não bloqueia o throw abaixo
+    void this.policyViolationAlertSvc?.evaluate({
+      kind:      'TOOL_BLOCKED',
+      tenantId:  scope.tenantId,
+      agentId:   scope.agentId,
+      toolName,
+      policyId:  scope.policyId,
+      reason,
+      timestamp: new Date(),
+    }).catch((err) => {
+      console.error('[PolicyEngine] policyViolationAlertSvc.evaluate falhou', err)
+    })
+
+    throw new ToolBlockedError(toolName, scope.policyId, reason)
   }
 }

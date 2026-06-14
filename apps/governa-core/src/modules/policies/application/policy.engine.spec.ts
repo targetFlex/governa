@@ -7,8 +7,10 @@ import { PolicyEngine } from './policy.engine'
 import {
   AgentNotFoundError,
   AgentWithoutPolicyError,
+  ToolBlockedError,
 } from './policy.errors'
 import { ToolScopeBuilder } from './tool-scope.builder'
+import type { PolicyViolationAlertService } from '../../alerts/application/policy-violation-alert.service'
 
 const tool = (name: string, isWrite: boolean): Tool => ({
   name,
@@ -55,6 +57,12 @@ const agentAssistido: AgentEntity = {
   tenantId: 'tenant-1',
   status:   'ACTIVE',
   policy:   assistidoPolicy,
+}
+
+function makeMockAlertSvc(): PolicyViolationAlertService {
+  return {
+    evaluate: jest.fn(() => Promise.resolve([])),
+  } as unknown as PolicyViolationAlertService
 }
 
 describe('PolicyEngine', () => {
@@ -128,6 +136,92 @@ describe('PolicyEngine', () => {
       await engine.buildScope('agent-consultivo', 'tenant-1')
 
       expect(spy).toHaveBeenCalledWith('agent-consultivo', 'tenant-1')
+    })
+  })
+
+  // ── E5.3: assertToolAllowed ───────────────────────────────────────────────
+
+  describe('E5.3 — assertToolAllowed', () => {
+    describe('Given a CONSULTIVO agent scope', () => {
+      it('When tool is in scope, Then resolves without error or alert', async () => {
+        repo.add(agentConsultivo)
+        const alertSvc = makeMockAlertSvc()
+        const engineWithAlert = new PolicyEngine(repo, new ToolScopeBuilder(CATALOG), alertSvc)
+        const scope = await engineWithAlert.buildScope('agent-consultivo', 'tenant-1')
+
+        await expect(engineWithAlert.assertToolAllowed(scope, 'read_protheus_pedido'))
+          .resolves.toBeUndefined()
+
+        await Promise.resolve()
+        expect(alertSvc.evaluate).not.toHaveBeenCalled()
+      })
+
+      it('When tool is NOT in scope, Then throws ToolBlockedError', async () => {
+        repo.add(agentConsultivo)
+        const scope = await engine.buildScope('agent-consultivo', 'tenant-1')
+
+        await expect(engine.assertToolAllowed(scope, 'write_protheus_pedido'))
+          .rejects.toBeInstanceOf(ToolBlockedError)
+      })
+
+      it('When tool is NOT in scope, Then ToolBlockedError carries toolName and policyId', async () => {
+        repo.add(agentConsultivo)
+        const scope = await engine.buildScope('agent-consultivo', 'tenant-1')
+
+        const err = await engine.assertToolAllowed(scope, 'write_protheus_pedido').catch(e => e)
+        expect(err).toBeInstanceOf(ToolBlockedError)
+        expect((err as ToolBlockedError).toolName).toBe('write_protheus_pedido')
+        expect((err as ToolBlockedError).policyId).toBe('policy-consultivo')
+        expect((err as ToolBlockedError).code).toBe('TOOL_BLOCKED')
+      })
+
+      it('When tool is NOT in scope, Then evaluate() is called with TOOL_BLOCKED event', async () => {
+        repo.add(agentConsultivo)
+        const alertSvc = makeMockAlertSvc()
+        const engineWithAlert = new PolicyEngine(repo, new ToolScopeBuilder(CATALOG), alertSvc)
+        const scope = await engineWithAlert.buildScope('agent-consultivo', 'tenant-1')
+
+        await engineWithAlert.assertToolAllowed(scope, 'write_protheus_pedido').catch(() => {})
+        await Promise.resolve()
+
+        expect(alertSvc.evaluate).toHaveBeenCalledTimes(1)
+        expect(alertSvc.evaluate).toHaveBeenCalledWith(
+          expect.objectContaining({
+            kind:     'TOOL_BLOCKED',
+            tenantId: 'tenant-1',
+            agentId:  'agent-consultivo',
+            toolName: 'write_protheus_pedido',
+            policyId: 'policy-consultivo',
+          }),
+        )
+      })
+    })
+
+    describe('Given no policyViolationAlertSvc injected', () => {
+      it('When tool is NOT in scope, Then still throws ToolBlockedError (alert svc optional)', async () => {
+        repo.add(agentConsultivo)
+        const scope = await engine.buildScope('agent-consultivo', 'tenant-1')
+
+        await expect(engine.assertToolAllowed(scope, 'write_protheus_pedido'))
+          .rejects.toBeInstanceOf(ToolBlockedError)
+      })
+    })
+
+    describe('Given evaluate() rejects', () => {
+      it('When alertSvc.evaluate rejects, Then ToolBlockedError is still thrown (best-effort)', async () => {
+        repo.add(agentConsultivo)
+        const alertSvc = {
+          evaluate: jest.fn(() => Promise.reject(new Error('alert down'))),
+        } as unknown as PolicyViolationAlertService
+        const engineWithAlert = new PolicyEngine(repo, new ToolScopeBuilder(CATALOG), alertSvc)
+        const scope = await engineWithAlert.buildScope('agent-consultivo', 'tenant-1')
+
+        await expect(engineWithAlert.assertToolAllowed(scope, 'write_protheus_pedido'))
+          .rejects.toBeInstanceOf(ToolBlockedError)
+
+        await Promise.resolve()
+        // não deve relançar o erro do evaluate
+      })
     })
   })
 })

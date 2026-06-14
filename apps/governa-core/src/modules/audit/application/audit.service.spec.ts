@@ -3,6 +3,7 @@ import { AuditService }                 from './audit.service'
 import { InvalidAuditInputError }       from './audit.errors'
 import { GENESIS_PREV_HASH }            from './hash-chain'
 import type { CreateAuditEventInput }   from '../domain/create-audit-event-input'
+import type { PolicyViolationAlertService } from '../../alerts/application/policy-violation-alert.service'
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -24,14 +25,24 @@ function makeInput(overrides: Partial<CreateAuditEventInput> = {}): CreateAuditE
   }
 }
 
-function makeService(overrides?: { now?: () => Date }) {
+function makeService(overrides?: {
+  now?: () => Date
+  policyViolationAlertSvc?: PolicyViolationAlertService
+}) {
   const repo    = new InMemoryAuditEventRepository()
   const service = new AuditService(
     repo,
     undefined,
     overrides?.now ? { now: overrides.now } : undefined,
+    overrides?.policyViolationAlertSvc,
   )
   return { repo, service }
+}
+
+function makeMockAlertSvc(evaluateImpl?: () => Promise<[]>): PolicyViolationAlertService {
+  return {
+    evaluate: jest.fn(evaluateImpl ?? (() => Promise.resolve([]))),
+  } as unknown as PolicyViolationAlertService
 }
 
 // ---------------------------------------------------------------------------
@@ -185,6 +196,69 @@ describe('AuditService', () => {
       await expect(
         service.createEvent(makeInput({ inputSummary: 'Dados do CPF 123.456.789-09' })),
       ).rejects.toThrow(/PII detected/)
+    })
+  })
+
+  // ---- E5.3: integração automática com PolicyViolationAlertService ---------
+
+  describe('E5.3 — PolicyViolationAlertService integration', () => {
+    it('When policyViolationAlertSvc is provided, Then evaluate() is called after createEvent()', async () => {
+      const alertSvc = makeMockAlertSvc()
+      const { service } = makeService({ policyViolationAlertSvc: alertSvc })
+
+      await service.createEvent(makeInput())
+
+      // aguarda microtasks do fire-and-forget (void Promise)
+      await Promise.resolve()
+
+      expect(alertSvc.evaluate).toHaveBeenCalledTimes(1)
+      expect(alertSvc.evaluate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          kind:     'AUDIT_RECORDED',
+          tenantId: 'tenant-A',
+          agentId:  'agent-1',
+          outcome:  'EXECUTADO',
+        }),
+      )
+    })
+
+    it('When policyViolationAlertSvc is NOT provided, Then createEvent() succeeds without error', async () => {
+      const { service } = makeService() // sem alertSvc
+
+      await expect(service.createEvent(makeInput())).resolves.toBeDefined()
+    })
+
+    it('When evaluate() rejects, Then createEvent() still resolves (best-effort)', async () => {
+      const alertSvc = makeMockAlertSvc(() => Promise.reject(new Error('alert down')))
+      const { service } = makeService({ policyViolationAlertSvc: alertSvc })
+
+      // não deve lançar, mesmo que evaluate falhe
+      await expect(service.createEvent(makeInput())).resolves.toBeDefined()
+      await Promise.resolve()
+    })
+
+    it('When outcome is BLOQUEADO, Then evaluate() receives outcome=BLOQUEADO', async () => {
+      const alertSvc = makeMockAlertSvc()
+      const { service } = makeService({ policyViolationAlertSvc: alertSvc })
+
+      await service.createEvent(makeInput({ outcome: 'BLOQUEADO' }))
+      await Promise.resolve()
+
+      expect(alertSvc.evaluate).toHaveBeenCalledWith(
+        expect.objectContaining({ outcome: 'BLOQUEADO' }),
+      )
+    })
+
+    it('When PII validation fails, Then evaluate() is NOT called', async () => {
+      const alertSvc = makeMockAlertSvc()
+      const { service } = makeService({ policyViolationAlertSvc: alertSvc })
+
+      await expect(
+        service.createEvent(makeInput({ inputSummary: 'CPF 123.456.789-09' })),
+      ).rejects.toThrow()
+
+      await Promise.resolve()
+      expect(alertSvc.evaluate).not.toHaveBeenCalled()
     })
   })
 })
