@@ -5,7 +5,7 @@
  * parâmetros corretos a partir das variáveis de ambiente.
  */
 
-// ── Mocks ─────────────────────────────────────────────────────────────────────
+// ── Mocks ───────────────────────────────────────────────────────────────────────
 
 const mockSdkStart    = jest.fn()
 const mockSdkShutdown = jest.fn().mockResolvedValue(undefined)
@@ -33,11 +33,6 @@ jest.mock('@opentelemetry/sdk-metrics', () => ({
   PeriodicExportingMetricReader: jest.fn().mockImplementation(() => ({})),
 }))
 
-// ── Imports ───────────────────────────────────────────────────────────────────
-
-import { NodeSDK } from '@opentelemetry/sdk-node'
-import { OTLPTraceExporter }  from '@opentelemetry/exporter-trace-otlp-http'
-
 // ── Testes ────────────────────────────────────────────────────────────────────
 
 describe('tracer — governa-core', () => {
@@ -45,7 +40,6 @@ describe('tracer — governa-core', () => {
 
   beforeEach(() => {
     jest.clearAllMocks()
-    // Resetar módulo entre testes para re-executar efeito colateral do import
     jest.resetModules()
     process.env = { ...originalEnv }
   })
@@ -58,7 +52,6 @@ describe('tracer — governa-core', () => {
     delete process.env['OTEL_SERVICE_NAME']
     delete process.env['OTEL_SDK_DISABLED']
 
-    // Re-mock após resetModules
     jest.mock('@opentelemetry/sdk-node', () => ({
       NodeSDK: jest.fn().mockImplementation(() => ({
         start:    mockSdkStart,

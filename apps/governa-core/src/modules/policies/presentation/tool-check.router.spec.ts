@@ -39,6 +39,7 @@ const TENANT   = 'tenant-1'
 const AGENT_ID = 'agent-abc'
 
 function makeJwt(tenantId = TENANT): string {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
   const { sign } = require('jsonwebtoken') as typeof import('jsonwebtoken')
   return sign(
     { tenantId, userId: 'user-1' },
@@ -229,7 +230,6 @@ describe('POST /policies/check-tool', () => {
     const customTenant = 'tenant-x'
     await req(
       url,
-      // body tenta injetar tenantId — deve ser ignorado
       { agentId: AGENT_ID, toolName: 'read_db', tenantId: 'attacker-tenant' },
       makeJwt(customTenant),
     )
