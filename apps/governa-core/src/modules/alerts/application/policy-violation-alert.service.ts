@@ -8,6 +8,8 @@
 // para disparo best-effort de alertas (TOOL_BLOCKED, AUDIT_RECORDED).
 // ============================================================
 
+import type { Alert } from '../domain/alert.types'
+
 export interface PolicyViolationEvent {
   kind:      string
   tenantId:  string
@@ -32,9 +34,9 @@ export class PolicyViolationAlertService {
     private readonly detectors: ViolationDetector[],
   ) {}
 
-  async evaluate(event: PolicyViolationEvent): Promise<void> {
+  async evaluate(event: PolicyViolationEvent): Promise<Alert[]> {
     // E5.5 — lógica completa de detecção e disparo de alertas
-    // Stub: delega para cada detector em best-effort
+    // Stub: delega para cada detector em best-effort, retorna [] por ora
     for (const detector of this.detectors) {
       try {
         await detector.detect(event)
@@ -45,5 +47,7 @@ export class PolicyViolationAlertService {
     // Suprime warnings de unused vars no stub
     void this.alertService
     void this.alertRepo
+
+    return []
   }
 }
