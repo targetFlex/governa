@@ -7,6 +7,7 @@
 // SRP: apenas persistência — sem regras de negócio.
 // ============================================================
 
+import { Prisma } from '@prisma/client'
 import type { PrismaClient } from '@prisma/client'
 import type { PolicyConfig }  from '../domain/policy.types'
 import type { AutonomyLevel } from '../domain/autonomy-level'
@@ -55,7 +56,6 @@ export class PrismaPolicyRepository implements PolicyRepository {
     })
     if (!existing) return null
 
-    // Bump minor version on each save (e.g. "1.0.0" → "1.1.0")
     const [major, minor, patch] = existing.version.split('.').map(Number)
     const nextVersion = `${major}.${minor + 1}.${patch ?? 0}`
 
@@ -67,7 +67,7 @@ export class PrismaPolicyRepository implements PolicyRepository {
         ...(data.allowedActions !== undefined && { allowedActions: data.allowedActions }),
         ...(data.maxValueBrl    !== undefined && {
           maxValueBrl: data.maxValueBrl !== null
-            ? new (require('@prisma/client').Prisma.Decimal)(data.maxValueBrl)
+            ? new Prisma.Decimal(data.maxValueBrl)
             : null,
         }),
         ...(data.timeWindowH    !== undefined && { timeWindowH: data.timeWindowH }),
@@ -79,7 +79,7 @@ export class PrismaPolicyRepository implements PolicyRepository {
     return this.toConfig(updated)
   }
 
-  // ── Mapeamento Prisma → domínio ───────────────────────────
+  // ── Mapeamento Prisma → domínio ───────────────────────────────
 
   private toConfig(p: {
     id:             string

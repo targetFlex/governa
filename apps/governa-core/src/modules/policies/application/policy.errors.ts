@@ -25,7 +25,7 @@ export class AgentWithoutPolicyError extends Error {
 }
 
 export class ToolBlockedError extends Error {
-  readonly code:     'TOOL_BLOCKED' = 'TOOL_BLOCKED'
+  readonly code = 'TOOL_BLOCKED' as const
   readonly toolName: string
   readonly policyId: string
   readonly reason:   string

@@ -40,10 +40,11 @@ if (!sdkDisabled) {
   sdk = new NodeSDK({
     serviceName,
     traceExporter,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     metricReader: new PeriodicExportingMetricReader({
-      exporter:        metricExporter,
+      exporter:             metricExporter,
       exportIntervalMillis: 30_000,
-    }),
+    }) as any,
     instrumentations: [
       getNodeAutoInstrumentations({
         // Reduz ruído: desativa instrumentação de fs (muito verbosa)
