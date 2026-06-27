@@ -237,6 +237,65 @@ describe('AlertasListComponent', () => {
     });
   });
 
+  // ── AL-8: ações de alerta ────────────────────────────────────────────────
+
+  describe('AL-8: ações de alerta', () => {
+    it('retry() chama clearError e loadAlertas', async () => {
+      const mock = makeStoreMock();
+      const { comp } = await setup(mock);
+      mock.useValue.loadAlertas.mockClear();
+      comp.retry();
+      expect(mock.useValue.clearError).toHaveBeenCalledTimes(1);
+      expect(mock.useValue.loadAlertas).toHaveBeenCalledTimes(1);
+    });
+
+    it('irParaPagina(2) chama loadAlertas com page:2', async () => {
+      const mock = makeStoreMock();
+      const { comp } = await setup(mock);
+      mock.useValue.loadAlertas.mockClear();
+      comp.irParaPagina(2);
+      expect(mock.useValue.loadAlertas).toHaveBeenCalledWith({ page: 2 });
+    });
+
+    it('ack(id) chama atualizarStatus com ACKNOWLEDGED', async () => {
+      const mock = makeStoreMock();
+      const { comp } = await setup(mock);
+      comp.ack('alert-1');
+      expect(mock.useValue.atualizarStatus).toHaveBeenCalledWith('alert-1', 'ACKNOWLEDGED');
+    });
+
+    it('resolve(id) chama atualizarStatus com RESOLVED', async () => {
+      const mock = makeStoreMock();
+      const { comp } = await setup(mock);
+      comp.resolve('alert-1');
+      expect(mock.useValue.atualizarStatus).toHaveBeenCalledWith('alert-1', 'RESOLVED');
+    });
+
+    it('limparFiltros() chama store.limparFiltros()', async () => {
+      const mock = makeStoreMock();
+      const { comp } = await setup(mock);
+      comp.limparFiltros();
+      expect(mock.useValue.limparFiltros).toHaveBeenCalledTimes(1);
+    });
+
+    it('aplicarFiltros() chama loadAlertas com filtros e page:1', async () => {
+      const mock = makeStoreMock();
+      const { comp } = await setup(mock);
+      mock.useValue.loadAlertas.mockClear();
+      comp.aplicarFiltros();
+      expect(mock.useValue.loadAlertas).toHaveBeenCalledWith(expect.objectContaining({ page: 1 }));
+    });
+
+    it('salvarThreshold delega ao store', async () => {
+      const mock    = makeStoreMock({ thresholds: () => [makeThreshold()] });
+      const { comp } = await setup(mock);
+      const threshold = makeThreshold();
+      const event = { target: { checked: false } } as unknown as Event;
+      comp.salvarEnabled(threshold, event);
+      expect(mock.useValue.salvarThreshold).toHaveBeenCalledWith(threshold.kind, { enabled: false });
+    });
+  });
+
   // ── AL-7: WCAG 2.1 AA ───────────────────────────────────────────────────
 
   describe('AL-7: acessibilidade WCAG 2.1 AA', () => {

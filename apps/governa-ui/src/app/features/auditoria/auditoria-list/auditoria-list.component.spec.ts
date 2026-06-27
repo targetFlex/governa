@@ -187,7 +187,7 @@ describe('AuditoriaListComponent', () => {
       form.dispatchEvent(new Event('ngSubmit'));
       fixture.detectChanges();
       // ngOnInit (1) + submit (1) = 2
-      expect(mock.useValue.loadEventos).toHaveBeenCalledTimes(1); // apenas ngOnInit até aqui
+      expect(mock.useValue.loadEventos).toHaveBeenCalledTimes(2);
     });
   });
 
@@ -243,6 +243,31 @@ describe('AuditoriaListComponent', () => {
       const { fixture } = await setup();
       const results = await axe(fixture.nativeElement);
       expect(results).toHaveNoViolations();
+    });
+  });
+
+  // ALC-14: retry chama clearError + loadEventos
+
+  describe('ALC-14: retry chama clearError e loadEventos', () => {
+    it('comp.retry() chama store.clearError() e store.loadEventos()', async () => {
+      const mock = makeStoreMock();
+      const { comp } = await setup(mock);
+      mock.useValue.loadEventos.mockClear();
+      comp.retry();
+      expect(mock.useValue.clearError).toHaveBeenCalledTimes(1);
+      expect(mock.useValue.loadEventos).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  // ALC-15: irParaPagina chama loadEventos com page
+
+  describe('ALC-15: irParaPagina chama loadEventos com página', () => {
+    it('comp.irParaPagina(3) chama store.loadEventos com page=3', async () => {
+      const mock = makeStoreMock();
+      const { comp } = await setup(mock);
+      mock.useValue.loadEventos.mockClear();
+      comp.irParaPagina(3);
+      expect(mock.useValue.loadEventos).toHaveBeenCalledWith({}, 3);
     });
   });
 });

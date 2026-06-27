@@ -360,3 +360,19 @@ describe('AgentesListComponent — acessibilidade (WCAG 2.1 AA)', () => {
   });
 
 });
+
+// ── Suite 8: filtroLabel fallback ─────────────────────────────
+
+describe('AgentesListComponent — filtroLabel', () => {
+  it('retorna label do chip quando status é válido', () => {
+    const store   = makeStoreMock({ filtroStatus: signal('TODOS' as const) });
+    const fixture = setup(store);
+    expect(fixture.componentInstance.filtroLabel).toBeTruthy();
+  });
+
+  it('retorna string vazia quando status não está nos chips', () => {
+    const store   = makeStoreMock({ filtroStatus: signal('INVALIDO' as never) });
+    const fixture = setup(store);
+    expect(fixture.componentInstance.filtroLabel).toBe('');
+  });
+});

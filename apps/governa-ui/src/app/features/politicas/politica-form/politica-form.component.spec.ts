@@ -157,6 +157,72 @@ describe('PoliticaFormComponent — estados especiais', () => {
   });
 });
 
+describe('PoliticaFormComponent — ações do formulário', () => {
+  it('selecionarNivel(AUTONOMO) atualiza formNivel e limpa aprovadores', async () => {
+    const { fixture } = await setup();
+    const comp = fixture.componentInstance;
+    comp.formApprovers = ['user@test.com'];
+    comp.selecionarNivel('AUTONOMO');
+    expect(comp.formNivel).toBe('AUTONOMO');
+    expect(comp.formApprovers).toEqual([]);
+  });
+
+  it('selecionarNivel(CONSULTIVO) limpa maxValue e timeWindow', async () => {
+    const { fixture } = await setup();
+    const comp = fixture.componentInstance;
+    comp.formMaxValue   = 1000;
+    comp.formTimeWindow = 24;
+    comp.selecionarNivel('CONSULTIVO');
+    expect(comp.formMaxValue).toBeNull();
+    expect(comp.formTimeWindow).toBeNull();
+  });
+
+  it('adicionarAprovador() adiciona entrada vazia ao array', async () => {
+    const { fixture } = await setup();
+    const comp = fixture.componentInstance;
+    const antes = comp.formApprovers.length;
+    comp.adicionarAprovador();
+    expect(comp.formApprovers.length).toBe(antes + 1);
+    expect(comp.formApprovers[comp.formApprovers.length - 1]).toBe('');
+  });
+
+  it('removerAprovador(0) remove o primeiro aprovador', async () => {
+    const { fixture } = await setup();
+    const comp = fixture.componentInstance;
+    comp.formApprovers = ['a@test.com', 'b@test.com'];
+    comp.removerAprovador(0);
+    expect(comp.formApprovers).toEqual(['b@test.com']);
+  });
+
+  it('retry() chama clearError e loadPolitica quando há policyId', async () => {
+    const { fixture, store } = await setup();
+    const comp = fixture.componentInstance;
+    comp.retry();
+    expect(store.clearError).toHaveBeenCalled();
+    expect(store.loadPolitica).toHaveBeenCalledWith('policy-1');
+  });
+
+  it('onSubmit() não salva quando formNome está vazio', async () => {
+    const { fixture, store } = await setup();
+    const comp = fixture.componentInstance;
+    comp.formNome = '';
+    comp.onSubmit();
+    expect(store.savePolitica).not.toHaveBeenCalled();
+  });
+
+  it('onSubmit() chama savePolitica com dados corretos', async () => {
+    const { fixture, store } = await setup();
+    const comp = fixture.componentInstance;
+    comp.formNome  = 'Política Teste';
+    comp.formNivel = 'CONSULTIVO';
+    comp.onSubmit();
+    expect(store.savePolitica).toHaveBeenCalledWith('policy-1', expect.objectContaining({
+      name:          'Política Teste',
+      autonomyLevel: 'CONSULTIVO',
+    }));
+  });
+});
+
 describe('PoliticaFormComponent — acessibilidade WCAG 2.1 AA', () => {
   it('cards de nível têm role=radio e aria-checked', async () => {
     const { fixture } = await setup();

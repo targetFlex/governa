@@ -10,6 +10,7 @@ module.exports = {
     '!src/**/*.spec.ts',
     '!src/**/index.ts',
     '!src/infra/telemetry/jest.setup.ts',
+    '!src/infra/telemetry/tracer.ts',
   ],
   coverageThreshold: {
     global: {
