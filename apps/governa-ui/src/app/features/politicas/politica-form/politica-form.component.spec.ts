@@ -221,6 +221,32 @@ describe('PoliticaFormComponent — ações do formulário', () => {
       autonomyLevel: 'CONSULTIVO',
     }));
   });
+
+  it('onSubmit() com nível ASSISTIDO inclui maxValueBrl e timeWindowH no dto', async () => {
+    const { fixture, store } = await setup();
+    const comp = fixture.componentInstance;
+    comp.formNome       = 'Política ASSISTIDO';
+    comp.formNivel      = 'ASSISTIDO';
+    comp.formMaxValue   = 5000;
+    comp.formTimeWindow = 48;
+    comp.onSubmit();
+    expect(store.savePolitica).toHaveBeenCalledWith('policy-1', expect.objectContaining({
+      autonomyLevel: 'ASSISTIDO',
+      maxValueBrl:   5000,
+      timeWindowH:   48,
+    }));
+  });
+
+  it('onSubmit() filtra aprovadores vazios do array antes de salvar', async () => {
+    const { fixture, store } = await setup();
+    const comp = fixture.componentInstance;
+    comp.formNome      = 'Política Filtro';
+    comp.formNivel     = 'CONSULTIVO';
+    comp.formApprovers = ['user@test.com', '', '  '];
+    comp.onSubmit();
+    const savedDto = (store.savePolitica as jest.Mock).mock.calls[0][1];
+    expect(savedDto.approvers).toEqual(['user@test.com']);
+  });
 });
 
 describe('PoliticaFormComponent — acessibilidade WCAG 2.1 AA', () => {

@@ -192,6 +192,31 @@ export class PrismaAuditEventRepository implements AuditEventRepository {
   }
 
   // ---------------------------------------------------------------------------
+  // countSince — conta eventos do agente a partir de `from`
+  // ---------------------------------------------------------------------------
+
+  async countSince(tenantId: string, agentId: string, from: Date): Promise<number> {
+    return this.prisma.auditEvent.count({
+      where: { tenantId, agentId, createdAt: { gte: from } },
+    })
+  }
+
+  // ---------------------------------------------------------------------------
+  // countByOutcomeSince — conta eventos por outcome a partir de `from`
+  // ---------------------------------------------------------------------------
+
+  async countByOutcomeSince(
+    tenantId: string,
+    agentId:  string,
+    outcome:  Outcome,
+    from:     Date,
+  ): Promise<number> {
+    return this.prisma.auditEvent.count({
+      where: { tenantId, agentId, outcome, createdAt: { gte: from } },
+    })
+  }
+
+  // ---------------------------------------------------------------------------
   // buildWhere — monta cláusula where Prisma com isolamento tenantId
   // ---------------------------------------------------------------------------
 

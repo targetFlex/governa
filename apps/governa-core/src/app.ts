@@ -23,6 +23,7 @@ import { createPolicyRouter }                           from './modules/policies
 import { createAuditRouter }                            from './modules/audit/presentation/audit.router'
 import { createAlertRouter }                            from './modules/alerts/presentation/alert.router'
 import { createViolationRouter }                        from './modules/alerts/presentation/violation.router'
+import { createToolCheckRouter }                        from './modules/policies/presentation/tool-check.router'
 
 import type { AgentService }                            from './modules/agents/application/agent.service'
 import type { ConsultarPedidoUseCase }                  from './modules/pedidos/application/consultar-pedido.use-case'
@@ -73,6 +74,10 @@ export function createApp(deps: AppDependencies): Application {
   app.use('/audit-events',  createAuditRouter(deps.auditQueryService))
   app.use('/alerts',        createAlertRouter(deps.alertService))
   app.use('/violations',    createViolationRouter(deps.policyViolationAlertService))
+  // E5.4 — expõe assertToolAllowed() via HTTP (montado apenas se policyEngine disponível)
+  if (deps.policyEngine) {
+    app.use('/policies',    createToolCheckRouter(deps.policyEngine))
+  }
 
   // ── Erro global (deve ser o último middleware) ───────────────────────────────
   // eslint-disable-next-line @typescript-eslint/no-unused-vars

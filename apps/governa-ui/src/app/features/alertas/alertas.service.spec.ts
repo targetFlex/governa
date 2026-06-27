@@ -301,4 +301,72 @@ describe('AlertasStore', () => {
       expect(store.error()).toBeNull();
     });
   });
+
+  // ── hasError computed — true branch ────────────────────────────────────────
+
+  describe('hasError computed — ramo true', () => {
+    it('hasError() retorna true quando há error', () => {
+      const { store, http } = setup();
+      store.loadAlertas();
+      http.expectOne((req) => req.url === BASE)
+        .flush({ error: 'Falha' }, { status: 500, statusText: 'Error' });
+      expect(store.hasError()).toBe(true);
+    });
+  });
+
+  // ── openCount — filter false branch ────────────────────────────────────────
+
+  describe('openCount — alertas não-OPEN não contam', () => {
+    it('openCount exclui alertas com status != OPEN', () => {
+      const { store, http } = setup();
+      store.loadAlertas();
+      http.expectOne((req) => req.url === BASE).flush(
+        makePage({ data: [makeAlert({ status: 'ACKNOWLEDGED' }), makeAlert({ status: 'RESOLVED' })], total: 2 })
+      );
+      expect(store.openCount()).toBe(0);
+    });
+  });
+
+  // ── SSE — catch parse error ─────────────────────────────────────────────────
+
+  describe('conectarStream — JSON inválido descartado silenciosamente', () => {
+    it('não lança ao receber evento SSE com JSON inválido', () => {
+      const { store, http } = setup();
+      store.loadAlertas();
+      http.expectOne((req) => req.url === BASE).flush(makePage({ data: [], total: 0 }));
+
+      store.conectarStream();
+      const sse = MockEventSource.instances[0];
+      // dispara evento com dados que não são JSON válido
+      const badEvt = { data: 'INVALID_JSON' } as MessageEvent;
+      expect(() => {
+        (sse.listeners['alert'] ?? []).forEach((fn) => fn(badEvt));
+      }).not.toThrow();
+      expect(store.alertas()).toHaveLength(0);
+    });
+  });
+
+  // ── loadThresholds — erro HTTP ──────────────────────────────────────────────
+
+  describe('loadThresholds — erro HTTP seta error', () => {
+    it('seta error ao falhar no GET /thresholds', () => {
+      const { store, http } = setup();
+      store.loadThresholds();
+      http.expectOne(`${BASE}/thresholds`)
+        .flush({ error: 'Não autorizado' }, { status: 401, statusText: 'Unauthorized' });
+      expect(store.error()).toBeTruthy();
+    });
+  });
+
+  // ── salvarThreshold — erro HTTP ─────────────────────────────────────────────
+
+  describe('salvarThreshold — erro HTTP seta error', () => {
+    it('seta error ao falhar no PUT /thresholds/:kind', () => {
+      const { store, http } = setup();
+      store.salvarThreshold('ERROR_RATE', { enabled: false });
+      http.expectOne(`${BASE}/thresholds/ERROR_RATE`)
+        .flush({ error: 'Timeout' }, { status: 504, statusText: 'Gateway Timeout' });
+      expect(store.error()).toBeTruthy();
+    });
+  });
 });

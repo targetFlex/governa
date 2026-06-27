@@ -49,11 +49,13 @@ function makePage(partial: Partial<AuditEventPage> = {}): AuditEventPage {
 
 function makeRepo(overrides: Partial<AuditEventRepository> = {}): AuditEventRepository {
   return {
-    lastHashFor:   jest.fn(),
-    appendInChain: jest.fn(),
-    iterateChain:  jest.fn(),
-    list:          jest.fn().mockResolvedValue(makePage()),
-    listForExport: jest.fn().mockResolvedValue([makeEvent()]),
+    lastHashFor:          jest.fn(),
+    appendInChain:        jest.fn(),
+    iterateChain:         jest.fn(),
+    list:                 jest.fn().mockResolvedValue(makePage()),
+    listForExport:        jest.fn().mockResolvedValue([makeEvent()]),
+    countSince:           jest.fn().mockResolvedValue(0),
+    countByOutcomeSince:  jest.fn().mockResolvedValue(0),
     ...overrides,
   }
 }

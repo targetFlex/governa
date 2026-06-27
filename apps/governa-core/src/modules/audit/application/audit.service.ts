@@ -107,7 +107,7 @@ export class AuditService {
       agentId:   input.agentId,
       outcome:   input.outcome,
       timestamp: this.clock.now(),
-    }).catch((err) => {
+    }).catch((err: unknown) => {
       // alertas são best-effort — nunca devem impedir o registro de auditoria
       console.error('[AuditService] policyViolationAlertSvc.evaluate falhou', err)
     })

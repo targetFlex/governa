@@ -296,6 +296,53 @@ describe('AlertasListComponent', () => {
     });
   });
 
+  // ── AL-9: métodos de threshold numérico + helpers com fallback ───────────
+
+  describe('AL-9: salvar threshold numérico e helpers com ?? fallback', () => {
+    it('salvarErrorRate chama salvarThreshold com errorRatePercent', async () => {
+      const mock = makeStoreMock({ thresholds: () => [makeThreshold()] });
+      const { comp } = await setup(mock);
+      const threshold = makeThreshold();
+      const event = { target: { value: '15' } } as unknown as Event;
+      comp.salvarErrorRate(threshold, event);
+      expect(mock.useValue.salvarThreshold).toHaveBeenCalledWith(threshold.kind, { errorRatePercent: 15 });
+    });
+
+    it('salvarVolumePerHour chama salvarThreshold com volumePerHour', async () => {
+      const mock = makeStoreMock({ thresholds: () => [makeThreshold()] });
+      const { comp } = await setup(mock);
+      const threshold = makeThreshold();
+      const event = { target: { value: '100' } } as unknown as Event;
+      comp.salvarVolumePerHour(threshold, event);
+      expect(mock.useValue.salvarThreshold).toHaveBeenCalledWith(threshold.kind, { volumePerHour: 100 });
+    });
+
+    it('salvarCheckpointExpiry chama salvarThreshold com checkpointExpiryMin', async () => {
+      const mock = makeStoreMock({ thresholds: () => [makeThreshold()] });
+      const { comp } = await setup(mock);
+      const threshold = makeThreshold();
+      const event = { target: { value: '30' } } as unknown as Event;
+      comp.salvarCheckpointExpiry(threshold, event);
+      expect(mock.useValue.salvarThreshold).toHaveBeenCalledWith(threshold.kind, { checkpointExpiryMin: 30 });
+    });
+
+    it('kindLabel retorna kind original quando não mapeado', async () => {
+      const { comp } = await setup();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      expect(comp.kindLabel('UNKNOWN_KIND' as any)).toBe('UNKNOWN_KIND');
+    });
+
+    it('severityCss retorna string vazia quando severity não mapeado', async () => {
+      const { comp } = await setup();
+      expect(comp.severityCss('UNKNOWN')).toBe('');
+    });
+
+    it('truncar retorna texto cortado com ellipsis quando excede max', async () => {
+      const { comp } = await setup();
+      expect(comp.truncar('abcdefghij', 5)).toBe('abcde…');
+    });
+  });
+
   // ── AL-7: WCAG 2.1 AA ───────────────────────────────────────────────────
 
   describe('AL-7: acessibilidade WCAG 2.1 AA', () => {

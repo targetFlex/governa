@@ -270,4 +270,38 @@ describe('AuditoriaListComponent', () => {
       expect(mock.useValue.loadEventos).toHaveBeenCalledWith({}, 3);
     });
   });
+
+  // ALC-16: outcomeLabel fallback ?? para outcome desconhecido
+
+  describe('ALC-16: outcomeLabel — outcome não mapeado retorna próprio valor', () => {
+    it('retorna o outcome quando não está no mapa de labels', async () => {
+      const { comp } = await setup();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      expect(comp.outcomeLabel('DESCONHECIDO' as any)).toBe('DESCONHECIDO');
+    });
+  });
+
+  // ALC-17: outcomeCss fallback ?? vazio para outcome desconhecido
+
+  describe('ALC-17: outcomeCss — outcome não mapeado retorna string vazia', () => {
+    it('retorna "" quando outcome não está no mapa de CSS', async () => {
+      const { comp } = await setup();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      expect(comp.outcomeCss('DESCONHECIDO' as any)).toBe('');
+    });
+  });
+
+  // ALC-18: truncar — texto mais longo que max é cortado com ellipsis
+
+  describe('ALC-18: truncar — ramos longo e curto', () => {
+    it('trunca e adiciona … quando texto excede max', async () => {
+      const { comp } = await setup();
+      expect(comp.truncar('abcdefgh', 4)).toBe('abcd…');
+    });
+
+    it('retorna texto inteiro quando não excede max', async () => {
+      const { comp } = await setup();
+      expect(comp.truncar('abc', 10)).toBe('abc');
+    });
+  });
 });
