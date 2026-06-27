@@ -1,1 +1,108 @@
-Ly8gPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09Ci8vIHByaXNtYS1wb2xpY3kucmVwb3NpdG9yeS50cwovLwovLyBBZGFwdGFkb3IgUHJpc21hIHBhcmEgbyByZXBvc2l0w7NyaW8gZGUgcG9sw610aWNhcy4KLy8gSXNvbGFtZW50byBtdWx0aS10ZW5hbnQgYWJzb2x1dG86IHRvZGEgcXVlcnkgZmlsdHJhIHBvciB0ZW5hbnRJZC4KLy8KLy8gU1JQOiBhcGVuYXMgcGVyc2lzdMOqbmNpYSDigJQgc2VtIHJlZ3JhcyBkZSBuZWfDs2Npby4KLy8gPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09CgppbXBvcnQgeyBQcmlzbWEgfSAgICAgICAgICAgZnJvbSAnQHByaXNtYS9jbGllbnQnCmltcG9ydCB0eXBlIHsgUHJpc21hQ2xpZW50IH0gZnJvbSAnQHByaXNtYS9jbGllbnQnCmltcG9ydCB0eXBlIHsgUG9saWN5Q29uZmlnIH0gIGZyb20gJy4uL2RvbWFpbi9wb2xpY3kudHlwZXMnCmltcG9ydCB0eXBlIHsgQXV0b25vbXlMZXZlbCB9IGZyb20gJy4uL2RvbWFpbi9hdXRvbm9teS1sZXZlbCcKCmV4cG9ydCBpbnRlcmZhY2UgUG9saWN5UmVwb3NpdG9yeSB7CiAgZmluZEJ5SWRGb3JUZW5hbnQoaWQ6IHN0cmluZywgdGVuYW50SWQ6IHN0cmluZyk6IFByb21pc2U8UG9saWN5Q29uZmlnIHwgbnVsbD4KICBmaW5kQWxsRm9yVGVuYW50KHRlbmFudElkOiBzdHJpbmcpOiBQcm9taXNlPFBvbGljeUNvbmZpZ1tdPgogIHVwZGF0ZShpZDogc3RyaW5nLCB0ZW5hbnRJZDogc3RyaW5nLCBkYXRhOiBVcGRhdGVQb2xpY3lJbnB1dCk6IFByb21pc2U8UG9saWN5Q29uZmlnIHwgbnVsbD4KfQoKZXhwb3J0IGludGVyZmFjZSBVcGRhdGVQb2xpY3lJbnB1dCB7CiAgbmFtZT86ICAgICAgICAgICBzdHJpbmcKICBhdXRvbm9teUxldmVsPzogIEF1dG9ub215TGV2ZWwKICBhbGxvd2VkQWN0aW9ucz86IHN0cmluZ1tdCiAgbWF4VmFsdWVCcmw/OiAgICBudW1iZXIgfCBudWxsCiAgdGltZVdpbmRvd0g/OiAgICBudW1iZXIgfCBudWxsCiAgYXBwcm92ZXJzPzogICAgICBzdHJpbmdbXQp9CgpleHBvcnQgY2xhc3MgUHJpc21hUG9saWN5UmVwb3NpdG9yeSBpbXBsZW1lbnRzIFBvbGljeVJlcG9zaXRvcnkgewogIGNvbnN0cnVjdG9yKHByaXZhdGUgcmVhZG9ubHkgcHJpc21hOiBQcmlzbWFDbGllbnQpIHt9CgogIGFzeW5jIGZpbmRCeUlkRm9yVGVuYW50KGlkOiBzdHJpbmcsIHRlbmFudElkOiBzdHJpbmcpOiBQcm9taXNlPFBvbGljeUNvbmZpZyB8IG51bGw+IHsKICAgIGNvbnN0IHBvbGljeSA9IGF3YWl0IHRoaXMucHJpc21hLnBvbGljeS5maW5kRmlyc3QoewogICAgICB3aGVyZTogeyBpZCwgdGVuYW50SWQsIGFjdGl2ZTogdHJ1ZSB9LAogICAgfSkKICAgIGlmICghcG9saWN5KSByZXR1cm4gbnVsbAogICAgcmV0dXJuIHRoaXMudG9Db25maWcocG9saWN5KQogIH0KCiAgYXN5bmMgZmluZEFsbEZvclRlbmFudCh0ZW5hbnRJZDogc3RyaW5nKTogUHJvbWlzZTxQb2xpY3lDb25maWdbXT4gewogICAgY29uc3QgcG9saWNpZXMgPSBhd2FpdCB0aGlzLnByaXNtYS5wb2xpY3kuZmluZE1hbnkoewogICAgICB3aGVyZTogICB7IHRlbmFudElkLCBhY3RpdmU6IHRydWUgfSwKICAgICAgb3JkZXJCeTogeyBjcmVhdGVkQXQ6ICdkZXNjJyB9LAogICAgfSkKICAgIHJldHVybiBwb2xpY2llcy5tYXAoKHApID0+IHRoaXMudG9Db25maWcocCkpCiAgfQoKICBhc3luYyB1cGRhdGUoCiAgICBpZDogICAgICAgc3RyaW5nLAogICAgdGVuYW50SWQ6IHN0cmluZywKICAgIGRhdGE6ICAgICBVcGRhdGVQb2xpY3lJbnB1dCwKICApOiBQcm9taXNlPFBvbGljeUNvbmZpZyB8IG51bGw+IHsKICAgIGNvbnN0IGV4aXN0aW5nID0gYXdhaXQgdGhpcy5wcmlzbWEucG9saWN5LmZpbmRGaXJzdCh7CiAgICAgIHdoZXJlOiB7IGlkLCB0ZW5hbnRJZCwgYWN0aXZlOiB0cnVlIH0sCiAgICB9KQogICAgaWYgKCFleGlzdGluZykgcmV0dXJuIG51bGwKCiAgICAvLyBCdW1wIG1pbm9yIHZlcnNpb24gb24gZWFjaCBzYXZlIChlLmcuICIxLjAuMCIg4oaSICIxLjEuMCIpCiAgICBjb25zdCBbbWFqb3IsIG1pbm9yLCBwYXRjaF0gPSBleGlzdGluZy52ZXJzaW9uLnNwbGl0KCcuJykubWFwKE51bWJlcikKICAgIGNvbnN0IG5leHRWZXJzaW9uID0gYCR7bWFqb3J9LiR7bWlub3IgKyAxfS4ke3BhdGNoID8/IDB9YAoKICAgIGNvbnN0IHVwZGF0ZWQgPSBhd2FpdCB0aGlzLnByaXNtYS5wb2xpY3kudXBkYXRlKHsKICAgICAgd2hlcmU6IHsgaWQgfSwKICAgICAgZGF0YTogewogICAgICAgIC4uLihkYXRhLm5hbWUgICAgICAgICAgICE9PSB1bmRlZmluZWQgJiYgeyBuYW1lOiBkYXRhLm5hbWUgfSksCiAgICAgICAgLi4uKGRhdGEuYXV0b25vbXlMZXZlbCAgIT09IHVuZGVmaW5lZCAmJiB7IGF1dG9ub215TGV2ZWw6IGRhdGEuYXV0b25vbXlMZXZlbCB9KSwKICAgICAgICAuLi4oZGF0YS5hbGxvd2VkQWN0aW9ucyAhPT0gdW5kZWZpbmVkICYmIHsgYWxsb3dlZEFjdGlvbnM6IGRhdGEuYWxsb3dlZEFjdGlvbnMgfSksCiAgICAgICAgLi4uKGRhdGEubWF4VmFsdWVCcmwgICAgIT09IHVuZGVmaW5lZCAmJiB7CiAgICAgICAgICBtYXhWYWx1ZUJybDogZGF0YS5tYXhWYWx1ZUJybCAhPT0gbnVsbAogICAgICAgICAgICA/IG5ldyBQcmlzbWEuRGVjaW1hbChkYXRhLm1heFZhbHVlQnJsKQogICAgICAgICAgICA6IG51bGwsCiAgICAgICAgfSksCiAgICAgICAgLi4uKGRhdGEudGltZVdpbmRvd0ggICAgIT09IHVuZGVmaW5lZCAmJiB7IHRpbWVXaW5kb3dIOiBkYXRhLnRpbWVXaW5kb3dIIH0pLAogICAgICAgIC4uLihkYXRhLmFwcHJvdmVycyAgICAgICE9PSB1bmRlZmluZWQgJiYgeyBhcHByb3ZlcnM6IGRhdGEuYXBwcm92ZXJzIH0pLAogICAgICAgIHZlcnNpb246IG5leHRWZXJzaW9uLAogICAgICB9LAogICAgfSkKCiAgICByZXR1cm4gdGhpcy50b0NvbmZpZyh1cGRhdGVkKQogIH0KCiAgLy8g4pSA4pSAIE1hcGVhbWVudG8gUHJpc21hIOKGkiBkb23DrW5pbyDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIAKCiAgcHJpdmF0ZSB0b0NvbmZpZyhwOiB7CiAgICBpZDogICAgICAgICAgICAgc3RyaW5nCiAgICB0ZW5hbnRJZDogICAgICAgc3RyaW5nCiAgICBuYW1lOiAgICAgICAgICAgc3RyaW5nCiAgICBhdXRvbm9teUxldmVsOiAgc3RyaW5nCiAgICBhbGxvd2VkQWN0aW9uczogc3RyaW5nW10KICAgIG1heFZhbHVlQnJsOiAgICB7IHRvTnVtYmVyKCk6IG51bWJlciB9IHwgbnVsbAogICAgdGltZVdpbmRvd0g6ICAgIG51bWJlciB8IG51bGwKICAgIGFwcHJvdmVyczogICAgICBzdHJpbmdbXQogICAgdmVyc2lvbjogICAgICAgIHN0cmluZwogIH0pOiBQb2xpY3lDb25maWcgewogICAgcmV0dXJuIHsKICAgICAgaWQ6ICAgICAgICAgICAgIHAuaWQsCiAgICAgIHRlbmFudElkOiAgICAgICBwLnRlbmFudElkLAogICAgICBuYW1lOiAgICAgICAgICAgcC5uYW1lLAogICAgICBhdXRvbm9teUxldmVsOiAgcC5hdXRvbm9teUxldmVsIGFzIEF1dG9ub215TGV2ZWwsCiAgICAgIGFsbG93ZWRBY3Rpb25zOiBwLmFsbG93ZWRBY3Rpb25zLAogICAgICBtYXhWYWx1ZUJybDogICAgcC5tYXhWYWx1ZUJybD8udG9OdW1iZXIoKSwKICAgICAgdGltZVdpbmRvd0g6ICAgIHAudGltZVdpbmRvd0ggPz8gdW5kZWZpbmVkLAogICAgICBhcHByb3ZlcnM6ICAgICAgcC5hcHByb3ZlcnMsCiAgICAgIHZlcnNpb246ICAgICAgICBwLnZlcnNpb24sCiAgICB9CiAgfQp9Cg==
+// ============================================================
+// prisma-policy.repository.ts
+//
+// Adaptador Prisma para o repositório de políticas.
+// Isolamento multi-tenant absoluto: toda query filtra por tenantId.
+//
+// SRP: apenas persistência — sem regras de negócio.
+// ============================================================
+
+import { Prisma }           from '@prisma/client'
+import type { PrismaClient } from '@prisma/client'
+import type { PolicyConfig }  from '../domain/policy.types'
+import type { AutonomyLevel } from '../domain/autonomy-level'
+
+export interface PolicyRepository {
+  findByIdForTenant(id: string, tenantId: string): Promise<PolicyConfig | null>
+  findAllForTenant(tenantId: string): Promise<PolicyConfig[]>
+  update(id: string, tenantId: string, data: UpdatePolicyInput): Promise<PolicyConfig | null>
+}
+
+export interface UpdatePolicyInput {
+  name?:           string
+  autonomyLevel?:  AutonomyLevel
+  allowedActions?: string[]
+  maxValueBrl?:    number | null
+  timeWindowH?:    number | null
+  approvers?:      string[]
+}
+
+export class PrismaPolicyRepository implements PolicyRepository {
+  constructor(private readonly prisma: PrismaClient) {}
+
+  async findByIdForTenant(id: string, tenantId: string): Promise<PolicyConfig | null> {
+    const policy = await this.prisma.policy.findFirst({
+      where: { id, tenantId, active: true },
+    })
+    if (!policy) return null
+    return this.toConfig(policy)
+  }
+
+  async findAllForTenant(tenantId: string): Promise<PolicyConfig[]> {
+    const policies = await this.prisma.policy.findMany({
+      where:   { tenantId, active: true },
+      orderBy: { createdAt: 'desc' },
+    })
+    return policies.map((p) => this.toConfig(p))
+  }
+
+  async update(
+    id:       string,
+    tenantId: string,
+    data:     UpdatePolicyInput,
+  ): Promise<PolicyConfig | null> {
+    const existing = await this.prisma.policy.findFirst({
+      where: { id, tenantId, active: true },
+    })
+    if (!existing) return null
+
+    // Bump minor version on each save (e.g. "1.0.0" → "1.1.0")
+    const [major, minor, patch] = existing.version.split('.').map(Number)
+    const nextVersion = `${major}.${minor + 1}.${patch ?? 0}`
+
+    const updated = await this.prisma.policy.update({
+      where: { id },
+      data: {
+        ...(data.name           !== undefined && { name: data.name }),
+        ...(data.autonomyLevel  !== undefined && { autonomyLevel: data.autonomyLevel }),
+        ...(data.allowedActions !== undefined && { allowedActions: data.allowedActions }),
+        ...(data.maxValueBrl    !== undefined && {
+          maxValueBrl: data.maxValueBrl !== null
+            ? new Prisma.Decimal(data.maxValueBrl)
+            : null,
+        }),
+        ...(data.timeWindowH    !== undefined && { timeWindowH: data.timeWindowH }),
+        ...(data.approvers      !== undefined && { approvers: data.approvers }),
+        version: nextVersion,
+      },
+    })
+
+    return this.toConfig(updated)
+  }
+
+  // ── Mapeamento Prisma → domínio ───────────────────────────
+
+  private toConfig(p: {
+    id:             string
+    tenantId:       string
+    name:           string
+    autonomyLevel:  string
+    allowedActions: string[]
+    maxValueBrl:    { toNumber(): number } | null
+    timeWindowH:    number | null
+    approvers:      string[]
+    version:        string
+  }): PolicyConfig {
+    return {
+      id:             p.id,
+      tenantId:       p.tenantId,
+      name:           p.name,
+      autonomyLevel:  p.autonomyLevel as AutonomyLevel,
+      allowedActions: p.allowedActions,
+      maxValueBrl:    p.maxValueBrl?.toNumber(),
+      timeWindowH:    p.timeWindowH ?? undefined,
+      approvers:      p.approvers,
+      version:        p.version,
+    }
+  }
+}

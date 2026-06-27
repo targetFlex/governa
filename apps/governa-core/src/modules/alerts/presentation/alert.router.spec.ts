@@ -1,1 +1,246 @@
-LyoqCiAqIGFsZXJ0LnJvdXRlci5zcGVjLnRzIOKAlCBUZXN0ZXMgZG8gQWxlcnRSb3V0ZXIgdmlhIEhUVFAgbmF0aXZvLgogKgogKiBQYWRyw6NvIGRvIHByb2pldG86IHNlcnZpZG9yIEhUVFAgbmF0aXZvICsgZmV0Y2ggKHNlbSBzdXBlcnRlc3QpLgogKiBBbGVydFNlcnZpY2UgdXNhbmRvIEluTWVtb3J5QWxlcnRSZXBvc2l0b3J5IOKAlCBzZW0gYmFuY28uCiAqLwoKaW1wb3J0IGh0dHAgICAgICAgICAgICAgICAgICAgZnJvbSAnbm9kZTpodHRwJwppbXBvcnQgZXhwcmVzcyAgICAgICAgICAgICAgICBmcm9tICdleHByZXNzJwppbXBvcnQgeyBjcmVhdGVBbGVydFJvdXRlciB9ICBmcm9tICcuL2FsZXJ0LnJvdXRlcicKaW1wb3J0IHsgdGVuYW50TWlkZGxld2FyZSB9ICAgZnJvbSAnLi4vLi4vLi4vc2hhcmVkL21pZGRsZXdhcmUvdGVuYW50Lm1pZGRsZXdhcmUnCmltcG9ydCB7IEFsZXJ0U2VydmljZSB9ICAgICAgIGZyb20gJy4uL2FwcGxpY2F0aW9uL2FsZXJ0LnNlcnZpY2UnCmltcG9ydCB7IEluTWVtb3J5QWxlcnRSZXBvc2l0b3J5IH0gZnJvbSAnLi4vLi4vLi4vLi4vdGVzdC9maXh0dXJlcy9pbi1tZW1vcnktYWxlcnQucmVwb3NpdG9yeScKCi8vIOKUgOKUgOKUgCBIZWxwZXJzIOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgAoKYXN5bmMgZnVuY3Rpb24gc3RhcnRBcHAoc2VydmljZTogQWxlcnRTZXJ2aWNlKTogUHJvbWlzZTx7IHVybDogc3RyaW5nOyBjbG9zZSgpOiB2b2lkIH0+IHsKICBjb25zdCBhcHAgPSBleHByZXNzKCkKICBhcHAudXNlKGV4cHJlc3MuanNvbigpKQogIGFwcC51c2UodGVuYW50TWlkZGxld2FyZSkKICBhcHAudXNlKCcvYWxlcnRzJywgY3JlYXRlQWxlcnRSb3V0ZXIoc2VydmljZSkpCgogIHJldHVybiBuZXcgUHJvbWlzZSgocmVzb2x2ZSwgcmVqZWN0KSA9PiB7CiAgICBjb25zdCBzZXJ2ZXIgPSBodHRwLmNyZWF0ZVNlcnZlcihhcHApCiAgICBzZXJ2ZXIubGlzdGVuKDAsICgpID0+IHsKICAgICAgY29uc3QgcG9ydCA9IChzZXJ2ZXIuYWRkcmVzcygpIGFzIHsgcG9ydDogbnVtYmVyIH0pLnBvcnQKICAgICAgcmVzb2x2ZSh7IHVybDogYGh0dHA6Ly8xMjcuMC4wLjE6JHtwb3J0fWAsIGNsb3NlOiAoKSA9PiBzZXJ2ZXIuY2xvc2UoKSB9KQogICAgfSkKICAgIHNlcnZlci5vbignZXJyb3InLCByZWplY3QpCiAgfSkKfQoKYXN5bmMgZnVuY3Rpb24gcmVxKAogIHVybDogICAgIHN0cmluZywKICBwYXRoOiAgICBzdHJpbmcsCiAgbWV0aG9kOiAgJ0dFVCcgfCAnUE9TVCcgfCAnUFVUJyB8ICdQQVRDSCcgPSAnR0VUJywKICBib2R5PzogICB1bmtub3duLAogIHRva2VuPzogIHN0cmluZywKKTogUHJvbWlzZTx7IHN0YXR1czogbnVtYmVyOyBib2R5OiB1bmtub3duIH0+IHsKICBjb25zdCBoZWFkZXJzOiBSZWNvcmQ8c3RyaW5nLCBzdHJpbmc+ID0geyAnQ29udGVudC1UeXBlJzogJ2FwcGxpY2F0aW9uL2pzb24nIH0KICBpZiAodG9rZW4pIGhlYWRlcnNbJ0F1dGhvcml6YXRpb24nXSA9IGBCZWFyZXIgJHt0b2tlbn1gCiAgY29uc3QgcmVzID0gYXdhaXQgZmV0Y2goYCR7dXJsfSR7cGF0aH1gLCB7CiAgICBtZXRob2QsCiAgICBoZWFkZXJzLAogICAgYm9keTogYm9keSA/IEpTT04uc3RyaW5naWZ5KGJvZHkpIDogdW5kZWZpbmVkLAogIH0pCiAgY29uc3QganNvbiA9IGF3YWl0IHJlcy5qc29uKCkuY2F0Y2goKCkgPT4gKHt9KSkKICByZXR1cm4geyBzdGF0dXM6IHJlcy5zdGF0dXMsIGJvZHk6IGpzb24gfQp9CgovLyDilIDilIDilIAgRml4dHVyZXMg4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSACgpjb25zdCBURU5BTlQgPSAndGVuYW50LXRlc3QnCmNvbnN0IEFHRU5UICA9ICcwMDAwMDAwMC0wMDAwLTAwMDAtMDAwMC0wMDAwMDAwMDAwMDEnCgpmdW5jdGlvbiBtYWtlSnd0KCk6IHN0cmluZyB7CiAgLy8gZXNsaW50LWRpc2FibGUtbmV4dC1saW5lIEB0eXBlc2NyaXB0LWVzbGludC9uby12YXItcmVxdWlyZXMKICBjb25zdCB7IHNpZ24gfSA9IHJlcXVpcmUoJ2pzb253ZWJ0b2tlbicpIGFzIHR5cGVvZiBpbXBvcnQoJ2pzb253ZWJ0b2tlbicpCiAgcmV0dXJuIHNpZ24oCiAgICB7IHRlbmFudElkOiBURU5BTlQsIHVzZXJJZDogJ3VzZXItdGVzdCcgfSwKICAgIHByb2Nlc3MuZW52WydKV1RfU0VDUkVUJ10gPz8gJ3Rlc3Qtc2VjcmV0JywKICApCn0KCmZ1bmN0aW9uIG1ha2VTZXJ2aWNlKCkgewogIHJldHVybiBuZXcgQWxlcnRTZXJ2aWNlKG5ldyBJbk1lbW9yeUFsZXJ0UmVwb3NpdG9yeSgpKQp9CgovLyDilIDilIDilIAgU2V0dXAgZ2xvYmFsIOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgAoKYmVmb3JlRWFjaCgoKSA9PiB7CiAgcHJvY2Vzcy5lbnZbJ0pXVF9TRUNSRVQnXSA9ICd0ZXN0LXNlY3JldCcKfSkKCi8vIOKUgOKUgOKUgCBUZXN0ZXMg4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSACgpkZXNjcmliZSgnR0VUIC9hbGVydHMnLCAoKSA9PiB7CiAgaXQoJ3JldG9ybmEgNDAxIHNlbSB0b2tlbicsIGFzeW5jICgpID0+IHsKICAgIGNvbnN0IHsgdXJsLCBjbG9zZSB9ID0gYXdhaXQgc3RhcnRBcHAobWFrZVNlcnZpY2UoKSkKICAgIHRyeSB7CiAgICAgIGNvbnN0IHsgc3RhdHVzIH0gPSBhd2FpdCByZXEodXJsLCAnL2FsZXJ0cycpCiAgICAgIGV4cGVjdChzdGF0dXMpLnRvQmUoNDAxKQogICAgfSBmaW5hbGx5IHsgY2xvc2UoKSB9CiAgfSkKCiAgaXQoJ3JldG9ybmEgcMOhZ2luYSB2YXppYSBjb20gdG9rZW4gdsOhbGlkbycsIGFzeW5jICgpID0+IHsKICAgIGNvbnN0IHsgdXJsLCBjbG9zZSB9ID0gYXdhaXQgc3RhcnRBcHAobWFrZVNlcnZpY2UoKSkKICAgIHRyeSB7CiAgICAgIGNvbnN0IHsgc3RhdHVzLCBib2R5IH0gPSBhd2FpdCByZXEodXJsLCAnL2FsZXJ0cycsICdHRVQnLCB1bmRlZmluZWQsIG1ha2VKd3QoKSkKICAgICAgZXhwZWN0KHN0YXR1cykudG9CZSgyMDApCiAgICAgIGNvbnN0IGIgPSBib2R5IGFzIHsgZGF0YTogdW5rbm93bltdOyB0b3RhbDogbnVtYmVyIH0KICAgICAgZXhwZWN0KGIuZGF0YSkudG9FcXVhbChbXSkKICAgICAgZXhwZWN0KGIudG90YWwpLnRvQmUoMCkKICAgIH0gZmluYWxseSB7IGNsb3NlKCkgfQogIH0pCgogIGl0KCdyZXRvcm5hIGFsZXJ0YXMgY3JpYWRvcyB2aWEgUE9TVCAvdHJpZ2dlcicsIGFzeW5jICgpID0+IHsKICAgIGNvbnN0IHNlcnZpY2UgICAgICAgID0gbWFrZVNlcnZpY2UoKQogICAgY29uc3QgeyB1cmwsIGNsb3NlIH0gPSBhd2FpdCBzdGFydEFwcChzZXJ2aWNlKQogICAgdHJ5IHsKICAgICAgY29uc3Qgand0ID0gbWFrZUp3dCgpCiAgICAgIGF3YWl0IHJlcSh1cmwsICcvYWxlcnRzL3RyaWdnZXInLCAnUE9TVCcsIHsKICAgICAgICBhZ2VudElkOiAgQUdFTlQsCiAgICAgICAga2luZDogICAgICdUT09MX0JMT0NLRUQnLAogICAgICAgIHNldmVyaXR5OiAnSElHSCcsCiAgICAgICAgbWVzc2FnZTogICdUb29sIGJsb3F1ZWFkYScsCiAgICAgIH0sIGp3dCkKCiAgICAgIGNvbnN0IHsgc3RhdHVzLCBib2R5IH0gPSBhd2FpdCByZXEodXJsLCAnL2FsZXJ0cycsICdHRVQnLCB1bmRlZmluZWQsIGp3dCkKICAgICAgZXhwZWN0KHN0YXR1cykudG9CZSgyMDApCiAgICAgIGNvbnN0IGIgPSBib2R5IGFzIHsgZGF0YTogdW5rbm93bltdOyB0b3RhbDogbnVtYmVyIH0KICAgICAgZXhwZWN0KGIudG90YWwpLnRvQmUoMSkKICAgICAgZXhwZWN0KEFycmF5LmlzQXJyYXkoYi5kYXRhKSkudG9CZSh0cnVlKQogICAgICBleHBlY3QoYi5kYXRhKS50b0hhdmVMZW5ndGgoMSkKICAgIH0gZmluYWxseSB7IGNsb3NlKCkgfQogIH0pCgogIGl0KCdmaWx0cmEgcG9yIGtpbmQgdmlhIHF1ZXJ5IHBhcmFtJywgYXN5bmMgKCkgPT4gewogICAgY29uc3Qgc2VydmljZSAgICAgICAgPSBtYWtlU2VydmljZSgpCiAgICBjb25zdCB7IHVybCwgY2xvc2UgfSA9IGF3YWl0IHN0YXJ0QXBwKHNlcnZpY2UpCiAgICB0cnkgewogICAgICBjb25zdCBqd3QgPSBtYWtlSnd0KCkKICAgICAgYXdhaXQgcmVxKHVybCwgJy9hbGVydHMvdHJpZ2dlcicsICdQT1NUJywgeyBhZ2VudElkOiBBR0VOVCwga2luZDogJ1RPT0xfQkxPQ0tFRCcsIHNldmVyaXR5OiAnSElHSCcsIG1lc3NhZ2U6ICdBJyB9LCBqd3QpCiAgICAgIGF3YWl0IHJlcSh1cmwsICcvYWxlcnRzL3RyaWdnZXInLCAnUE9TVCcsIHsgYWdlbnRJZDogQUdFTlQsIGtpbmQ6ICdFUlJPUl9SQVRFJywgICBzZXZlcml0eTogJ0xPVycsICBtZXNzYWdlOiAnQicgfSwgand0KQoKICAgICAgY29uc3QgeyBzdGF0dXMsIGJvZHkgfSA9IGF3YWl0IHJlcSh1cmwsICcvYWxlcnRzP2tpbmQ9VE9PTF9CTE9DS0VEJywgJ0dFVCcsIHVuZGVmaW5lZCwgand0KQogICAgICBleHBlY3Qoc3RhdHVzKS50b0JlKDIwMCkKICAgICAgY29uc3QgYiA9IGJvZHkgYXMgeyBkYXRhOiBBcnJheTx7IGtpbmQ6IHN0cmluZyB9PjsgdG90YWw6IG51bWJlciB9CiAgICAgIGV4cGVjdChiLnRvdGFsKS50b0JlKDEpCiAgICAgIGV4cGVjdChiLmRhdGFbMF0ua2luZCkudG9CZSgnVE9PTF9CTE9DS0VEJykKICAgIH0gZmluYWxseSB7IGNsb3NlKCkgfQogIH0pCgogIGl0KCdyZXRvcm5hIDQwMCBwYXJhIHF1ZXJ5IHBhcmFtIGludsOhbGlkbycsIGFzeW5jICgpID0+IHsKICAgIGNvbnN0IHsgdXJsLCBjbG9zZSB9ID0gYXdhaXQgc3RhcnRBcHAobWFrZVNlcnZpY2UoKSkKICAgIHRyeSB7CiAgICAgIGNvbnN0IHsgc3RhdHVzIH0gPSBhd2FpdCByZXEodXJsLCAnL2FsZXJ0cz9raW5kPUlOVkFMSURPJywgJ0dFVCcsIHVuZGVmaW5lZCwgbWFrZUp3dCgpKQogICAgICBleHBlY3Qoc3RhdHVzKS50b0JlKDQwMCkKICAgIH0gZmluYWxseSB7IGNsb3NlKCkgfQogIH0pCn0pCgpkZXNjcmliZSgnUE9TVCAvYWxlcnRzL3RyaWdnZXInLCAoKSA9PiB7CiAgaXQoJ2NyaWEgYWxlcnRhIGUgcmV0b3JuYSAyMDEnLCBhc3luYyAoKSA9PiB7CiAgICBjb25zdCB7IHVybCwgY2xvc2UgfSA9IGF3YWl0IHN0YXJ0QXBwKG1ha2VTZXJ2aWNlKCkpCiAgICB0cnkgewogICAgICBjb25zdCB7IHN0YXR1cywgYm9keSB9ID0gYXdhaXQgcmVxKHVybCwgJy9hbGVydHMvdHJpZ2dlcicsICdQT1NUJywgewogICAgICAgIGFnZW50SWQ6ICBBR0VOVCwKICAgICAgICBraW5kOiAgICAgJ0NIRUNLUE9JTlRfRVhQSVJFRCcsCiAgICAgICAgc2V2ZXJpdHk6ICdISUdIJywKICAgICAgICBtZXNzYWdlOiAgJ0NoZWNrcG9pbnQgZXhwaXJvdScsCiAgICAgICAgbWV0YWRhdGE6IHsgY2hlY2twb2ludElkOiAnY2stMScgfSwKICAgICAgfSwgbWFrZUp3dCgpKQogICAgICBleHBlY3Qoc3RhdHVzKS50b0JlKDIwMSkKICAgICAgY29uc3QgYiA9IGJvZHkgYXMgeyBpZDogc3RyaW5nOyBzdGF0dXM6IHN0cmluZzsga2luZDogc3RyaW5nIH0KICAgICAgZXhwZWN0KGIuaWQpLnRvQmVEZWZpbmVkKCkKICAgICAgZXhwZWN0KGIuc3RhdHVzKS50b0JlKCdPUEVOJykKICAgICAgZXhwZWN0KGIua2luZCkudG9CZSgnQ0hFQ0tQT0lOVF9FWFBJUkVEJykKICAgIH0gZmluYWxseSB7IGNsb3NlKCkgfQogIH0pCgogIGl0KCdyZXRvcm5hIDQwMCBzZSBraW5kIGludsOhbGlkbycsIGFzeW5jICgpID0+IHsKICAgIGNvbnN0IHsgdXJsLCBjbG9zZSB9ID0gYXdhaXQgc3RhcnRBcHAobWFrZVNlcnZpY2UoKSkKICAgIHRyeSB7CiAgICAgIGNvbnN0IHsgc3RhdHVzIH0gPSBhd2FpdCByZXEodXJsLCAnL2FsZXJ0cy90cmlnZ2VyJywgJ1BPU1QnLCB7CiAgICAgICAgYWdlbnRJZDogQUdFTlQsIGtpbmQ6ICdJTlZBTElETycsIHNldmVyaXR5OiAnSElHSCcsIG1lc3NhZ2U6ICdYJywKICAgICAgfSwgbWFrZUp3dCgpKQogICAgICBleHBlY3Qoc3RhdHVzKS50b0JlKDQwMCkKICAgIH0gZmluYWxseSB7IGNsb3NlKCkgfQogIH0pCgogIGl0KCdyZXRvcm5hIDQwMCBzZSBhZ2VudElkIG7Do28gZm9yIFVVSUQnLCBhc3luYyAoKSA9PiB7CiAgICBjb25zdCB7IHVybCwgY2xvc2UgfSA9IGF3YWl0IHN0YXJ0QXBwKG1ha2VTZXJ2aWNlKCkpCiAgICB0cnkgewogICAgICBjb25zdCB7IHN0YXR1cyB9ID0gYXdhaXQgcmVxKHVybCwgJy9hbGVydHMvdHJpZ2dlcicsICdQT1NUJywgewogICAgICAgIGFnZW50SWQ6ICduYW8tdXVpZCcsIGtpbmQ6ICdUT09MX0JMT0NLRUQnLCBzZXZlcml0eTogJ0hJR0gnLCBtZXNzYWdlOiAnWCcsCiAgICAgIH0sIG1ha2VKd3QoKSkKICAgICAgZXhwZWN0KHN0YXR1cykudG9CZSg0MDApCiAgICB9IGZpbmFsbHkgeyBjbG9zZSgpIH0KICB9KQp9KQoKZGVzY3JpYmUoJ1BBVENIIC9hbGVydHMvOmlkL3N0YXR1cycsICgpID0+IHsKICBpdCgndHJhbnNpY2lvbmEgc3RhdHVzIHBhcmEgQUNLTk9XTEVER0VEJywgYXN5bmMgKCkgPT4gewogICAgY29uc3Qgc2VydmljZSAgICAgICAgPSBtYWtlU2VydmljZSgpCiAgICBjb25zdCB7IHVybCwgY2xvc2UgfSA9IGF3YWl0IHN0YXJ0QXBwKHNlcnZpY2UpCiAgICB0cnkgewogICAgICBjb25zdCBqd3QgICAgPSBtYWtlSnd0KCkKICAgICAgY29uc3QgY3JlYXRlID0gYXdhaXQgcmVxKHVybCwgJy9hbGVydHMvdHJpZ2dlcicsICdQT1NUJywgewogICAgICAgIGFnZW50SWQ6IEFHRU5ULCBraW5kOiAnRVJST1JfUkFURScsIHNldmVyaXR5OiAnTUVESVVNJywgbWVzc2FnZTogJ1gnLAogICAgICB9LCBqd3QpCiAgICAgIGNvbnN0IGlkID0gKGNyZWF0ZS5ib2R5IGFzIHsgaWQ6IHN0cmluZyB9KS5pZAoKICAgICAgY29uc3QgeyBzdGF0dXMsIGJvZHkgfSA9IGF3YWl0IHJlcSh1cmwsIGAvYWxlcnRzLyR7aWR9L3N0YXR1c2AsICdQQVRDSCcsIHsgc3RhdHVzOiAnQUNLTk9XTEVER0VEJyB9LCBqd3QpCiAgICAgIGV4cGVjdChzdGF0dXMpLnRvQmUoMjAwKQogICAgICBleHBlY3QoKGJvZHkgYXMgeyBzdGF0dXM6IHN0cmluZyB9KS5zdGF0dXMpLnRvQmUoJ0FDS05PV0xFREdFRCcpCiAgICB9IGZpbmFsbHkgeyBjbG9zZSgpIH0KICB9KQoKICBpdCgncmV0b3JuYSA0MDAgcGFyYSBzdGF0dXMgaW52w6FsaWRvJywgYXN5bmMgKCkgPT4gewogICAgY29uc3QgeyB1cmwsIGNsb3NlIH0gPSBhd2FpdCBzdGFydEFwcChtYWtlU2VydmljZSgpKQogICAgdHJ5IHsKICAgICAgY29uc3QgeyBzdGF0dXMgfSA9IGF3YWl0IHJlcSh1cmwsICcvYWxlcnRzL2FsZ3VtLWlkL3N0YXR1cycsICdQQVRDSCcsIHsgc3RhdHVzOiAnSU5WQUxJRE8nIH0sIG1ha2VKd3QoKSkKICAgICAgZXhwZWN0KHN0YXR1cykudG9CZSg0MDApCiAgICB9IGZpbmFsbHkgeyBjbG9zZSgpIH0KICB9KQp9KQoKZGVzY3JpYmUoJ0dFVCAvYWxlcnRzL3RocmVzaG9sZHMnLCAoKSA9PiB7CiAgaXQoJ3JldG9ybmEgNCB0aHJlc2hvbGRzIGNvbSBkZWZhdWx0cycsIGFzeW5jICgpID0+IHsKICAgIGNvbnN0IHsgdXJsLCBjbG9zZSB9ID0gYXdhaXQgc3RhcnRBcHAobWFrZVNlcnZpY2UoKSkKICAgIHRyeSB7CiAgICAgIGNvbnN0IHsgc3RhdHVzLCBib2R5IH0gPSBhd2FpdCByZXEodXJsLCAnL2FsZXJ0cy90aHJlc2hvbGRzJywgJ0dFVCcsIHVuZGVmaW5lZCwgbWFrZUp3dCgpKQogICAgICBleHBlY3Qoc3RhdHVzKS50b0JlKDIwMCkKICAgICAgY29uc3QgYiA9IGJvZHkgYXMgeyBkYXRhOiBBcnJheTx7IGtpbmQ6IHN0cmluZyB9PiB9CiAgICAgIGV4cGVjdChiLmRhdGEpLnRvSGF2ZUxlbmd0aCg0KQogICAgICBjb25zdCBraW5kcyA9IGIuZGF0YS5tYXAoKHQpID0+IHQua2luZCkKICAgICAgZXhwZWN0KGtpbmRzKS50b0NvbnRhaW4oJ1RPT0xfQkxPQ0tFRCcpCiAgICAgIGV4cGVjdChraW5kcykudG9Db250YWluKCdWT0xVTUVfQU5PTUFMWScpCiAgICB9IGZpbmFsbHkgeyBjbG9zZSgpIH0KICB9KQp9KQoKZGVzY3JpYmUoJ1BVVCAvYWxlcnRzL3RocmVzaG9sZHMvOmtpbmQnLCAoKSA9PiB7CiAgaXQoJ2F0dWFsaXphIGVycm9yUmF0ZVBlcmNlbnQnLCBhc3luYyAoKSA9PiB7CiAgICBjb25zdCB7IHVybCwgY2xvc2UgfSA9IGF3YWl0IHN0YXJ0QXBwKG1ha2VTZXJ2aWNlKCkpCiAgICB0cnkgewogICAgICBjb25zdCBqd3QgPSBtYWtlSnd0KCkKICAgICAgY29uc3QgeyBzdGF0dXMsIGJvZHkgfSA9IGF3YWl0IHJlcSgKICAgICAgICB1cmwsICcvYWxlcnRzL3RocmVzaG9sZHMvRVJST1JfUkFURScsICdQVVQnLAogICAgICAgIHsgZW5hYmxlZDogdHJ1ZSwgZXJyb3JSYXRlUGVyY2VudDogMjAgfSwKICAgICAgICBqd3QsCiAgICAgICkKICAgICAgZXhwZWN0KHN0YXR1cykudG9CZSgyMDApCiAgICAgIGV4cGVjdCgoYm9keSBhcyB7IGVycm9yUmF0ZVBlcmNlbnQ6IG51bWJlciB9KS5lcnJvclJhdGVQZXJjZW50KS50b0JlKDIwKQogICAgfSBmaW5hbGx5IHsgY2xvc2UoKSB9CiAgfSkKCiAgaXQoJ3JldG9ybmEgNDAwIHBhcmEga2luZCBpbnbDoWxpZG8nLCBhc3luYyAoKSA9PiB7CiAgICBjb25zdCB7IHVybCwgY2xvc2UgfSA9IGF3YWl0IHN0YXJ0QXBwKG1ha2VTZXJ2aWNlKCkpCiAgICB0cnkgewogICAgICBjb25zdCB7IHN0YXR1cyB9ID0gYXdhaXQgcmVxKHVybCwgJy9hbGVydHMvdGhyZXNob2xkcy9JTlZBTElETycsICdQVVQnLCB7IGVuYWJsZWQ6IHRydWUgfSwgbWFrZUp3dCgpKQogICAgICBleHBlY3Qoc3RhdHVzKS50b0JlKDQwMCkKICAgIH0gZmluYWxseSB7IGNsb3NlKCkgfQogIH0pCn0pCg==
+/**
+ * alert.router.spec.ts — Testes do AlertRouter via HTTP nativo.
+ *
+ * Padrão do projeto: servidor HTTP nativo + fetch (sem supertest).
+ * AlertService usando InMemoryAlertRepository — sem banco.
+ */
+
+import http                   from 'node:http'
+import express                from 'express'
+import { createAlertRouter }  from './alert.router'
+import { tenantMiddleware }   from '../../../shared/middleware/tenant.middleware'
+import { AlertService }       from '../application/alert.service'
+import { InMemoryAlertRepository } from '../../../../test/fixtures/in-memory-alert.repository'
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+async function startApp(service: AlertService): Promise<{ url: string; close(): void }> {
+  const app = express()
+  app.use(express.json())
+  app.use(tenantMiddleware)
+  app.use('/alerts', createAlertRouter(service))
+
+  return new Promise((resolve, reject) => {
+    const server = http.createServer(app)
+    server.listen(0, () => {
+      const port = (server.address() as { port: number }).port
+      resolve({ url: `http://127.0.0.1:${port}`, close: () => server.close() })
+    })
+    server.on('error', reject)
+  })
+}
+
+async function req(
+  url:     string,
+  path:    string,
+  method:  'GET' | 'POST' | 'PUT' | 'PATCH' = 'GET',
+  body?:   unknown,
+  token?:  string,
+): Promise<{ status: number; body: unknown }> {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+  if (token) headers['Authorization'] = `Bearer ${token}`
+  const res = await fetch(`${url}${path}`, {
+    method,
+    headers,
+    body: body ? JSON.stringify(body) : undefined,
+  })
+  const json = await res.json().catch(() => ({}))
+  return { status: res.status, body: json }
+}
+
+// ─── Fixtures ─────────────────────────────────────────────────────────────────
+
+const TENANT = 'tenant-test'
+const AGENT  = '00000000-0000-0000-0000-000000000001'
+
+function makeJwt(): string {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const { sign } = require('jsonwebtoken') as typeof import('jsonwebtoken')
+  return sign(
+    { tenantId: TENANT, userId: 'user-test' },
+    process.env['JWT_SECRET'] ?? 'test-secret',
+  )
+}
+
+function makeService() {
+  return new AlertService(new InMemoryAlertRepository())
+}
+
+// ─── Setup global ────────────────────────────────────────────────────────────
+
+beforeEach(() => {
+  process.env['JWT_SECRET'] = 'test-secret'
+})
+
+// ─── Testes ───────────────────────────────────────────────────────────────────
+
+describe('GET /alerts', () => {
+  it('retorna 401 sem token', async () => {
+    const { url, close } = await startApp(makeService())
+    try {
+      const { status } = await req(url, '/alerts')
+      expect(status).toBe(401)
+    } finally { close() }
+  })
+
+  it('retorna página vazia com token válido', async () => {
+    const { url, close } = await startApp(makeService())
+    try {
+      const { status, body } = await req(url, '/alerts', 'GET', undefined, makeJwt())
+      expect(status).toBe(200)
+      const b = body as { data: unknown[]; total: number }
+      expect(b.data).toEqual([])
+      expect(b.total).toBe(0)
+    } finally { close() }
+  })
+
+  it('retorna alertas criados via POST /trigger', async () => {
+    const service        = makeService()
+    const { url, close } = await startApp(service)
+    try {
+      const jwt = makeJwt()
+      await req(url, '/alerts/trigger', 'POST', {
+        agentId:  AGENT,
+        kind:     'TOOL_BLOCKED',
+        severity: 'HIGH',
+        message:  'Tool bloqueada',
+      }, jwt)
+
+      const { status, body } = await req(url, '/alerts', 'GET', undefined, jwt)
+      expect(status).toBe(200)
+      const b = body as { data: unknown[]; total: number }
+      expect(b.total).toBe(1)
+      expect(Array.isArray(b.data)).toBe(true)
+      expect(b.data).toHaveLength(1)
+    } finally { close() }
+  })
+
+  it('filtra por kind via query param', async () => {
+    const service        = makeService()
+    const { url, close } = await startApp(service)
+    try {
+      const jwt = makeJwt()
+      await req(url, '/alerts/trigger', 'POST', { agentId: AGENT, kind: 'TOOL_BLOCKED', severity: 'HIGH', message: 'A' }, jwt)
+      await req(url, '/alerts/trigger', 'POST', { agentId: AGENT, kind: 'ERROR_RATE',   severity: 'LOW',  message: 'B' }, jwt)
+
+      const { status, body } = await req(url, '/alerts?kind=TOOL_BLOCKED', 'GET', undefined, jwt)
+      expect(status).toBe(200)
+      const b = body as { data: Array<{ kind: string }>; total: number }
+      expect(b.total).toBe(1)
+      expect(b.data[0].kind).toBe('TOOL_BLOCKED')
+    } finally { close() }
+  })
+
+  it('retorna 400 para query param inválido', async () => {
+    const { url, close } = await startApp(makeService())
+    try {
+      const { status } = await req(url, '/alerts?kind=INVALIDO', 'GET', undefined, makeJwt())
+      expect(status).toBe(400)
+    } finally { close() }
+  })
+})
+
+describe('POST /alerts/trigger', () => {
+  it('cria alerta e retorna 201', async () => {
+    const { url, close } = await startApp(makeService())
+    try {
+      const { status, body } = await req(url, '/alerts/trigger', 'POST', {
+        agentId:  AGENT,
+        kind:     'CHECKPOINT_EXPIRED',
+        severity: 'HIGH',
+        message:  'Checkpoint expirou',
+        metadata: { checkpointId: 'ck-1' },
+      }, makeJwt())
+      expect(status).toBe(201)
+      const b = body as { id: string; status: string; kind: string }
+      expect(b.id).toBeDefined()
+      expect(b.status).toBe('OPEN')
+      expect(b.kind).toBe('CHECKPOINT_EXPIRED')
+    } finally { close() }
+  })
+
+  it('retorna 400 se kind inválido', async () => {
+    const { url, close } = await startApp(makeService())
+    try {
+      const { status } = await req(url, '/alerts/trigger', 'POST', {
+        agentId: AGENT, kind: 'INVALIDO', severity: 'HIGH', message: 'X',
+      }, makeJwt())
+      expect(status).toBe(400)
+    } finally { close() }
+  })
+
+  it('retorna 400 se agentId não for UUID', async () => {
+    const { url, close } = await startApp(makeService())
+    try {
+      const { status } = await req(url, '/alerts/trigger', 'POST', {
+        agentId: 'nao-uuid', kind: 'TOOL_BLOCKED', severity: 'HIGH', message: 'X',
+      }, makeJwt())
+      expect(status).toBe(400)
+    } finally { close() }
+  })
+})
+
+describe('PATCH /alerts/:id/status', () => {
+  it('transiciona status para ACKNOWLEDGED', async () => {
+    const service        = makeService()
+    const { url, close } = await startApp(service)
+    try {
+      const jwt    = makeJwt()
+      const create = await req(url, '/alerts/trigger', 'POST', {
+        agentId: AGENT, kind: 'ERROR_RATE', severity: 'MEDIUM', message: 'X',
+      }, jwt)
+      const id = (create.body as { id: string }).id
+
+      const { status, body } = await req(url, `/alerts/${id}/status`, 'PATCH', { status: 'ACKNOWLEDGED' }, jwt)
+      expect(status).toBe(200)
+      expect((body as { status: string }).status).toBe('ACKNOWLEDGED')
+    } finally { close() }
+  })
+
+  it('retorna 400 para status inválido', async () => {
+    const { url, close } = await startApp(makeService())
+    try {
+      const { status } = await req(url, '/alerts/algum-id/status', 'PATCH', { status: 'INVALIDO' }, makeJwt())
+      expect(status).toBe(400)
+    } finally { close() }
+  })
+})
+
+describe('GET /alerts/thresholds', () => {
+  it('retorna 4 thresholds com defaults', async () => {
+    const { url, close } = await startApp(makeService())
+    try {
+      const { status, body } = await req(url, '/alerts/thresholds', 'GET', undefined, makeJwt())
+      expect(status).toBe(200)
+      const b = body as { data: Array<{ kind: string }> }
+      expect(b.data).toHaveLength(4)
+      const kinds = b.data.map((t) => t.kind)
+      expect(kinds).toContain('TOOL_BLOCKED')
+      expect(kinds).toContain('VOLUME_ANOMALY')
+    } finally { close() }
+  })
+})
+
+describe('PUT /alerts/thresholds/:kind', () => {
+  it('atualiza errorRatePercent', async () => {
+    const { url, close } = await startApp(makeService())
+    try {
+      const jwt = makeJwt()
+      const { status, body } = await req(
+        url, '/alerts/thresholds/ERROR_RATE', 'PUT',
+        { enabled: true, errorRatePercent: 20 },
+        jwt,
+      )
+      expect(status).toBe(200)
+      expect((body as { errorRatePercent: number }).errorRatePercent).toBe(20)
+    } finally { close() }
+  })
+
+  it('retorna 400 para kind inválido', async () => {
+    const { url, close } = await startApp(makeService())
+    try {
+      const { status } = await req(url, '/alerts/thresholds/INVALIDO', 'PUT', { enabled: true }, makeJwt())
+      expect(status).toBe(400)
+    } finally { close() }
+  })
+})
