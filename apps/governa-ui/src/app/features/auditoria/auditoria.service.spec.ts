@@ -416,4 +416,45 @@ describe('AuditoriaStore', () => {
       expect(store.eventos()).toEqual(eventosSalvos);
     });
   });
+
+  // AS-26: exportarPDF — window.open retorna janela real (ramo if-win true)
+
+  describe('AS-26: exportarPDF — win não-null (if-win true branch)', () => {
+    it('escreve HTML e fecha o documento quando window.open retorna objeto', () => {
+      const { store, http } = setup();
+
+      const mockDoc = { write: jest.fn(), close: jest.fn() };
+      const mockWin = { document: mockDoc } as unknown as Window;
+      const openSpy = jest.spyOn(window, 'open').mockReturnValue(mockWin);
+
+      store.exportarPDF();
+      http.expectOne((r) => r.url === `${BASE}/export`).flush({ data: [makeEvent()], total: 1 });
+
+      expect(mockDoc.write).toHaveBeenCalled();
+      expect(mockDoc.close).toHaveBeenCalled();
+      openSpy.mockRestore();
+    });
+  });
+
+  // AS-27: exportarPDF — filtros aplicados geram params corretos na URL
+
+  describe('AS-27: exportarPDF com filtros agentId/from/to/outcome', () => {
+    it('envia agentId, from, to, outcome quando filtros definidos', () => {
+      const { store, http } = setup();
+
+      // carrega com filtros para que store.filtros() tenha valores não-vazios
+      store.loadEventos({ agentId: 'agt-1', from: '2026-01-01', to: '2026-06-30', outcome: 'BLOQUEADO' });
+      http.expectOne((r) => r.url === BASE).flush(makePage());
+
+      const openSpy = jest.spyOn(window, 'open').mockReturnValue(null);
+      store.exportarPDF();
+      const req = http.expectOne((r) => r.url === `${BASE}/export`);
+      expect(req.request.params.get('agentId')).toBe('agt-1');
+      expect(req.request.params.get('from')).toContain('2026-01-01');
+      expect(req.request.params.get('to')).toContain('2026-06-30');
+      expect(req.request.params.get('outcome')).toBe('BLOQUEADO');
+      req.flush({ data: [makeEvent()], total: 1 });
+      openSpy.mockRestore();
+    });
+  });
 });

@@ -18,6 +18,7 @@ import type { ConsultarClienteUseCase }     from './modules/clientes/application
 import type { PolicyService }               from './modules/policies/application/policy.service'
 import type { AuditQueryService }           from './modules/audit/application/audit.query.service'
 import type { AlertService }               from './modules/alerts/application/alert.service'
+import type { PolicyViolationAlertService } from './modules/alerts/application/policy-violation-alert.service'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -81,16 +82,21 @@ const mockAlertService = {
   subscribe:       jest.fn().mockReturnValue(() => {}),
 } as unknown as AlertService
 
+const mockPolicyViolationAlertService = {
+  evaluate: jest.fn().mockResolvedValue([]),
+} as unknown as PolicyViolationAlertService
+
 // ─── Testes ───────────────────────────────────────────────────────────────────
 
 describe('App — wiring', () => {
   const app = createApp({
-    agentService:            mockAgentService,
-    consultarPedidoUseCase:  mockPedidoUseCase,
-    consultarClienteUseCase: mockClienteUseCase,
-    policyService:           mockPolicyService,
-    auditQueryService:       mockAuditQueryService,
-    alertService:            mockAlertService,
+    agentService:                mockAgentService,
+    consultarPedidoUseCase:      mockPedidoUseCase,
+    consultarClienteUseCase:     mockClienteUseCase,
+    policyService:               mockPolicyService,
+    auditQueryService:           mockAuditQueryService,
+    alertService:                mockAlertService,
+    policyViolationAlertService: mockPolicyViolationAlertService,
   })
 
   beforeEach(() => {

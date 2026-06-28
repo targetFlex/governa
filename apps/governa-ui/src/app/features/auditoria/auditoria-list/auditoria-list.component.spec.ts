@@ -187,7 +187,7 @@ describe('AuditoriaListComponent', () => {
       form.dispatchEvent(new Event('ngSubmit'));
       fixture.detectChanges();
       // ngOnInit (1) + submit (1) = 2
-      expect(mock.useValue.loadEventos).toHaveBeenCalledTimes(1); // apenas ngOnInit até aqui
+      expect(mock.useValue.loadEventos).toHaveBeenCalledTimes(2);
     });
   });
 
@@ -243,6 +243,65 @@ describe('AuditoriaListComponent', () => {
       const { fixture } = await setup();
       const results = await axe(fixture.nativeElement);
       expect(results).toHaveNoViolations();
+    });
+  });
+
+  // ALC-14: retry chama clearError + loadEventos
+
+  describe('ALC-14: retry chama clearError e loadEventos', () => {
+    it('comp.retry() chama store.clearError() e store.loadEventos()', async () => {
+      const mock = makeStoreMock();
+      const { comp } = await setup(mock);
+      mock.useValue.loadEventos.mockClear();
+      comp.retry();
+      expect(mock.useValue.clearError).toHaveBeenCalledTimes(1);
+      expect(mock.useValue.loadEventos).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  // ALC-15: irParaPagina chama loadEventos com page
+
+  describe('ALC-15: irParaPagina chama loadEventos com página', () => {
+    it('comp.irParaPagina(3) chama store.loadEventos com page=3', async () => {
+      const mock = makeStoreMock();
+      const { comp } = await setup(mock);
+      mock.useValue.loadEventos.mockClear();
+      comp.irParaPagina(3);
+      expect(mock.useValue.loadEventos).toHaveBeenCalledWith({}, 3);
+    });
+  });
+
+  // ALC-16: outcomeLabel fallback ?? para outcome desconhecido
+
+  describe('ALC-16: outcomeLabel — outcome não mapeado retorna próprio valor', () => {
+    it('retorna o outcome quando não está no mapa de labels', async () => {
+      const { comp } = await setup();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      expect(comp.outcomeLabel('DESCONHECIDO' as any)).toBe('DESCONHECIDO');
+    });
+  });
+
+  // ALC-17: outcomeCss fallback ?? vazio para outcome desconhecido
+
+  describe('ALC-17: outcomeCss — outcome não mapeado retorna string vazia', () => {
+    it('retorna "" quando outcome não está no mapa de CSS', async () => {
+      const { comp } = await setup();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      expect(comp.outcomeCss('DESCONHECIDO' as any)).toBe('');
+    });
+  });
+
+  // ALC-18: truncar — texto mais longo que max é cortado com ellipsis
+
+  describe('ALC-18: truncar — ramos longo e curto', () => {
+    it('trunca e adiciona … quando texto excede max', async () => {
+      const { comp } = await setup();
+      expect(comp.truncar('abcdefgh', 4)).toBe('abcd…');
+    });
+
+    it('retorna texto inteiro quando não excede max', async () => {
+      const { comp } = await setup();
+      expect(comp.truncar('abc', 10)).toBe('abc');
     });
   });
 });

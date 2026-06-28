@@ -237,6 +237,112 @@ describe('AlertasListComponent', () => {
     });
   });
 
+  // ── AL-8: ações de alerta ────────────────────────────────────────────────
+
+  describe('AL-8: ações de alerta', () => {
+    it('retry() chama clearError e loadAlertas', async () => {
+      const mock = makeStoreMock();
+      const { comp } = await setup(mock);
+      mock.useValue.loadAlertas.mockClear();
+      comp.retry();
+      expect(mock.useValue.clearError).toHaveBeenCalledTimes(1);
+      expect(mock.useValue.loadAlertas).toHaveBeenCalledTimes(1);
+    });
+
+    it('irParaPagina(2) chama loadAlertas com page:2', async () => {
+      const mock = makeStoreMock();
+      const { comp } = await setup(mock);
+      mock.useValue.loadAlertas.mockClear();
+      comp.irParaPagina(2);
+      expect(mock.useValue.loadAlertas).toHaveBeenCalledWith({ page: 2 });
+    });
+
+    it('ack(id) chama atualizarStatus com ACKNOWLEDGED', async () => {
+      const mock = makeStoreMock();
+      const { comp } = await setup(mock);
+      comp.ack('alert-1');
+      expect(mock.useValue.atualizarStatus).toHaveBeenCalledWith('alert-1', 'ACKNOWLEDGED');
+    });
+
+    it('resolve(id) chama atualizarStatus com RESOLVED', async () => {
+      const mock = makeStoreMock();
+      const { comp } = await setup(mock);
+      comp.resolve('alert-1');
+      expect(mock.useValue.atualizarStatus).toHaveBeenCalledWith('alert-1', 'RESOLVED');
+    });
+
+    it('limparFiltros() chama store.limparFiltros()', async () => {
+      const mock = makeStoreMock();
+      const { comp } = await setup(mock);
+      comp.limparFiltros();
+      expect(mock.useValue.limparFiltros).toHaveBeenCalledTimes(1);
+    });
+
+    it('aplicarFiltros() chama loadAlertas com filtros e page:1', async () => {
+      const mock = makeStoreMock();
+      const { comp } = await setup(mock);
+      mock.useValue.loadAlertas.mockClear();
+      comp.aplicarFiltros();
+      expect(mock.useValue.loadAlertas).toHaveBeenCalledWith(expect.objectContaining({ page: 1 }));
+    });
+
+    it('salvarThreshold delega ao store', async () => {
+      const mock    = makeStoreMock({ thresholds: () => [makeThreshold()] });
+      const { comp } = await setup(mock);
+      const threshold = makeThreshold();
+      const event = { target: { checked: false } } as unknown as Event;
+      comp.salvarEnabled(threshold, event);
+      expect(mock.useValue.salvarThreshold).toHaveBeenCalledWith(threshold.kind, { enabled: false });
+    });
+  });
+
+  // ── AL-9: métodos de threshold numérico + helpers com fallback ───────────
+
+  describe('AL-9: salvar threshold numérico e helpers com ?? fallback', () => {
+    it('salvarErrorRate chama salvarThreshold com errorRatePercent', async () => {
+      const mock = makeStoreMock({ thresholds: () => [makeThreshold()] });
+      const { comp } = await setup(mock);
+      const threshold = makeThreshold();
+      const event = { target: { value: '15' } } as unknown as Event;
+      comp.salvarErrorRate(threshold, event);
+      expect(mock.useValue.salvarThreshold).toHaveBeenCalledWith(threshold.kind, { errorRatePercent: 15 });
+    });
+
+    it('salvarVolumePerHour chama salvarThreshold com volumePerHour', async () => {
+      const mock = makeStoreMock({ thresholds: () => [makeThreshold()] });
+      const { comp } = await setup(mock);
+      const threshold = makeThreshold();
+      const event = { target: { value: '100' } } as unknown as Event;
+      comp.salvarVolumePerHour(threshold, event);
+      expect(mock.useValue.salvarThreshold).toHaveBeenCalledWith(threshold.kind, { volumePerHour: 100 });
+    });
+
+    it('salvarCheckpointExpiry chama salvarThreshold com checkpointExpiryMin', async () => {
+      const mock = makeStoreMock({ thresholds: () => [makeThreshold()] });
+      const { comp } = await setup(mock);
+      const threshold = makeThreshold();
+      const event = { target: { value: '30' } } as unknown as Event;
+      comp.salvarCheckpointExpiry(threshold, event);
+      expect(mock.useValue.salvarThreshold).toHaveBeenCalledWith(threshold.kind, { checkpointExpiryMin: 30 });
+    });
+
+    it('kindLabel retorna kind original quando não mapeado', async () => {
+      const { comp } = await setup();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      expect(comp.kindLabel('UNKNOWN_KIND' as any)).toBe('UNKNOWN_KIND');
+    });
+
+    it('severityCss retorna string vazia quando severity não mapeado', async () => {
+      const { comp } = await setup();
+      expect(comp.severityCss('UNKNOWN')).toBe('');
+    });
+
+    it('truncar retorna texto cortado com ellipsis quando excede max', async () => {
+      const { comp } = await setup();
+      expect(comp.truncar('abcdefghij', 5)).toBe('abcde…');
+    });
+  });
+
   // ── AL-7: WCAG 2.1 AA ───────────────────────────────────────────────────
 
   describe('AL-7: acessibilidade WCAG 2.1 AA', () => {

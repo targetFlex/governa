@@ -1,8 +1,13 @@
 # otel-collector-config.yaml — Configuração do OpenTelemetry Collector para dev.
 #
-# Recebe traces e metrics via OTLP HTTP/gRPC de governa-core e governa-gateway.
-# Em desenvolvimento: exporta para console (logging) e expõe Prometheus em :8889.
-# Para produção com SigNoz: trocar exporters por otlp apontando ao SigNoz OTel endpoint.
+# Recebe traces, metrics e LOGS via OTLP HTTP/gRPC de governa-core e governa-gateway.
+# Em desenvolvimento: exporta para console (debug) e arquivo de logs (/tmp/otel-logs.json).
+# Prometheus scrape em :8889/metrics.
+#
+# Para Datadog (produção):
+#   Configurar DD_API_KEY e descomentar exporters datadog abaixo.
+# Para SigNoz (produção):
+#   Descomentar otlp/signoz e apontar ao endpoint SigNoz.
 
 receivers:
   otlp:
@@ -24,9 +29,18 @@ processors:
         action: delete
       - key: http.request.header.cookie
         action: delete
+      - key: db.statement
+        action: delete
+
+  # Enriquece logs com service.name e deployment.environment
+  resource/add_env:
+    attributes:
+      - key: deployment.environment
+        value: ${DEPLOYMENT_ENV:-development}
+        action: upsert
 
 exporters:
-  # Console — útil para debug local
+  # Console — útil para debug local (traces, metrics, logs)
   debug:
     verbosity: normal
 
@@ -35,6 +49,21 @@ exporters:
     endpoint: "0.0.0.0:8889"
     namespace: governa
 
+  # Arquivo de logs JSON — para inspeção local e auditoria
+  # Escrito em /tmp/otel-logs.json dentro do container
+  file/logs:
+    path: /tmp/otel-logs.json
+    rotation:
+      max_megabytes: 10
+      max_days: 3
+      max_backups: 3
+
+  # Para Datadog (descomentar e configurar DD_API_KEY):
+  # datadog:
+  #   api:
+  #     key: ${DD_API_KEY}
+  #     site: ${DD_SITE:-datadoghq.com}
+
   # Para SigNoz (descomentar e configurar em produção):
   # otlp/signoz:
   #   endpoint: ${SIGNOZ_OTLP_ENDPOINT:-http://signoz:4317}
@@ -42,6 +71,10 @@ exporters:
   #     insecure: true
 
 service:
+  telemetry:
+    logs:
+      level: info
+
   pipelines:
     traces:
       receivers:  [otlp]
@@ -52,3 +85,10 @@ service:
       receivers:  [otlp]
       processors: [batch]
       exporters:  [debug, prometheus]
+
+    # Pipeline de logs — NOVO (sessão 2.41)
+    # Recebe logs OTLP de governa-core (Winston bridge) e governa-gateway (logger nativo)
+    logs:
+      receivers:  [otlp]
+      processors: [attributes/remove_pii, resource/add_env, batch]
+      exporters:  [debug, file/logs]

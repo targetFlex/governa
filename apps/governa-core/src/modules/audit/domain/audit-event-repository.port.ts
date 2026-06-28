@@ -1,5 +1,5 @@
 import type { AuditEventEntity } from './audit-event.entity'
-import type { Outcome }           from './outcome'
+import type { Outcome }          from './outcome'
 
 // ─── Filtros de consulta ───────────────────────────────────────────────────────
 
@@ -87,4 +87,21 @@ export interface AuditEventRepository {
     tenantId: string,
     filter:   Omit<AuditEventFilter, 'page' | 'limit'>,
   ): Promise<AuditEventEntity[]>
+
+  /**
+   * Conta todos os eventos do agente a partir de `from` (inclusive).
+   * Usado por VolumeAnomalyDetector e ErrorRateDetector.
+   */
+  countSince(tenantId: string, agentId: string, from: Date): Promise<number>
+
+  /**
+   * Conta eventos por outcome do agente a partir de `from` (inclusive).
+   * Usado por ErrorRateDetector para calcular taxa de erro.
+   */
+  countByOutcomeSince(
+    tenantId: string,
+    agentId:  string,
+    outcome:  Outcome,
+    from:     Date,
+  ): Promise<number>
 }

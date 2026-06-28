@@ -133,6 +133,32 @@ export class InMemoryAuditEventRepository implements AuditEventRepository {
   }
 
   // ---------------------------------------------------------------------------
+  // countSince — conta eventos do agente a partir de `from`
+  // ---------------------------------------------------------------------------
+
+  async countSince(tenantId: string, agentId: string, from: Date): Promise<number> {
+    return this.store.filter(
+      e => e.tenantId === tenantId && e.agentId === agentId && e.createdAt >= from,
+    ).length
+  }
+
+  // ---------------------------------------------------------------------------
+  // countByOutcomeSince — conta eventos por outcome a partir de `from`
+  // ---------------------------------------------------------------------------
+
+  async countByOutcomeSince(
+    tenantId: string,
+    agentId:  string,
+    outcome:  Outcome,
+    from:     Date,
+  ): Promise<number> {
+    return this.store.filter(
+      e => e.tenantId === tenantId && e.agentId === agentId
+        && e.outcome === outcome && e.createdAt >= from,
+    ).length
+  }
+
+  // ---------------------------------------------------------------------------
   // helpers internos
   // ---------------------------------------------------------------------------
 

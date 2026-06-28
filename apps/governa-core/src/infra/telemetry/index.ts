@@ -12,4 +12,4 @@ export {
   recordAgentDecision,
 } from './metrics'
 
-export { shutdownTelemetry } from './tracer'
+export { shutdownTelemetry, logger } from './tracer'

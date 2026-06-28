@@ -76,7 +76,7 @@ export class PolicyEngine {
       policyId:  scope.policyId,
       reason,
       timestamp: new Date(),
-    }).catch((err) => {
+    }).catch((err: unknown) => {
       console.error('[PolicyEngine] policyViolationAlertSvc.evaluate falhou', err)
     })
 
