@@ -27,6 +27,7 @@ import { createToolCheckRouter }                        from './modules/policies
 import { createNotificationConfigRouter }               from './modules/alerts/presentation/notification-config.router'
 import { createAnchorAgentRouter }                      from './modules/anchor-agent/presentation/anchor-agent.router'
 import { createFluigWebhookRouter }                     from './modules/anchor-agent/presentation/fluig-webhook.router'
+import { createPendingActionRouter }                    from './modules/pending-actions/presentation/pending-action.router'
 
 import type { AgentService }                            from './modules/agents/application/agent.service'
 import type { ConsultarPedidoUseCase }                  from './modules/pedidos/application/consultar-pedido.use-case'
@@ -39,6 +40,7 @@ import type { PolicyViolationAlertService }             from './modules/alerts/a
 import type { NotificationService }                     from './modules/alerts/application/notification.service'
 import type { AnchorAgentService }                      from './modules/anchor-agent/application/anchor-agent.service'
 import type { FluigWebhookService }                     from './modules/anchor-agent/application/fluig-webhook.service'
+import type { PendingActionService }                    from './modules/pending-actions/application/pending-action.service'
 
 // ─── Contrato de dependências injetadas ───────────────────────────────────────
 
@@ -58,6 +60,8 @@ export interface AppDependencies {
   /** E3.3 — Webhook Fluig (opt-in via FLUIG_API_KEY + ANTHROPIC_API_KEY + PII_HMAC_KEY) */
   fluigWebhookService?:         FluigWebhookService
   fluigApiKey?:                 string
+  /** E3.4 — Checkpoint humano (PendingAction) */
+  pendingActionService?:        PendingActionService
 }
 
 // ─── Factory ──────────────────────────────────────────────────────────────────
@@ -97,6 +101,10 @@ export function createApp(deps: AppDependencies): Application {
   // E3.1 — agente âncora (montado apenas se ANTHROPIC_API_KEY estiver configurada)
   if (deps.anchorAgentService) {
     app.use('/anchor-agent', createAnchorAgentRouter(deps.anchorAgentService))
+  }
+  // E3.4 — checkpoint humano (pending actions)
+  if (deps.pendingActionService) {
+    app.use('/pending-actions', createPendingActionRouter(deps.pendingActionService))
   }
   // E5.4 — expõe assertToolAllowed() via HTTP (montado apenas se policyEngine disponível)
   if (deps.policyEngine) {

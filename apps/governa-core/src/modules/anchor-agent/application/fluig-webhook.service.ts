@@ -1,11 +1,13 @@
-import type { AnchorAgentService }  from './anchor-agent.service'
-import type { SubjectTokenHasher }  from '../../../shared/crypto/subject-token'
+import type { AnchorAgentService }   from './anchor-agent.service'
+import type { SubjectTokenHasher }   from '../../../shared/crypto/subject-token'
 import type { FluigTicketPayload, FluigTicketResponse } from '../domain/fluig-webhook.types'
+import type { PendingActionService } from '../../pending-actions/application/pending-action.service'
 
 export class FluigWebhookService {
   constructor(
-    private readonly anchorAgent:   AnchorAgentService,
-    private readonly subjectHasher: SubjectTokenHasher,
+    private readonly anchorAgent:       AnchorAgentService,
+    private readonly subjectHasher:     SubjectTokenHasher,
+    private readonly pendingActionSvc?: PendingActionService,
   ) {}
 
   async processTicket(payload: FluigTicketPayload): Promise<FluigTicketResponse> {
@@ -24,6 +26,26 @@ export class FluigWebhookService {
       reply:       output.reply,
       escalation:  output.escalation,
       processedAt: new Date().toISOString(),
+    }
+
+    // E3.4: criar PendingAction se houve escalonamento
+    if (output.escalation && this.pendingActionSvc) {
+      await this.pendingActionSvc.create({
+        tenantId: payload.tenantId,
+        agentId:  payload.agentId,
+        toolName: output.escalation.reason,
+        payload:  {
+          ticketId:          payload.ticketId,
+          sessionId:         output.sessionId,
+          userMessage:       payload.message,
+          agentReply:        output.reply,
+          escalationReason:  output.escalation.reason,
+          escalationSummary: output.escalation.summary,
+          callbackUrl:       payload.callbackUrl,
+        },
+      }).catch(err => {
+        console.error('[FluigWebhookService] criar PendingAction falhou', err)
+      })
     }
 
     // Fire-and-forget: envia resultado ao BPM Fluig se callbackUrl estiver presente

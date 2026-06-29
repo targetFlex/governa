@@ -67,6 +67,8 @@ import { AnchorAgentService }                           from './modules/anchor-a
 import { buildProtheusHandlers, PROTHEUS_TOOL_DEFS }    from './modules/anchor-agent/application/protheus-tool-handlers'
 import { FluigWebhookService }                          from './modules/anchor-agent/application/fluig-webhook.service'
 import { SubjectTokenHasher }                           from './shared/crypto/subject-token'
+import { PrismaPendingActionRepository, type PendingActionPrismaClient } from './modules/pending-actions/infrastructure/prisma-pending-action.repository'
+import { PendingActionService }                         from './modules/pending-actions/application/pending-action.service'
 
 // ─── Validação de variáveis obrigatórias ─────────────────────────────────────
 
@@ -97,6 +99,10 @@ async function bootstrap(): Promise<void> {
   const policyRepo         = new PrismaPolicyRepository(prisma)
   const policyAgentRepo    = new PrismaAgentRepository(prisma)
   const gatewayClient      = new HttpGatewayClient(gatewayBaseUrl)
+
+  // ── E3.4: PendingActionService ───────────────────────────────────────────────
+  const pendingActionRepo    = new PrismaPendingActionRepository(prisma as unknown as PendingActionPrismaClient)
+  const pendingActionService = new PendingActionService(pendingActionRepo)
 
   // ── Infra de alertas ────────────────────────────────────────────────────────
   const alertRepo    = new PrismaAlertRepository(prisma)
@@ -164,6 +170,7 @@ async function bootstrap(): Promise<void> {
     ? new FluigWebhookService(
         anchorAgentService,
         new SubjectTokenHasher(process.env.PII_HMAC_KEY),
+        pendingActionService,
       )
     : undefined
 
@@ -185,6 +192,7 @@ async function bootstrap(): Promise<void> {
     anchorAgentService,
     fluigWebhookService,
     fluigApiKey,
+    pendingActionService,
   })
 
   // ── HTTP Server ─────────────────────────────────────────────────────────────
