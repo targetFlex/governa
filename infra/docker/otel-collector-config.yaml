@@ -1,12 +1,11 @@
-# otel-collector-config.yaml — Configuração do OpenTelemetry Collector para dev.
+# otel-collector-config.yaml — Configuração do OpenTelemetry Collector para dev/prod.
 #
 # Recebe traces, metrics e LOGS via OTLP HTTP/gRPC de governa-core e governa-gateway.
 # Em desenvolvimento: exporta para console (debug) e arquivo de logs (/tmp/otel-logs.json).
+# Com DD_API_KEY: exporta também para Datadog (traces, metrics, logs).
 # Prometheus scrape em :8889/metrics.
 #
-# Para Datadog (produção):
-#   Configurar DD_API_KEY e descomentar exporters datadog abaixo.
-# Para SigNoz (produção):
+# Para SigNoz (alternativa ao Datadog):
 #   Descomentar otlp/signoz e apontar ao endpoint SigNoz.
 
 receivers:
@@ -58,13 +57,15 @@ exporters:
       max_days: 3
       max_backups: 3
 
-  # Para Datadog (descomentar e configurar DD_API_KEY):
-  # datadog:
-  #   api:
-  #     key: ${DD_API_KEY}
-  #     site: ${DD_SITE:-datadoghq.com}
+  # Datadog — ativo quando DD_API_KEY estiver definido no ambiente
+  # Requer: DD_API_KEY no .env (infra/docker/.env)
+  # Opcional: DD_SITE (padrão: datadoghq.com | alternativas: datadoghq.eu, us3.datadoghq.com)
+  datadog:
+    api:
+      key: ${DD_API_KEY}
+      site: ${DD_SITE:-datadoghq.com}
 
-  # Para SigNoz (descomentar e configurar em produção):
+  # Para SigNoz (alternativa ao Datadog — descomentar em produção):
   # otlp/signoz:
   #   endpoint: ${SIGNOZ_OTLP_ENDPOINT:-http://signoz:4317}
   #   tls:
@@ -79,16 +80,14 @@ service:
     traces:
       receivers:  [otlp]
       processors: [attributes/remove_pii, batch]
-      exporters:  [debug]
+      exporters:  [debug, datadog]
 
     metrics:
       receivers:  [otlp]
       processors: [batch]
-      exporters:  [debug, prometheus]
+      exporters:  [debug, prometheus, datadog]
 
-    # Pipeline de logs — NOVO (sessão 2.41)
-    # Recebe logs OTLP de governa-core (Winston bridge) e governa-gateway (logger nativo)
     logs:
       receivers:  [otlp]
       processors: [attributes/remove_pii, resource/add_env, batch]
-      exporters:  [debug, file/logs]
+      exporters:  [debug, file/logs, datadog]

@@ -160,6 +160,10 @@ services:
     command: ["--config=/etc/otel/config.yaml"]
     volumes:
       - ./otel-collector-config.yaml:/etc/otel/config.yaml:ro
+    environment:
+      DD_API_KEY: ${DD_API_KEY}
+      DD_SITE:    ${DD_SITE:-datadoghq.com}
+      DEPLOYMENT_ENV: ${DEPLOYMENT_ENV:-development}
     ports:
       - "4317:4317"    # OTLP gRPC
       - "4318:4318"    # OTLP HTTP
