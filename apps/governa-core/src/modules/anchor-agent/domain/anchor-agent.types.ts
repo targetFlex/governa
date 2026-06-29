@@ -12,10 +12,37 @@ export interface ToolCallRecord {
   readonly output:   unknown
 }
 
+// ─── Escalonamento (E3.2) ────────────────────────────────────────────────────
+
+/**
+ * Razões originadas pelo Claude (via tool `escalate_to_human`):
+ *   USER_REQUESTED  — usuário pediu explicitamente falar com humano
+ *   SCOPE_EXCEEDED  — solicitação requer ação além da leitura (escrita/cancelamento)
+ *   CANNOT_RESOLVE  — Claude não conseguiu resolver com as informações disponíveis
+ *   SENSITIVE_TOPIC — reclamação grave / conflito que exige julgamento humano
+ *
+ * Razões detectadas internamente pelo serviço:
+ *   TOOL_BLOCKED         — tool necessária bloqueada pela política de autonomia
+ *   TOOL_ERRORS_EXCEEDED — ≥ 2 falhas de handler de tool na mesma sessão
+ */
+export type EscalationReason =
+  | 'USER_REQUESTED'
+  | 'SCOPE_EXCEEDED'
+  | 'CANNOT_RESOLVE'
+  | 'SENSITIVE_TOPIC'
+  | 'TOOL_BLOCKED'
+  | 'TOOL_ERRORS_EXCEEDED'
+
+export interface EscalationResult {
+  readonly reason:  EscalationReason
+  readonly summary: string   // contexto para o operador humano
+}
+
 export interface ChatOutput {
-  readonly reply:     string
-  readonly toolCalls: ToolCallRecord[]
-  readonly sessionId: string
+  readonly reply:      string
+  readonly toolCalls:  ToolCallRecord[]
+  readonly sessionId:  string
+  readonly escalation?: EscalationResult   // presente quando handoff para humano é acionado
 }
 
 export class AnchorAgentNotConfiguredError extends Error {
