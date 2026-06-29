@@ -13,6 +13,14 @@
  *   GATEWAY_BASE_URL      — URL base do governa-gateway (ex: http://gateway:3001)
  *   JWT_SECRET            — Segredo HS256 para validação do tenantMiddleware
  *   PORT                  — Porta HTTP (default: 3000)
+ *
+ * Variáveis opcionais:
+ *   SMTP_HOST             — Habilita e-mail; se ausente, NotificationService não sobe
+ *   SMTP_PORT             — Porta SMTP (default: 587)
+ *   SMTP_SECURE           — "true" para TLS (default: false)
+ *   SMTP_USER             — Usuário SMTP (opcional)
+ *   SMTP_PASS             — Senha SMTP (opcional)
+ *   SMTP_FROM             — Remetente (default: governa@aicockpit.com.br)
  */
 
 // ── OpenTelemetry — DEVE ser o primeiro import (monkey-patching antecipado) ──
@@ -33,6 +41,7 @@ import { HttpGatewayClient }                from './shared/infrastructure/http-g
 import { PrismaPolicyRepository }           from './modules/policies/infrastructure/prisma-policy.repository'
 import { PrismaAgentRepository }            from './modules/policies/infrastructure/prisma-agent.repository'
 import { PrismaAlertRepository }            from './modules/alerts/infrastructure/prisma-alert.repository'
+import { PrismaNotificationConfigRepository } from './modules/alerts/infrastructure/prisma-notification-config.repository'
 
 // ── Application ──────────────────────────────────────────────────────────────
 import { AgentService }                     from './modules/agents/application/agent.service'
@@ -49,6 +58,7 @@ import { PolicyViolationAlertService }      from './modules/alerts/application/p
 import { BlockedToolDetector }              from './modules/alerts/application/detectors/blocked-tool.detector'
 import { ErrorRateDetector }               from './modules/alerts/application/detectors/error-rate.detector'
 import { VolumeAnomalyDetector }           from './modules/alerts/application/detectors/volume-anomaly.detector'
+import { NotificationService, NodemailerMailSender, NodeHttpPoster } from './modules/alerts/application/notification.service'
 
 // ─── Validação de variáveis obrigatórias ─────────────────────────────────────
 
@@ -106,6 +116,26 @@ async function bootstrap(): Promise<void> {
   const consultarPedidoUseCase  = new ConsultarPedidoUseCase(gatewayClient, auditService)
   const consultarClienteUseCase = new ConsultarClienteUseCase(gatewayClient, auditService)
 
+  // ── E5.4: NotificationService (opt-in — ativo somente se SMTP_HOST estiver definido) ──
+  const notificationService = process.env.SMTP_HOST
+    ? new NotificationService(
+        new PrismaNotificationConfigRepository(prisma),
+        new NodemailerMailSender({
+          host:   process.env.SMTP_HOST,
+          port:   Number(process.env.SMTP_PORT ?? 587),
+          secure: process.env.SMTP_SECURE === 'true',
+          user:   process.env.SMTP_USER,
+          pass:   process.env.SMTP_PASS,
+          from:   process.env.SMTP_FROM ?? 'governa@aicockpit.com.br',
+        }),
+        new NodeHttpPoster(),
+      )
+    : undefined
+
+  if (notificationService) {
+    console.log('[governa-core] NotificationService ativo (SMTP + webhook)')
+  }
+
   // ── App Express ─────────────────────────────────────────────────────────────
   const app = createApp({
     agentService,
@@ -116,6 +146,7 @@ async function bootstrap(): Promise<void> {
     auditQueryService,
     alertService,
     policyViolationAlertService,
+    notificationService,
   })
 
   // ── HTTP Server ─────────────────────────────────────────────────────────────
