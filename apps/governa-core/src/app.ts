@@ -24,6 +24,7 @@ import { createAuditRouter }                            from './modules/audit/pr
 import { createAlertRouter }                            from './modules/alerts/presentation/alert.router'
 import { createViolationRouter }                        from './modules/alerts/presentation/violation.router'
 import { createToolCheckRouter }                        from './modules/policies/presentation/tool-check.router'
+import { createNotificationConfigRouter }               from './modules/alerts/presentation/notification-config.router'
 
 import type { AgentService }                            from './modules/agents/application/agent.service'
 import type { ConsultarPedidoUseCase }                  from './modules/pedidos/application/consultar-pedido.use-case'
@@ -33,6 +34,7 @@ import type { PolicyEngine }                            from './modules/policies
 import type { AuditQueryService }                       from './modules/audit/application/audit.query.service'
 import type { AlertService }                            from './modules/alerts/application/alert.service'
 import type { PolicyViolationAlertService }             from './modules/alerts/application/policy-violation-alert.service'
+import type { NotificationService }                     from './modules/alerts/application/notification.service'
 
 // ─── Contrato de dependências injetadas ───────────────────────────────────────
 
@@ -46,6 +48,7 @@ export interface AppDependencies {
   auditQueryService:            AuditQueryService
   alertService:                 AlertService
   policyViolationAlertService:  PolicyViolationAlertService
+  notificationService?:         NotificationService
 }
 
 // ─── Factory ──────────────────────────────────────────────────────────────────
@@ -74,6 +77,9 @@ export function createApp(deps: AppDependencies): Application {
   app.use('/audit-events',  createAuditRouter(deps.auditQueryService))
   app.use('/alerts',        createAlertRouter(deps.alertService))
   app.use('/violations',    createViolationRouter(deps.policyViolationAlertService))
+  if (deps.notificationService) {
+    app.use('/notifications', createNotificationConfigRouter(deps.notificationService))
+  }
   // E5.4 — expõe assertToolAllowed() via HTTP (montado apenas se policyEngine disponível)
   if (deps.policyEngine) {
     app.use('/policies',    createToolCheckRouter(deps.policyEngine))

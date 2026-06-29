@@ -206,3 +206,17 @@ model AlertThreshold {
   @@index([tenantId])
   @@map("alert_thresholds")
 }
+
+model NotificationConfig {
+  id               String        @id @default(uuid())
+  tenantId         String        @unique @map("tenant_id")
+  emailEnabled     Boolean       @default(false) @map("email_enabled")
+  emailRecipients  String[]      @map("email_recipients")
+  webhookEnabled   Boolean       @default(false) @map("webhook_enabled")
+  webhookUrl       String?       @map("webhook_url")
+  webhookSecret    String?       @map("webhook_secret")
+  minSeverity      AlertSeverity @default(HIGH) @map("min_severity")
+  updatedAt        DateTime      @updatedAt @map("updated_at")
+
+  @@map("notification_configs")
+}
