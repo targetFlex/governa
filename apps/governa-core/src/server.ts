@@ -60,6 +60,12 @@ import { ErrorRateDetector }               from './modules/alerts/application/de
 import { VolumeAnomalyDetector }           from './modules/alerts/application/detectors/volume-anomaly.detector'
 import { NotificationService, NodemailerMailSender, NodeHttpPoster } from './modules/alerts/application/notification.service'
 
+// ── E3.1: Agente âncora ──────────────────────────────────────────────────────
+import Anthropic                                        from '@anthropic-ai/sdk'
+import { AnthropicLlmAdapter }                          from './modules/anchor-agent/infrastructure/anthropic-llm-adapter'
+import { AnchorAgentService }                           from './modules/anchor-agent/application/anchor-agent.service'
+import { buildProtheusHandlers, PROTHEUS_TOOL_DEFS }    from './modules/anchor-agent/application/protheus-tool-handlers'
+
 // ─── Validação de variáveis obrigatórias ─────────────────────────────────────
 
 function requireEnv(name: string): string {
@@ -136,6 +142,20 @@ async function bootstrap(): Promise<void> {
     console.log('[governa-core] NotificationService ativo (SMTP + webhook)')
   }
 
+  // ── E3.1: AnchorAgentService (opt-in — ativo somente se ANTHROPIC_API_KEY estiver definida) ──
+  const anchorAgentService = process.env.ANTHROPIC_API_KEY
+    ? new AnchorAgentService(
+        policyEngine,
+        buildProtheusHandlers(consultarPedidoUseCase, consultarClienteUseCase),
+        PROTHEUS_TOOL_DEFS,
+        new AnthropicLlmAdapter(new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })),
+      )
+    : undefined
+
+  if (anchorAgentService) {
+    console.log('[governa-core] AnchorAgentService ativo (modelo claude-sonnet-4-6)')
+  }
+
   // ── App Express ─────────────────────────────────────────────────────────────
   const app = createApp({
     agentService,
@@ -147,6 +167,7 @@ async function bootstrap(): Promise<void> {
     alertService,
     policyViolationAlertService,
     notificationService,
+    anchorAgentService,
   })
 
   // ── HTTP Server ─────────────────────────────────────────────────────────────

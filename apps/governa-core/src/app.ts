@@ -25,6 +25,7 @@ import { createAlertRouter }                            from './modules/alerts/p
 import { createViolationRouter }                        from './modules/alerts/presentation/violation.router'
 import { createToolCheckRouter }                        from './modules/policies/presentation/tool-check.router'
 import { createNotificationConfigRouter }               from './modules/alerts/presentation/notification-config.router'
+import { createAnchorAgentRouter }                      from './modules/anchor-agent/presentation/anchor-agent.router'
 
 import type { AgentService }                            from './modules/agents/application/agent.service'
 import type { ConsultarPedidoUseCase }                  from './modules/pedidos/application/consultar-pedido.use-case'
@@ -35,6 +36,7 @@ import type { AuditQueryService }                       from './modules/audit/ap
 import type { AlertService }                            from './modules/alerts/application/alert.service'
 import type { PolicyViolationAlertService }             from './modules/alerts/application/policy-violation-alert.service'
 import type { NotificationService }                     from './modules/alerts/application/notification.service'
+import type { AnchorAgentService }                      from './modules/anchor-agent/application/anchor-agent.service'
 
 // ─── Contrato de dependências injetadas ───────────────────────────────────────
 
@@ -49,6 +51,8 @@ export interface AppDependencies {
   alertService:                 AlertService
   policyViolationAlertService:  PolicyViolationAlertService
   notificationService?:         NotificationService
+  /** E3.1 — Agente âncora consultivo (opt-in via ANTHROPIC_API_KEY) */
+  anchorAgentService?:          AnchorAgentService
 }
 
 // ─── Factory ──────────────────────────────────────────────────────────────────
@@ -79,6 +83,10 @@ export function createApp(deps: AppDependencies): Application {
   app.use('/violations',    createViolationRouter(deps.policyViolationAlertService))
   if (deps.notificationService) {
     app.use('/notifications', createNotificationConfigRouter(deps.notificationService))
+  }
+  // E3.1 — agente âncora (montado apenas se ANTHROPIC_API_KEY estiver configurada)
+  if (deps.anchorAgentService) {
+    app.use('/anchor-agent', createAnchorAgentRouter(deps.anchorAgentService))
   }
   // E5.4 — expõe assertToolAllowed() via HTTP (montado apenas se policyEngine disponível)
   if (deps.policyEngine) {
