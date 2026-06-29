@@ -26,6 +26,7 @@ import { createViolationRouter }                        from './modules/alerts/p
 import { createToolCheckRouter }                        from './modules/policies/presentation/tool-check.router'
 import { createNotificationConfigRouter }               from './modules/alerts/presentation/notification-config.router'
 import { createAnchorAgentRouter }                      from './modules/anchor-agent/presentation/anchor-agent.router'
+import { createFluigWebhookRouter }                     from './modules/anchor-agent/presentation/fluig-webhook.router'
 
 import type { AgentService }                            from './modules/agents/application/agent.service'
 import type { ConsultarPedidoUseCase }                  from './modules/pedidos/application/consultar-pedido.use-case'
@@ -37,6 +38,7 @@ import type { AlertService }                            from './modules/alerts/a
 import type { PolicyViolationAlertService }             from './modules/alerts/application/policy-violation-alert.service'
 import type { NotificationService }                     from './modules/alerts/application/notification.service'
 import type { AnchorAgentService }                      from './modules/anchor-agent/application/anchor-agent.service'
+import type { FluigWebhookService }                     from './modules/anchor-agent/application/fluig-webhook.service'
 
 // ─── Contrato de dependências injetadas ───────────────────────────────────────
 
@@ -53,6 +55,9 @@ export interface AppDependencies {
   notificationService?:         NotificationService
   /** E3.1 — Agente âncora consultivo (opt-in via ANTHROPIC_API_KEY) */
   anchorAgentService?:          AnchorAgentService
+  /** E3.3 — Webhook Fluig (opt-in via FLUIG_API_KEY + ANTHROPIC_API_KEY + PII_HMAC_KEY) */
+  fluigWebhookService?:         FluigWebhookService
+  fluigApiKey?:                 string
 }
 
 // ─── Factory ──────────────────────────────────────────────────────────────────
@@ -69,6 +74,11 @@ export function createApp(deps: AppDependencies): Application {
   app.get('/health', (_req: Request, res: Response) => {
     res.json({ status: 'ok', ts: new Date().toISOString() })
   })
+
+  // ── E3.3: Webhook Fluig — ANTES do tenantMiddleware (auth via X-Fluig-Api-Key) ──
+  if (deps.fluigWebhookService && deps.fluigApiKey) {
+    app.use('/webhooks', createFluigWebhookRouter(deps.fluigWebhookService, deps.fluigApiKey))
+  }
 
   // ── Autenticação obrigatória para todos os recursos abaixo ──────────────────
   app.use(tenantMiddleware)

@@ -65,6 +65,8 @@ import Anthropic                                        from '@anthropic-ai/sdk'
 import { AnthropicLlmAdapter }                          from './modules/anchor-agent/infrastructure/anthropic-llm-adapter'
 import { AnchorAgentService }                           from './modules/anchor-agent/application/anchor-agent.service'
 import { buildProtheusHandlers, PROTHEUS_TOOL_DEFS }    from './modules/anchor-agent/application/protheus-tool-handlers'
+import { FluigWebhookService }                          from './modules/anchor-agent/application/fluig-webhook.service'
+import { SubjectTokenHasher }                           from './shared/crypto/subject-token'
 
 // ─── Validação de variáveis obrigatórias ─────────────────────────────────────
 
@@ -156,6 +158,19 @@ async function bootstrap(): Promise<void> {
     console.log('[governa-core] AnchorAgentService ativo (modelo claude-sonnet-4-6)')
   }
 
+  // ── E3.3: FluigWebhookService (opt-in — requer FLUIG_API_KEY + ANTHROPIC_API_KEY + PII_HMAC_KEY) ──
+  const fluigApiKey = process.env.FLUIG_API_KEY
+  const fluigWebhookService = anchorAgentService && fluigApiKey && process.env.PII_HMAC_KEY
+    ? new FluigWebhookService(
+        anchorAgentService,
+        new SubjectTokenHasher(process.env.PII_HMAC_KEY),
+      )
+    : undefined
+
+  if (fluigWebhookService) {
+    console.log('[governa-core] FluigWebhookService ativo (POST /webhooks/fluig)')
+  }
+
   // ── App Express ─────────────────────────────────────────────────────────────
   const app = createApp({
     agentService,
@@ -168,6 +183,8 @@ async function bootstrap(): Promise<void> {
     policyViolationAlertService,
     notificationService,
     anchorAgentService,
+    fluigWebhookService,
+    fluigApiKey,
   })
 
   // ── HTTP Server ─────────────────────────────────────────────────────────────
