@@ -25,11 +25,13 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../../core/auth/auth.service';
+import { GovInputComponent } from '../../../shared/ui/input/gov-input.component';
+import { GovButtonComponent } from '../../../shared/ui/button/gov-button.component';
 
 @Component({
   selector: 'gov-login',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, GovInputComponent, GovButtonComponent],
   template: `
     <main class="login-page" role="main">
       <section class="login-card" aria-labelledby="login-title">
@@ -46,46 +48,24 @@ import { AuthService } from '../../../core/auth/auth.service';
           class="login-form"
         >
           <!-- Email -->
-          <div class="field-group">
-            <label for="email" class="field-label">E-mail</label>
-            <input
-              id="email"
-              type="email"
-              formControlName="email"
-              autocomplete="email"
-              aria-label="Endereço de e-mail"
-              [attr.aria-invalid]="emailInvalid ? 'true' : null"
-              class="field-input"
-              [class.field-input--error]="emailInvalid"
-              placeholder="seu@email.com"
-            />
-            @if (emailInvalid) {
-              <span class="field-error" role="alert">
-                Informe um e-mail válido.
-              </span>
-            }
-          </div>
+          <gov-input
+            formControlName="email"
+            label="E-mail"
+            type="email"
+            autocomplete="email"
+            placeholder="seu@email.com"
+            [error]="emailInvalid ? 'Informe um e-mail válido.' : undefined"
+          />
 
           <!-- Senha -->
-          <div class="field-group">
-            <label for="password" class="field-label">Senha</label>
-            <input
-              id="password"
-              type="password"
-              formControlName="password"
-              autocomplete="current-password"
-              aria-label="Senha de acesso"
-              [attr.aria-invalid]="passwordInvalid ? 'true' : null"
-              class="field-input"
-              [class.field-input--error]="passwordInvalid"
-              placeholder="••••••••"
-            />
-            @if (passwordInvalid) {
-              <span class="field-error" role="alert">
-                Informe sua senha.
-              </span>
-            }
-          </div>
+          <gov-input
+            formControlName="password"
+            label="Senha"
+            type="password"
+            autocomplete="current-password"
+            placeholder="••••••••"
+            [error]="passwordInvalid ? 'Informe sua senha.' : undefined"
+          />
 
           <!-- Erro de autenticação -->
           @if (authError()) {
@@ -100,19 +80,12 @@ import { AuthService } from '../../../core/auth/auth.service';
           }
 
           <!-- Submit -->
-          <button
+          <gov-button
             type="submit"
-            class="btn-primary"
-            [disabled]="loading()"
-            [attr.aria-busy]="loading()"
-          >
-            @if (loading()) {
-              <span class="spinner" aria-hidden="true"></span>
-              Entrando…
-            } @else {
-              Entrar
-            }
-          </button>
+            size="lg"
+            [fullWidth]="true"
+            [loading]="loading()"
+          >Entrar</gov-button>
         </form>
 
       </section>
@@ -162,53 +135,6 @@ import { AuthService } from '../../../core/auth/auth.service';
       gap: var(--gov-space-5);
     }
 
-    .field-group {
-      display: flex;
-      flex-direction: column;
-      gap: var(--gov-space-1);
-    }
-
-    .field-label {
-      font-size: var(--gov-font-size-sm);
-      font-weight: var(--gov-font-weight-medium);
-      color: var(--gov-color-text-primary);
-    }
-
-    .field-input {
-      width: 100%;
-      padding: var(--gov-space-3) var(--gov-space-4);
-      border: 1px solid var(--gov-color-border);
-      border-radius: var(--gov-radius-md);
-      font-size: var(--gov-font-size-base);
-      color: var(--gov-color-text-primary);
-      background: var(--gov-color-surface);
-      transition: border-color var(--gov-transition-fast),
-                  box-shadow var(--gov-transition-fast);
-      outline: none;
-
-      &::placeholder {
-        color: var(--gov-color-text-secondary);
-      }
-
-      &:focus {
-        border-color: var(--gov-color-brand);
-        box-shadow: 0 0 0 3px var(--gov-color-primary-100);
-      }
-
-      &--error {
-        border-color: var(--gov-color-error-500);
-
-        &:focus {
-          box-shadow: 0 0 0 3px var(--gov-color-error-100);
-        }
-      }
-    }
-
-    .field-error {
-      font-size: var(--gov-font-size-xs);
-      color: var(--gov-color-error-700);
-    }
-
     .auth-error {
       padding: var(--gov-space-3) var(--gov-space-4);
       background: var(--gov-color-error-100);
@@ -218,48 +144,6 @@ import { AuthService } from '../../../core/auth/auth.service';
       color: var(--gov-color-error-700);
     }
 
-    .btn-primary {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: var(--gov-space-2);
-      width: 100%;
-      padding: var(--gov-space-3) var(--gov-space-4);
-      background: var(--gov-color-brand);
-      color: var(--gov-color-text-inverse);
-      font-size: var(--gov-font-size-base);
-      font-weight: var(--gov-font-weight-semibold);
-      border: none;
-      border-radius: var(--gov-radius-md);
-      transition: background var(--gov-transition-fast);
-
-      &:hover:not(:disabled) {
-        background: var(--gov-color-brand-hover);
-      }
-
-      &:focus-visible {
-        outline: 2px solid var(--gov-color-brand);
-        outline-offset: 2px;
-      }
-
-      &:disabled {
-        opacity: 0.65;
-        cursor: not-allowed;
-      }
-    }
-
-    .spinner {
-      width: 16px;
-      height: 16px;
-      border: 2px solid rgb(255 255 255 / 0.35);
-      border-top-color: white;
-      border-radius: var(--gov-radius-full);
-      animation: spin 0.7s linear infinite;
-    }
-
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
   `],
 })
 export class LoginComponent {

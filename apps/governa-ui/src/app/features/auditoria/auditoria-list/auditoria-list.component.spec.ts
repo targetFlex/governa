@@ -171,7 +171,7 @@ describe('AuditoriaListComponent', () => {
     it('click no botão dispara store.exportarPDF()', async () => {
       const mock = makeStoreMock({ isEmpty: () => false });
       const { fixture } = await setup(mock);
-      const btn: HTMLButtonElement = fixture.nativeElement.querySelector('.auditoria__btn-export');
+      const btn: HTMLButtonElement = fixture.nativeElement.querySelector('button[aria-label="Exportar audit trail como PDF"]');
       btn.click();
       expect(mock.useValue.exportarPDF).toHaveBeenCalledTimes(1);
     });
@@ -197,7 +197,7 @@ describe('AuditoriaListComponent', () => {
     it('click em limpar chama store.limparFiltros()', async () => {
       const mock = makeStoreMock();
       const { fixture } = await setup(mock);
-      const btn: HTMLButtonElement = fixture.nativeElement.querySelector('.auditoria__btn-limpar');
+      const btn: HTMLButtonElement = fixture.nativeElement.querySelector('button[aria-label="Limpar filtros"]');
       btn.click();
       expect(mock.useValue.limparFiltros).toHaveBeenCalledTimes(1);
     });
@@ -215,7 +215,7 @@ describe('AuditoriaListComponent', () => {
         totalPages: () => 3,
         total:      () => 60,
       }));
-      const btns: NodeListOf<HTMLButtonElement> = fixture.nativeElement.querySelectorAll('.auditoria__pag-btn');
+      const btns: NodeListOf<HTMLButtonElement> = fixture.nativeElement.querySelectorAll('.auditoria__paginacao gov-button button');
       expect(btns[0].disabled).toBe(true); // Anterior
     });
   });
@@ -231,7 +231,7 @@ describe('AuditoriaListComponent', () => {
         totalPages: () => 3,
         total:      () => 60,
       }));
-      const btns: NodeListOf<HTMLButtonElement> = fixture.nativeElement.querySelectorAll('.auditoria__pag-btn');
+      const btns: NodeListOf<HTMLButtonElement> = fixture.nativeElement.querySelectorAll('.auditoria__paginacao gov-button button');
       expect(btns[1].disabled).toBe(true); // Próxima
     });
   });

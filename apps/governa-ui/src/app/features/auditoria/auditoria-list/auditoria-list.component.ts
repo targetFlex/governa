@@ -33,12 +33,15 @@ import {
   OUTCOME_CSS,
   Outcome,
 } from '../../../shared/models/auditoria.model';
+import { GovInputComponent } from '../../../shared/ui/input/gov-input.component';
+import { GovSelectComponent, SelectOption } from '../../../shared/ui/select/gov-select.component';
+import { GovButtonComponent } from '../../../shared/ui/button/gov-button.component';
 
 @Component({
   selector: 'app-auditoria-list',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, GovInputComponent, GovSelectComponent, GovButtonComponent],
   template: `
     <section class="auditoria" aria-label="Audit trail de eventos">
 
@@ -50,113 +53,58 @@ import {
             Registro imutável de todas as decisões dos agentes. Retenção: 5 anos (LGPD art. 16).
           </p>
         </div>
-        <button
-          class="auditoria__btn-export"
-          type="button"
+        <gov-button
+          [loading]="store.loadingExport()"
           [disabled]="store.loadingExport() || store.loading()"
-          [attr.aria-busy]="store.loadingExport()"
-          aria-label="Exportar audit trail como PDF"
-          (click)="exportarPDF()"
-        >
-          @if (store.loadingExport()) {
-            <span class="auditoria__btn-export-spinner" aria-hidden="true"></span>
-            Exportando…
-          } @else {
-            ⬇ Exportar PDF
-          }
-        </button>
+          ariaLabel="Exportar audit trail como PDF"
+          (clicked)="exportarPDF()"
+        >⬇ Exportar PDF</gov-button>
       </header>
 
       <!-- ── Banner de erro ─────────────────────────────────── -->
       @if (store.hasError()) {
         <div class="auditoria__erro" role="alert">
           <span>{{ store.error() }}</span>
-          <button
-            type="button"
-            class="auditoria__erro-retry"
-            aria-label="Tentar novamente"
-            (click)="retry()"
-          >
+          <gov-button variant="danger" size="sm" ariaLabel="Tentar novamente" (clicked)="retry()">
             Tentar novamente
-          </button>
-          <button
-            type="button"
-            class="auditoria__erro-fechar"
-            aria-label="Fechar mensagem de erro"
-            (click)="store.clearError()"
-          >
+          </gov-button>
+          <gov-button variant="ghost" size="sm" ariaLabel="Fechar mensagem de erro" (clicked)="store.clearError()">
             ✕
-          </button>
+          </gov-button>
         </div>
       }
 
       <!-- ── Filtros ────────────────────────────────────────── -->
       <form class="auditoria__filtros" aria-label="Filtros do audit trail" (ngSubmit)="aplicarFiltros()">
-        <div class="auditoria__filtro-campo">
-          <label class="auditoria__label" for="filtro-agente">Agente (UUID)</label>
-          <input
-            id="filtro-agente"
-            class="auditoria__input"
-            type="text"
-            placeholder="ex: 00000000-…"
-            [(ngModel)]="agentId"
-            name="agentId"
-            aria-label="Filtrar por ID do agente"
-          />
-        </div>
-
-        <div class="auditoria__filtro-campo">
-          <label class="auditoria__label" for="filtro-from">De</label>
-          <input
-            id="filtro-from"
-            class="auditoria__input"
-            type="date"
-            [(ngModel)]="from"
-            name="from"
-            aria-label="Data de início do período"
-          />
-        </div>
-
-        <div class="auditoria__filtro-campo">
-          <label class="auditoria__label" for="filtro-to">Até</label>
-          <input
-            id="filtro-to"
-            class="auditoria__input"
-            type="date"
-            [(ngModel)]="to"
-            name="to"
-            aria-label="Data de fim do período"
-          />
-        </div>
-
-        <div class="auditoria__filtro-campo">
-          <label class="auditoria__label" for="filtro-outcome">Desfecho</label>
-          <select
-            id="filtro-outcome"
-            class="auditoria__select"
-            [(ngModel)]="outcome"
-            name="outcome"
-            aria-label="Filtrar por desfecho"
-          >
-            <option value="">Todos</option>
-            @for (o of outcomes; track o) {
-              <option [value]="o">{{ outcomeLabel(o) }}</option>
-            }
-          </select>
-        </div>
-
+        <gov-input
+          label="Agente (UUID)"
+          type="text"
+          placeholder="ex: 00000000-…"
+          [(ngModel)]="agentId"
+          name="agentId"
+        />
+        <gov-input
+          label="De"
+          type="date"
+          [(ngModel)]="from"
+          name="from"
+        />
+        <gov-input
+          label="Até"
+          type="date"
+          [(ngModel)]="to"
+          name="to"
+        />
+        <gov-select
+          label="Desfecho"
+          [(ngModel)]="outcome"
+          name="outcome"
+          placeholder="Todos"
+          [options]="outcomeOptions"
+        />
         <div class="auditoria__filtro-acoes">
-          <button type="submit" class="auditoria__btn-filtrar" aria-label="Aplicar filtros">
-            Filtrar
-          </button>
-          <button
-            type="button"
-            class="auditoria__btn-limpar"
-            aria-label="Limpar filtros"
-            (click)="limparFiltros()"
-          >
-            Limpar
-          </button>
+          <gov-button type="submit" ariaLabel="Aplicar filtros">Filtrar</gov-button>
+          <gov-button variant="secondary" ariaLabel="Limpar filtros" (clicked)="limparFiltros()">Limpar</gov-button>
         </div>
       </form>
 
@@ -175,14 +123,9 @@ import {
       @if (store.isEmpty() && !store.hasError()) {
         <div class="auditoria__empty" role="status">
           <p class="auditoria__empty-msg">Nenhum evento encontrado para os filtros selecionados.</p>
-          <button
-            type="button"
-            class="auditoria__btn-limpar"
-            aria-label="Limpar filtros e recarregar"
-            (click)="limparFiltros()"
-          >
+          <gov-button variant="secondary" ariaLabel="Limpar filtros e recarregar" (clicked)="limparFiltros()">
             Limpar filtros
-          </button>
+          </gov-button>
         </div>
       }
 
@@ -233,27 +176,17 @@ import {
 
         <!-- ── Paginação ──────────────────────────────────────── -->
         <nav class="auditoria__paginacao" aria-label="Navegação de páginas">
-          <button
-            type="button"
-            class="auditoria__pag-btn"
-            [disabled]="store.page() <= 1"
-            aria-label="Página anterior"
-            (click)="irParaPagina(store.page() - 1)"
-          >
+          <gov-button variant="secondary" size="sm" [disabled]="store.page() <= 1"
+            ariaLabel="Página anterior" (clicked)="irParaPagina(store.page() - 1)">
             ‹ Anterior
-          </button>
+          </gov-button>
           <span class="auditoria__pag-info" aria-current="page">
             Página {{ store.page() }} de {{ store.totalPages() }} — {{ store.total() }} eventos
           </span>
-          <button
-            type="button"
-            class="auditoria__pag-btn"
-            [disabled]="store.page() >= store.totalPages()"
-            aria-label="Próxima página"
-            (click)="irParaPagina(store.page() + 1)"
-          >
+          <gov-button variant="secondary" size="sm" [disabled]="store.page() >= store.totalPages()"
+            ariaLabel="Próxima página" (clicked)="irParaPagina(store.page() + 1)">
             Próxima ›
-          </button>
+          </gov-button>
         </nav>
       }
     </section>
@@ -545,6 +478,11 @@ export class AuditoriaListComponent implements OnInit {
   readonly store    = inject(AuditoriaStore);
   readonly outcomes = OUTCOMES;
   readonly skeletons = Array(5).fill(0);
+
+  readonly outcomeOptions: SelectOption[] = OUTCOMES.map(o => ({
+    value: o,
+    label: OUTCOME_LABELS[o] ?? o,
+  }));
 
   // ── Campos de filtro (two-way binding no template) ─────────────
   agentId = '';

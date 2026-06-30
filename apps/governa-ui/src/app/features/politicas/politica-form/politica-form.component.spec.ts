@@ -145,14 +145,14 @@ describe('PoliticaFormComponent — estados especiais', () => {
     const component = fixture.componentInstance;
     component.formNivel = 'ASSISTIDO';
     fixture.detectChanges();
-    const addBtn = fixture.nativeElement.querySelector('.pf__add-approver-btn');
+    const addBtn = fixture.nativeElement.querySelector('.pf__approvers-list ~ gov-button button');
     expect(addBtn).not.toBeNull();
   });
 
   it('botão salvar fica desabilitado durante saving', async () => {
     const { fixture } = await setup({ saving: () => true });
     fixture.detectChanges();
-    const btn = fixture.nativeElement.querySelector('.pf__save-btn') as HTMLButtonElement;
+    const btn = fixture.nativeElement.querySelector('.pf__footer gov-button button') as HTMLButtonElement;
     expect(btn?.disabled).toBe(true);
   });
 });

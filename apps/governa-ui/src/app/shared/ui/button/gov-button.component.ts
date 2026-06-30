@@ -13,6 +13,7 @@ export type ButtonSize    = 'sm' | 'md' | 'lg';
       [attr.aria-busy]="loading || null"
       [attr.aria-label]="ariaLabel ?? null"
       class="gov-btn gov-btn--{{ variant }} gov-btn--{{ size }}"
+      [class.gov-btn--full-width]="fullWidth"
       (click)="clicked.emit($event)"
     >
       @if (loading) {
@@ -95,6 +96,8 @@ export type ButtonSize    = 'sm' | 'md' | 'lg';
       flex-shrink: 0;
     }
 
+    .gov-btn--full-width { width: 100%; }
+
     @keyframes gov-spin {
       to { transform: rotate(360deg); }
     }
@@ -104,8 +107,9 @@ export class GovButtonComponent {
   @Input() variant: ButtonVariant  = 'primary';
   @Input() size: ButtonSize        = 'md';
   @Input() type: 'button' | 'submit' | 'reset' = 'button';
-  @Input() disabled = false;
-  @Input() loading  = false;
+  @Input() disabled   = false;
+  @Input() loading    = false;
+  @Input() fullWidth  = false;
   @Input() ariaLabel?: string;
 
   @Output() clicked = new EventEmitter<MouseEvent>();
