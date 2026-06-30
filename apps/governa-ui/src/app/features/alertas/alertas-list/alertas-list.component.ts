@@ -33,6 +33,7 @@ import { AlertasStore }      from '../alertas.service';
 import { GovInputComponent } from '../../../shared/ui/input/gov-input.component';
 import { GovSelectComponent, SelectOption } from '../../../shared/ui/select/gov-select.component';
 import { GovButtonComponent } from '../../../shared/ui/button/gov-button.component';
+import { NotificationConfigPanelComponent } from '../notification-config-panel/notification-config-panel.component';
 import {
   ALERT_KINDS,
   ALERT_STATUSES,
@@ -50,7 +51,7 @@ import {
   selector: 'app-alertas-list',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule, GovInputComponent, GovSelectComponent, GovButtonComponent],
+  imports: [CommonModule, FormsModule, GovInputComponent, GovSelectComponent, GovButtonComponent, NotificationConfigPanelComponent],
   template: `
     <section class="alertas" aria-label="Feed de alertas dos agentes">
 
@@ -80,7 +81,16 @@ import {
             aria-controls="painel-config"
             (click)="toggleConfig()"
           >
-            {{ mostrarConfig ? 'Fechar configurações' : 'Configurar thresholds' }}
+            {{ mostrarConfig ? 'Fechar thresholds' : 'Configurar thresholds' }}
+          </button>
+          <button
+            class="alertas__btn-config"
+            type="button"
+            [attr.aria-expanded]="mostrarNotifConfig"
+            aria-controls="painel-notif-config"
+            (click)="toggleNotifConfig()"
+          >
+            {{ mostrarNotifConfig ? 'Fechar notificações' : 'Canais de notificação' }}
           </button>
         </div>
       </header>
@@ -163,6 +173,11 @@ import {
           </div>
         </div>
       </aside>
+
+      <!-- ── Painel de canais de notificação ───────────────── -->
+      <div *ngIf="mostrarNotifConfig" id="painel-notif-config">
+        <app-notification-config-panel />
+      </div>
 
       <!-- ── Filtros ─────────────────────────────────────────── -->
       <form class="alertas__filtros" (ngSubmit)="aplicarFiltros()" role="search" aria-label="Filtrar alertas">
@@ -690,7 +705,8 @@ export class AlertasListComponent implements OnInit, OnDestroy {
   readonly skeletons  = Array(5).fill(0);
   readonly skeletons4 = Array(4).fill(0);
 
-  mostrarConfig = false;
+  mostrarConfig       = false;
+  mostrarNotifConfig  = false;
 
   // ── Campos de filtro ────────────────────────────────────────
   kindFiltro:    AlertKind | '' = '';
@@ -711,6 +727,10 @@ export class AlertasListComponent implements OnInit, OnDestroy {
 
   toggleConfig(): void {
     this.mostrarConfig = !this.mostrarConfig;
+  }
+
+  toggleNotifConfig(): void {
+    this.mostrarNotifConfig = !this.mostrarNotifConfig;
   }
 
   aplicarFiltros(): void {
