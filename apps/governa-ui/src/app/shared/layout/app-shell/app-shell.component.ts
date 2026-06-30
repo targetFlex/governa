@@ -1,11 +1,12 @@
-import { Component, inject } from '@angular/core';
-import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
+import { Component, inject, computed } from '@angular/core';
+import { RouterOutlet, RouterLink, RouterLinkActive, Router, NavigationEnd } from '@angular/router';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { filter, map, startWith } from 'rxjs';
 import { AuthService } from '../../../core/auth/auth.service';
 
 interface NavItem {
   label: string;
   path:  string;
-  // Heroicons outline 24px — path data only
   svgPath: string;
   exact?: boolean;
 }
@@ -54,13 +55,11 @@ const NAV_ITEMS: NavItem[] = [
       <!-- ── Sidebar ──────────────────────────────────────── -->
       <aside class="sidebar" aria-label="Navegação principal">
 
-        <!-- Brand -->
         <div class="sidebar__brand" aria-label="AICOCKPIT">
           <span class="sidebar__brand-icon" aria-hidden="true">◈</span>
           <span class="sidebar__brand-name">AICOCKPIT</span>
         </div>
 
-        <!-- Nav -->
         <nav class="sidebar__nav">
           <ul role="list">
             @for (item of navItems; track item.path) {
@@ -72,14 +71,8 @@ const NAV_ITEMS: NavItem[] = [
                   class="sidebar__link"
                   [attr.aria-label]="item.label"
                 >
-                  <svg
-                    class="sidebar__icon"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="1.5"
-                    aria-hidden="true"
-                  >
+                  <svg class="sidebar__icon" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="1.5" aria-hidden="true">
                     <path [attr.d]="item.svgPath" stroke-linecap="round" stroke-linejoin="round" />
                   </svg>
                   <span class="sidebar__label">{{ item.label }}</span>
@@ -89,15 +82,11 @@ const NAV_ITEMS: NavItem[] = [
           </ul>
         </nav>
 
-        <!-- Footer / logout -->
         <div class="sidebar__footer">
-          <button
-            type="button"
-            class="sidebar__logout"
-            aria-label="Encerrar sessão"
-            (click)="logout()"
-          >
-            <svg class="sidebar__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+          <button type="button" class="sidebar__logout"
+            aria-label="Encerrar sessão" (click)="logout()">
+            <svg class="sidebar__icon" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="1.5" aria-hidden="true">
               <path stroke-linecap="round" stroke-linejoin="round"
                 d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" />
             </svg>
@@ -107,10 +96,20 @@ const NAV_ITEMS: NavItem[] = [
 
       </aside>
 
-      <!-- ── Conteúdo ─────────────────────────────────────── -->
-      <main class="shell__content" id="main-content" tabindex="-1">
-        <router-outlet />
-      </main>
+      <!-- ── Área principal ───────────────────────────────── -->
+      <div class="shell__main">
+
+        <!-- Topbar -->
+        <header class="shell__topbar" aria-label="Cabeçalho da página">
+          <h1 class="shell__page-title">{{ pageTitle() }}</h1>
+        </header>
+
+        <!-- Conteúdo da rota -->
+        <main class="shell__content" id="main-content" tabindex="-1">
+          <router-outlet />
+        </main>
+
+      </div>
 
     </div>
   `,
@@ -137,7 +136,6 @@ const NAV_ITEMS: NavItem[] = [
       overflow-y: auto;
     }
 
-    /* Brand */
     .sidebar__brand {
       display: flex;
       align-items: center;
@@ -160,7 +158,6 @@ const NAV_ITEMS: NavItem[] = [
       text-transform: uppercase;
     }
 
-    /* Nav */
     .sidebar__nav {
       flex: 1;
       padding: var(--gov-space-4) var(--gov-space-3);
@@ -187,24 +184,14 @@ const NAV_ITEMS: NavItem[] = [
       font-weight: var(--gov-font-weight-medium);
       transition: background var(--gov-transition-fast), color var(--gov-transition-fast);
 
-      &:hover {
-        background: rgb(255 255 255 / 0.08);
-        color: var(--gov-color-white);
-      }
-
-      &:focus-visible {
-        outline: 2px solid var(--gov-color-primary-300);
-        outline-offset: 1px;
-      }
+      &:hover { background: rgb(255 255 255 / 0.08); color: var(--gov-color-white); }
+      &:focus-visible { outline: 2px solid var(--gov-color-primary-300); outline-offset: 1px; }
     }
 
     .sidebar__link--active {
       background: var(--gov-color-primary-700);
       color: var(--gov-color-white);
-
-      &:hover {
-        background: var(--gov-color-primary-600);
-      }
+      &:hover { background: var(--gov-color-primary-600); }
     }
 
     .sidebar__icon {
@@ -213,11 +200,8 @@ const NAV_ITEMS: NavItem[] = [
       flex-shrink: 0;
     }
 
-    .sidebar__label {
-      flex: 1;
-    }
+    .sidebar__label { flex: 1; }
 
-    /* Footer */
     .sidebar__footer {
       padding: var(--gov-space-3);
       border-top: 1px solid rgb(255 255 255 / 0.08);
@@ -239,18 +223,37 @@ const NAV_ITEMS: NavItem[] = [
       text-align: left;
       transition: background var(--gov-transition-fast), color var(--gov-transition-fast);
 
-      &:hover {
-        background: rgb(239 68 68 / 0.15);
-        color: #fca5a5;
-      }
-
-      &:focus-visible {
-        outline: 2px solid var(--gov-color-primary-300);
-        outline-offset: 1px;
-      }
+      &:hover { background: rgb(239 68 68 / 0.15); color: #fca5a5; }
+      &:focus-visible { outline: 2px solid var(--gov-color-primary-300); outline-offset: 1px; }
     }
 
-    /* ── Conteúdo principal ──────────────────────────────── */
+    /* ── Área principal ──────────────────────────────────── */
+    .shell__main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* Topbar */
+    .shell__topbar {
+      height: 56px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      padding: 0 var(--gov-space-8);
+      background: var(--gov-color-surface);
+      border-bottom: 1px solid var(--gov-color-border);
+    }
+
+    .shell__page-title {
+      font-size: var(--gov-font-size-lg);
+      font-weight: var(--gov-font-weight-semibold);
+      color: var(--gov-color-text-primary);
+      margin: 0;
+    }
+
+    /* Conteúdo */
     .shell__content {
       flex: 1;
       overflow-y: auto;
@@ -260,7 +263,23 @@ const NAV_ITEMS: NavItem[] = [
 })
 export class AppShellComponent {
   protected readonly auth     = inject(AuthService);
+  private  readonly router    = inject(Router);
   protected readonly navItems = NAV_ITEMS;
+
+  private readonly routeTitle = toSignal(
+    this.router.events.pipe(
+      filter(e => e instanceof NavigationEnd),
+      startWith(null),
+      map(() => {
+        let route = this.router.routerState.snapshot.root;
+        while (route.firstChild) route = route.firstChild;
+        return (route.data['title'] as string | undefined) ?? '';
+      }),
+    ),
+    { initialValue: '' },
+  );
+
+  protected readonly pageTitle = computed(() => this.routeTitle() ?? '');
 
   logout(): void {
     this.auth.logout();
