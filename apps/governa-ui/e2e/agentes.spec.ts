@@ -18,6 +18,7 @@
 //   - Usuário autenticado (auth interceptada via page.route se necessário)
 // ============================================================
 import { test, expect, type Page } from '@playwright/test';
+import { loginE2E, navigateTo } from './helpers';
 
 // ── Fixtures ─────────────────────────────────────────────────
 
@@ -123,21 +124,25 @@ async function mockActivateAPI(page: Page, id: string): Promise<void> {
 
 test.describe('GET /agents — inventário de agentes', () => {
 
+  test.beforeEach(async ({ page }) => {
+    await loginE2E(page);
+  });
+
   test('Given rota /agentes, When carregada, Then seção de inventário é visível', async ({ page }) => {
     await mockAgentesAPI(page);
-    await page.goto('/agentes');
+    await navigateTo(page, '/agentes');
     await expect(page.getByRole('region', { name: 'Inventário de agentes' })).toBeVisible();
   });
 
   test('Given API com 3 agentes, When página carrega, Then exibe 3 cards', async ({ page }) => {
     await mockAgentesAPI(page);
-    await page.goto('/agentes');
+    await navigateTo(page, '/agentes');
     await expect(page.locator('app-agente-card')).toHaveCount(3);
   });
 
   test('Given API com 3 agentes, When chip ACTIVE clicado, Then exibe apenas 1 card', async ({ page }) => {
     await mockAgentesAPI(page);
-    await page.goto('/agentes');
+    await navigateTo(page, '/agentes');
 
     // Aguarda os chips aparecerem
     await page.getByRole('button', { name: /Ativos/i }).click();
@@ -148,7 +153,7 @@ test.describe('GET /agents — inventário de agentes', () => {
 
   test('Given agente DEPRECATED, When exibido, Then não renderiza botões de ação', async ({ page }) => {
     await mockAgentesAPI(page);
-    await page.goto('/agentes');
+    await navigateTo(page, '/agentes');
 
     // Localiza o card do agente depreciado pelo nome
     const cardDeprecado = page.locator('app-agente-card', {
@@ -160,7 +165,7 @@ test.describe('GET /agents — inventário de agentes', () => {
   test('Given agente ACTIVE, When Pausar clicado, Then badge muda para "Pausado"', async ({ page }) => {
     await mockAgentesAPI(page);
     await mockPauseAPI(page, 'ag-1');
-    await page.goto('/agentes');
+    await navigateTo(page, '/agentes');
 
     // Encontra o card do agente ativo e clica em Pausar
     const cardAtivo = page.locator('app-agente-card', {
@@ -175,7 +180,7 @@ test.describe('GET /agents — inventário de agentes', () => {
   test('Given agente PAUSED com política, When Ativar clicado, Then badge muda para "Ativo"', async ({ page }) => {
     await mockAgentesAPI(page);
     await mockActivateAPI(page, 'ag-2');
-    await page.goto('/agentes');
+    await navigateTo(page, '/agentes');
 
     const cardPausado = page.locator('app-agente-card', {
       has: page.getByText('Agente Financeiro'),
@@ -187,14 +192,14 @@ test.describe('GET /agents — inventário de agentes', () => {
 
   test('Given lista vazia, When página carrega, Then exibe mensagem de empty state', async ({ page }) => {
     await mockAgentesAPI(page, { data: [], total: 0 });
-    await page.goto('/agentes');
+    await navigateTo(page, '/agentes');
     await expect(page.getByText('Nenhum agente encontrado.')).toBeVisible();
     await expect(page.locator('app-agente-card')).toHaveCount(0);
   });
 
   test('Given API com erro 503, When página carrega, Then exibe banner de erro com retry', async ({ page }) => {
     await mockAgentesAPIError(page);
-    await page.goto('/agentes');
+    await navigateTo(page, '/agentes');
     await expect(page.locator('[role="alert"]')).toBeVisible();
     await expect(page.getByRole('button', { name: 'Tentar novamente' })).toBeVisible();
   });

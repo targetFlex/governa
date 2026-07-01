@@ -16,10 +16,12 @@
 //   - governa-gateway rodando com rota GET /pedidos
 // ============================================================
 import { test, expect, type Page } from '@playwright/test';
+import { loginE2E, navigateTo } from './helpers';
 
-// ── Helper: intercepta e injeta resposta mockada ──────────────
+// ── Helpers de mock ──────────────────────────────────────────
 async function mockPedidosAPI(page: Page, payload: object): Promise<void> {
-  await page.route('**/pedidos**', (route) =>
+  // Usa regex para capturar /pedidos com quaisquer query params
+  await page.route(/\/pedidos(\?|$)/, (route) =>
     route.fulfill({
       status: 200,
       contentType: 'application/json',
@@ -29,7 +31,7 @@ async function mockPedidosAPI(page: Page, payload: object): Promise<void> {
 }
 
 async function mockPedidosAPIError(page: Page): Promise<void> {
-  await page.route('**/pedidos**', (route) =>
+  await page.route(/\/pedidos(\?|$)/, (route) =>
     route.fulfill({
       status: 503,
       contentType: 'application/json',
@@ -76,46 +78,50 @@ const pedidosMock = {
 
 test.describe('GET /pedidos — listagem', () => {
 
+  test.beforeEach(async ({ page }) => {
+    await loginE2E(page);
+  });
+
   test('Given a rota /pedidos, When carregada, Then seção de pedidos é visível', async ({ page }) => {
     await mockPedidosAPI(page, pedidosMock);
-    await page.goto('/pedidos');
+    await navigateTo(page, '/pedidos');
     await expect(page.getByRole('region', { name: 'Lista de pedidos' })).toBeVisible();
   });
 
   test('Given API com 2 pedidos, When página carrega, Then exibe 2 cards', async ({ page }) => {
     await mockPedidosAPI(page, pedidosMock);
-    await page.goto('/pedidos');
+    await navigateTo(page, '/pedidos');
     const cards = page.locator('app-pedido-card');
     await expect(cards).toHaveCount(2);
   });
 
   test('Given API com 2 pedidos, When página carrega, Then número do primeiro pedido aparece', async ({ page }) => {
     await mockPedidosAPI(page, pedidosMock);
-    await page.goto('/pedidos');
+    await navigateTo(page, '/pedidos');
     await expect(page.getByText('PED-0001')).toBeVisible();
   });
 
   test('Given API com 2 pedidos, When página carrega, Then nome do cliente aparece', async ({ page }) => {
     await mockPedidosAPI(page, pedidosMock);
-    await page.goto('/pedidos');
+    await navigateTo(page, '/pedidos');
     await expect(page.getByText('Acme Tecnologia Ltda')).toBeVisible();
   });
 
   test('Given pedido CANCELADO, When exibido, Then badge "Cancelado" é visível', async ({ page }) => {
     await mockPedidosAPI(page, pedidosMock);
-    await page.goto('/pedidos');
+    await navigateTo(page, '/pedidos');
     await expect(page.getByText('Cancelado')).toBeVisible();
   });
 
   test('Given pedido com dataEntregaPrevista, When exibido, Then linha de entrega é visível', async ({ page }) => {
     await mockPedidosAPI(page, pedidosMock);
-    await page.goto('/pedidos');
+    await navigateTo(page, '/pedidos');
     await expect(page.getByText('Entrega prevista')).toBeVisible();
   });
 
   test('Given API com lista vazia, When página carrega, Then exibe mensagem de lista vazia', async ({ page }) => {
     await mockPedidosAPI(page, { data: [], total: 0, page: 1, pageSize: 20 });
-    await page.goto('/pedidos');
+    await navigateTo(page, '/pedidos');
     await expect(page.locator('app-pedido-card')).toHaveCount(0);
     const emptyMsg = page.getByText(/nenhum pedido|sem pedidos|lista vazia/i);
     await expect(emptyMsg).toBeVisible();
@@ -123,7 +129,7 @@ test.describe('GET /pedidos — listagem', () => {
 
   test('Given API com erro 503, When página carrega, Then exibe banner de erro com retry', async ({ page }) => {
     await mockPedidosAPIError(page);
-    await page.goto('/pedidos');
+    await navigateTo(page, '/pedidos');
     const errorBanner = page.locator('[role="alert"]');
     await expect(errorBanner).toBeVisible();
     const retryBtn = page.getByRole('button', { name: 'Tentar novamente' });
