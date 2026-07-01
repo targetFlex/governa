@@ -32,8 +32,7 @@ function makeCliente(override: Partial<Cliente> = {}): Cliente {
 // ── Suite ─────────────────────────────────────────────────────
 
 describe('ClientesListComponent', () => {
-  let fixture:   ComponentFixture<ClientesListComponent>;
-  let component: ClientesListComponent;
+  let fixture: ComponentFixture<ClientesListComponent>;
 
   // Signals mutáveis — alterados por cada teste antes de detectChanges()
   let clientes: WritableSignal<Cliente[]>;
@@ -70,8 +69,7 @@ describe('ClientesListComponent', () => {
       ],
     });
 
-    fixture   = TestBed.createComponent(ClientesListComponent);
-    component = fixture.componentInstance;
+    fixture = TestBed.createComponent(ClientesListComponent);
     // NÃO chamar detectChanges() aqui — cada teste controla o estado antes
   });
 

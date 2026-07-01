@@ -16,7 +16,7 @@
 // Sem lógica de negócio — apenas orquestração de I/O e estado.
 // ============================================================
 
-import { Injectable, inject, OnDestroy } from '@angular/core';
+import { inject } from '@angular/core';
 import { HttpClient, HttpParams }         from '@angular/common/http';
 import {
   signalStore,

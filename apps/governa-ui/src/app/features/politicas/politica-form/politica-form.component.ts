@@ -25,13 +25,13 @@ import {
   OnDestroy,
   inject,
   ChangeDetectionStrategy,
-  signal,
-  computed,
 }                               from '@angular/core';
 import { CommonModule }         from '@angular/common';
 import { ActivatedRoute }       from '@angular/router';
 import { FormsModule }          from '@angular/forms';
 import { PoliticasStore }       from '../politicas.service';
+import { GovInputComponent }    from '../../../shared/ui/input/gov-input.component';
+import { GovButtonComponent }   from '../../../shared/ui/button/gov-button.component';
 import type { AutonomyLevel, UpdatePoliticaDto } from '../../../shared/models/politica.model';
 
 // ── Metadados dos níveis (orientados ao gestor não-técnico) ──
@@ -76,7 +76,7 @@ const NIVEIS: NivelMeta[] = [
   selector:        'app-politica-form',
   standalone:      true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports:         [CommonModule, FormsModule],
+  imports:         [CommonModule, FormsModule, GovInputComponent, GovButtonComponent],
   template: `
     <section class="pf" aria-label="Configuração de política">
 
@@ -105,9 +105,9 @@ const NIVEIS: NivelMeta[] = [
       @if (store.hasError() && !store.loading() && !store.saving()) {
         <div class="pf__error" role="alert">
           <p class="pf__error-msg">{{ store.error() }}</p>
-          <button class="pf__retry-btn" type="button" (click)="retry()">
+          <gov-button variant="danger" size="sm" (clicked)="retry()">
             Tentar novamente
-          </button>
+          </gov-button>
         </div>
       }
 
@@ -130,22 +130,15 @@ const NIVEIS: NivelMeta[] = [
         <form class="pf__form" (ngSubmit)="onSubmit()" #form="ngForm" novalidate>
 
           <!-- Nome da política -->
-          <div class="pf__field">
-            <label class="pf__label" for="pf-nome">Nome da política</label>
-            <input
-              id="pf-nome"
-              class="pf__input"
-              type="text"
-              name="nome"
-              maxlength="120"
-              required
-              [(ngModel)]="formNome"
-              aria-describedby="pf-nome-hint"
-            />
-            <span id="pf-nome-hint" class="pf__hint">
-              Identifica esta política no painel e nos relatórios de auditoria.
-            </span>
-          </div>
+          <gov-input
+            label="Nome da política"
+            type="text"
+            name="nome"
+            [maxlength]="120"
+            [required]="true"
+            [(ngModel)]="formNome"
+            hint="Identifica esta política no painel e nos relatórios de auditoria."
+          />
 
           <!-- ── Seletor de nível ───────────────────────────── -->
           <fieldset class="pf__fieldset">
@@ -191,45 +184,26 @@ const NIVEIS: NivelMeta[] = [
               </p>
 
               <div class="pf__fields-row">
-                <div class="pf__field">
-                  <label class="pf__label" for="pf-valor-max">
-                    Valor máximo por operação (R$)
-                  </label>
-                  <input
-                    id="pf-valor-max"
-                    class="pf__input"
-                    type="number"
-                    name="maxValueBrl"
-                    min="0"
-                    step="0.01"
-                    [(ngModel)]="formMaxValue"
-                    aria-describedby="pf-valor-max-hint"
-                    placeholder="Ex.: 5000.00"
-                  />
-                  <span id="pf-valor-max-hint" class="pf__hint">
-                    Deixe em branco para sem limite financeiro.
-                  </span>
-                </div>
-
-                <div class="pf__field">
-                  <label class="pf__label" for="pf-janela">
-                    Janela de ação (horas)
-                  </label>
-                  <input
-                    id="pf-janela"
-                    class="pf__input"
-                    type="number"
-                    name="timeWindowH"
-                    min="1"
-                    step="1"
-                    [(ngModel)]="formTimeWindow"
-                    aria-describedby="pf-janela-hint"
-                    placeholder="Ex.: 24"
-                  />
-                  <span id="pf-janela-hint" class="pf__hint">
-                    Período em que o agente pode agir sem nova autorização.
-                  </span>
-                </div>
+                <gov-input
+                  label="Valor máximo por operação (R$)"
+                  type="number"
+                  name="maxValueBrl"
+                  min="0"
+                  step="0.01"
+                  [(ngModel)]="formMaxValue"
+                  placeholder="Ex.: 5000.00"
+                  hint="Deixe em branco para sem limite financeiro."
+                />
+                <gov-input
+                  label="Janela de ação (horas)"
+                  type="number"
+                  name="timeWindowH"
+                  min="1"
+                  step="1"
+                  [(ngModel)]="formTimeWindow"
+                  placeholder="Ex.: 24"
+                  hint="Período em que o agente pode agir sem nova autorização."
+                />
               </div>
             </fieldset>
           }
@@ -246,31 +220,26 @@ const NIVEIS: NivelMeta[] = [
               <div class="pf__approvers-list">
                 @for (email of formApprovers; track $index) {
                   <div class="pf__approver-row">
-                    <input
-                      class="pf__input pf__input--approver"
+                    <gov-input
                       type="email"
                       [name]="'approver_' + $index"
                       [(ngModel)]="formApprovers[$index]"
-                      [attr.aria-label]="'E-mail do aprovador ' + ($index + 1)"
+                      [ariaLabel]="'E-mail do aprovador ' + ($index + 1)"
                       placeholder="aprovador@empresa.com"
                     />
-                    <button
-                      type="button"
-                      class="pf__remove-btn"
-                      [attr.aria-label]="'Remover aprovador ' + ($index + 1)"
-                      (click)="removerAprovador($index)"
-                    >✕</button>
+                    <gov-button
+                      variant="ghost"
+                      size="sm"
+                      [ariaLabel]="'Remover aprovador ' + ($index + 1)"
+                      (clicked)="removerAprovador($index)"
+                    >✕</gov-button>
                   </div>
                 }
               </div>
 
-              <button
-                type="button"
-                class="pf__add-approver-btn"
-                (click)="adicionarAprovador()"
-              >
+              <gov-button variant="secondary" size="sm" (clicked)="adicionarAprovador()">
                 + Adicionar aprovador
-              </button>
+              </gov-button>
             </fieldset>
           }
 
@@ -300,19 +269,11 @@ const NIVEIS: NivelMeta[] = [
 
           <!-- ── Rodapé do formulário ────────────────────────── -->
           <footer class="pf__footer">
-            <button
+            <gov-button
               type="submit"
-              class="pf__save-btn"
               [disabled]="store.saving() || !formNome.trim()"
-              [attr.aria-busy]="store.saving()"
-            >
-              @if (store.saving()) {
-                <span class="pf__spinner" aria-hidden="true"></span>
-                Salvando…
-              } @else {
-                Salvar política
-              }
-            </button>
+              [loading]="store.saving()"
+            >Salvar política</gov-button>
             <p class="pf__version-hint">
               Cada salvamento cria uma nova versão. O histórico completo fica
               no audit trail.

@@ -4,7 +4,7 @@
 // TDD — Given/When/Then + jest-axe WCAG 2.1 AA
 // ============================================================
 
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { TestBed } from '@angular/core/testing';
 import { axe, toHaveNoViolations }   from 'jest-axe';
 import { AlertasListComponent }      from './alertas-list.component';
 import { AlertasStore }              from '../alertas.service';
@@ -107,7 +107,7 @@ describe('AlertasListComponent', () => {
 
     it('chama desconectarStream no ngOnDestroy', async () => {
       const mock            = makeStoreMock();
-      const { fixture, comp } = await setup(mock);
+      const { comp } = await setup(mock);
       comp.ngOnDestroy();
       expect(mock.useValue.desconectarStream).toHaveBeenCalled();
     });

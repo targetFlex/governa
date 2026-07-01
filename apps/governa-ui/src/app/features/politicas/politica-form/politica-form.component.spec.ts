@@ -4,9 +4,8 @@
 // TDD — Given/When/Then  (13 testes)
 // ============================================================
 
-import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { ActivatedRoute }            from '@angular/router';
-import { of }                        from 'rxjs';
+import { TestBed }         from '@angular/core/testing';
+import { ActivatedRoute } from '@angular/router';
 import { axe, toHaveNoViolations }   from 'jest-axe';
 import { PoliticaFormComponent }     from './politica-form.component';
 import { PoliticasStore }            from '../politicas.service';
@@ -145,14 +144,14 @@ describe('PoliticaFormComponent — estados especiais', () => {
     const component = fixture.componentInstance;
     component.formNivel = 'ASSISTIDO';
     fixture.detectChanges();
-    const addBtn = fixture.nativeElement.querySelector('.pf__add-approver-btn');
+    const addBtn = fixture.nativeElement.querySelector('.pf__approvers-list ~ gov-button button');
     expect(addBtn).not.toBeNull();
   });
 
   it('botão salvar fica desabilitado durante saving', async () => {
     const { fixture } = await setup({ saving: () => true });
     fixture.detectChanges();
-    const btn = fixture.nativeElement.querySelector('.pf__save-btn') as HTMLButtonElement;
+    const btn = fixture.nativeElement.querySelector('.pf__footer gov-button button') as HTMLButtonElement;
     expect(btn?.disabled).toBe(true);
   });
 });

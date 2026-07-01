@@ -12,7 +12,6 @@
 
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule, CurrencyPipe, DatePipe } from '@angular/common';
-import { AuthService } from '../../core/auth/auth.service';
 import { PedidosService } from '../pedidos/pedidos.service';
 import { ClientesService } from '../clientes/clientes.service';
 
@@ -22,19 +21,6 @@ import { ClientesService } from '../clientes/clientes.service';
   imports: [CommonModule, CurrencyPipe, DatePipe],
   template: `
     <main class="dashboard" role="main">
-      <!-- ── Header ─────────────────────────────────────────── -->
-      <header class="dashboard-header">
-        <h1 class="dashboard-title">Dashboard</h1>
-        <button
-          class="btn-logout"
-          type="button"
-          aria-label="Encerrar sessão"
-          (click)="logout()"
-        >
-          Sair
-        </button>
-      </header>
-
       <!-- ── Pedidos ────────────────────────────────────────── -->
       <section class="dashboard-section" aria-labelledby="secao-pedidos">
         <div class="section-header">
@@ -251,22 +237,6 @@ import { ClientesService } from '../clientes/clientes.service';
       margin: 0 auto;
     }
 
-    /* ── Header ─────────────────────────────────────────────── */
-    .dashboard-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: var(--gov-space-8);
-      padding-bottom: var(--gov-space-4);
-      border-bottom: 1px solid var(--gov-color-border);
-    }
-
-    .dashboard-title {
-      font-size: var(--gov-font-size-2xl);
-      font-weight: var(--gov-font-weight-bold);
-      color: var(--gov-color-text-primary);
-    }
-
     /* ── Seções ─────────────────────────────────────────────── */
     .dashboard-section {
       margin-bottom: var(--gov-space-10);
@@ -304,36 +274,20 @@ import { ClientesService } from '../clientes/clientes.service';
     }
 
     /* ── Buttons ─────────────────────────────────────────────── */
-    .btn-logout,
     .btn-refresh {
       padding: var(--gov-space-2) var(--gov-space-4);
       border-radius: var(--gov-radius-md);
       font-size: var(--gov-font-size-sm);
       transition: all var(--gov-transition-fast);
       cursor: pointer;
+      background: var(--gov-color-primary-600);
+      color: #fff;
+      border: none;
 
       &:disabled {
         opacity: 0.5;
         cursor: not-allowed;
       }
-    }
-
-    .btn-logout {
-      background: transparent;
-      color: var(--gov-color-text-secondary);
-      border: 1px solid var(--gov-color-border);
-
-      &:hover:not(:disabled) {
-        background: var(--gov-color-error-100);
-        border-color: var(--gov-color-error-500);
-        color: var(--gov-color-error-700);
-      }
-    }
-
-    .btn-refresh {
-      background: var(--gov-color-primary-600);
-      color: #fff;
-      border: none;
 
       &:hover:not(:disabled) {
         background: var(--gov-color-primary-700);
@@ -513,7 +467,6 @@ import { ClientesService } from '../clientes/clientes.service';
   `],
 })
 export class DashboardComponent implements OnInit {
-  protected readonly auth         = inject(AuthService);
   protected readonly pedidosSvc   = inject(PedidosService);
   protected readonly clientesSvc  = inject(ClientesService);
 
@@ -525,10 +478,6 @@ export class DashboardComponent implements OnInit {
   ngOnInit(): void {
     this.pedidosSvc.loadPedidos();
     this.clientesSvc.loadClientes();
-  }
-
-  logout(): void {
-    this.auth.logout();
   }
 
   reloadPedidos(): void {

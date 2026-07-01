@@ -24,6 +24,10 @@ import { createAuditRouter }                            from './modules/audit/pr
 import { createAlertRouter }                            from './modules/alerts/presentation/alert.router'
 import { createViolationRouter }                        from './modules/alerts/presentation/violation.router'
 import { createToolCheckRouter }                        from './modules/policies/presentation/tool-check.router'
+import { createNotificationConfigRouter }               from './modules/alerts/presentation/notification-config.router'
+import { createAnchorAgentRouter }                      from './modules/anchor-agent/presentation/anchor-agent.router'
+import { createFluigWebhookRouter }                     from './modules/anchor-agent/presentation/fluig-webhook.router'
+import { createPendingActionRouter }                    from './modules/pending-actions/presentation/pending-action.router'
 
 import type { AgentService }                            from './modules/agents/application/agent.service'
 import type { ConsultarPedidoUseCase }                  from './modules/pedidos/application/consultar-pedido.use-case'
@@ -33,6 +37,10 @@ import type { PolicyEngine }                            from './modules/policies
 import type { AuditQueryService }                       from './modules/audit/application/audit.query.service'
 import type { AlertService }                            from './modules/alerts/application/alert.service'
 import type { PolicyViolationAlertService }             from './modules/alerts/application/policy-violation-alert.service'
+import type { NotificationService }                     from './modules/alerts/application/notification.service'
+import type { AnchorAgentService }                      from './modules/anchor-agent/application/anchor-agent.service'
+import type { FluigWebhookService }                     from './modules/anchor-agent/application/fluig-webhook.service'
+import type { PendingActionService }                    from './modules/pending-actions/application/pending-action.service'
 
 // ─── Contrato de dependências injetadas ───────────────────────────────────────
 
@@ -46,6 +54,14 @@ export interface AppDependencies {
   auditQueryService:            AuditQueryService
   alertService:                 AlertService
   policyViolationAlertService:  PolicyViolationAlertService
+  notificationService?:         NotificationService
+  /** E3.1 — Agente âncora consultivo (opt-in via ANTHROPIC_API_KEY) */
+  anchorAgentService?:          AnchorAgentService
+  /** E3.3 — Webhook Fluig (opt-in via FLUIG_API_KEY + ANTHROPIC_API_KEY + PII_HMAC_KEY) */
+  fluigWebhookService?:         FluigWebhookService
+  fluigApiKey?:                 string
+  /** E3.4 — Checkpoint humano (PendingAction) */
+  pendingActionService?:        PendingActionService
 }
 
 // ─── Factory ──────────────────────────────────────────────────────────────────
@@ -63,6 +79,11 @@ export function createApp(deps: AppDependencies): Application {
     res.json({ status: 'ok', ts: new Date().toISOString() })
   })
 
+  // ── E3.3: Webhook Fluig — ANTES do tenantMiddleware (auth via X-Fluig-Api-Key) ──
+  if (deps.fluigWebhookService && deps.fluigApiKey) {
+    app.use('/webhooks', createFluigWebhookRouter(deps.fluigWebhookService, deps.fluigApiKey))
+  }
+
   // ── Autenticação obrigatória para todos os recursos abaixo ──────────────────
   app.use(tenantMiddleware)
 
@@ -74,6 +95,17 @@ export function createApp(deps: AppDependencies): Application {
   app.use('/audit-events',  createAuditRouter(deps.auditQueryService))
   app.use('/alerts',        createAlertRouter(deps.alertService))
   app.use('/violations',    createViolationRouter(deps.policyViolationAlertService))
+  if (deps.notificationService) {
+    app.use('/notifications', createNotificationConfigRouter(deps.notificationService))
+  }
+  // E3.1 — agente âncora (montado apenas se ANTHROPIC_API_KEY estiver configurada)
+  if (deps.anchorAgentService) {
+    app.use('/anchor-agent', createAnchorAgentRouter(deps.anchorAgentService))
+  }
+  // E3.4 — checkpoint humano (pending actions)
+  if (deps.pendingActionService) {
+    app.use('/pending-actions', createPendingActionRouter(deps.pendingActionService))
+  }
   // E5.4 — expõe assertToolAllowed() via HTTP (montado apenas se policyEngine disponível)
   if (deps.policyEngine) {
     app.use('/policies',    createToolCheckRouter(deps.policyEngine))

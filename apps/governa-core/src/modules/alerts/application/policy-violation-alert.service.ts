@@ -18,13 +18,15 @@ import type { Alert }             from '../domain/alert.types'
 import type { ViolationDetector } from '../domain/violation-detector.port'
 import type { ViolationEvent }    from '../domain/violation-event'
 import type { AlertService }      from './alert.service'
+import type { NotificationService } from './notification.service'
 import { recordAlertCreated }     from '../../../infra/telemetry/metrics'
 
 export class PolicyViolationAlertService {
   constructor(
-    private readonly alertService: AlertService,
-    private readonly alertRepo:    AlertRepository,
-    private readonly detectors:    ViolationDetector[],
+    private readonly alertService:        AlertService,
+    private readonly alertRepo:           AlertRepository,
+    private readonly detectors:           ViolationDetector[],
+    private readonly notificationService: NotificationService | null = null,
   ) {}
 
   /**
@@ -50,6 +52,12 @@ export class PolicyViolationAlertService {
       const alert = await this.alertService.triggerAlert(input)
       recordAlertCreated({ kind: alert.kind, severity: alert.severity, tenantId: alert.tenantId })
       fired.push(alert)
+
+      if (this.notificationService) {
+        this.notificationService.dispatch(alert).catch((err) =>
+          console.error('[NotificationService] dispatch failed', err),
+        )
+      }
     }
 
     return fired

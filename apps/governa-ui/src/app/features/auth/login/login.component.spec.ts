@@ -79,14 +79,15 @@ describe('LoginComponent', () => {
     });
 
     it('deve exibir os campos de e-mail e senha', () => {
-      const email    = fixture.nativeElement.querySelector('#email');
-      const password = fixture.nativeElement.querySelector('#password');
+      const inputs   = fixture.nativeElement.querySelectorAll('gov-input input');
+      const email    = inputs[0];
+      const password = inputs[1];
       expect(email).toBeTruthy();
       expect(password).toBeTruthy();
     });
 
     it('não deve exibir erro de e-mail inicialmente', () => {
-      const emailError = fixture.nativeElement.querySelector('.field-error');
+      const emailError = fixture.nativeElement.querySelector('.gov-field__error');
       expect(emailError).toBeNull();
     });
 
@@ -107,7 +108,7 @@ describe('LoginComponent', () => {
       ctrl.setValue('');
       fixture.detectChanges();
 
-      const error = fixture.nativeElement.querySelector('.field-error');
+      const error = fixture.nativeElement.querySelector('.gov-field__error');
       expect(error).toBeTruthy();
     });
 
@@ -117,7 +118,7 @@ describe('LoginComponent', () => {
       ctrl.setValue('not-an-email');
       fixture.detectChanges();
 
-      const error = fixture.nativeElement.querySelector('.field-error');
+      const error = fixture.nativeElement.querySelector('.gov-field__error');
       expect(error).toBeTruthy();
     });
 
@@ -127,7 +128,7 @@ describe('LoginComponent', () => {
       ctrl.setValue('user@example.com');
       fixture.detectChanges();
 
-      const error = fixture.nativeElement.querySelector('.field-error');
+      const error = fixture.nativeElement.querySelector('.gov-field__error');
       expect(error).toBeNull();
     });
   });
@@ -143,7 +144,7 @@ describe('LoginComponent', () => {
       ctrl.setValue('');
       fixture.detectChanges();
 
-      const errors = fixture.nativeElement.querySelectorAll('.field-error');
+      const errors = fixture.nativeElement.querySelectorAll('.gov-field__error');
       expect(errors.length).toBeGreaterThan(0);
     });
 
@@ -153,7 +154,7 @@ describe('LoginComponent', () => {
       ctrl.setValue('abc');
       fixture.detectChanges();
 
-      const errors = fixture.nativeElement.querySelectorAll('.field-error');
+      const errors = fixture.nativeElement.querySelectorAll('.gov-field__error');
       expect(errors.length).toBeGreaterThan(0);
     });
   });

@@ -30,6 +30,10 @@ import {
 import { CommonModule }      from '@angular/common';
 import { FormsModule }       from '@angular/forms';
 import { AlertasStore }      from '../alertas.service';
+import { GovInputComponent } from '../../../shared/ui/input/gov-input.component';
+import { GovSelectComponent, SelectOption } from '../../../shared/ui/select/gov-select.component';
+import { GovButtonComponent } from '../../../shared/ui/button/gov-button.component';
+import { NotificationConfigPanelComponent } from '../notification-config-panel/notification-config-panel.component';
 import {
   ALERT_KINDS,
   ALERT_STATUSES,
@@ -47,7 +51,7 @@ import {
   selector: 'app-alertas-list',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, GovInputComponent, GovSelectComponent, GovButtonComponent, NotificationConfigPanelComponent],
   template: `
     <section class="alertas" aria-label="Feed de alertas dos agentes">
 
@@ -77,7 +81,16 @@ import {
             aria-controls="painel-config"
             (click)="toggleConfig()"
           >
-            {{ mostrarConfig ? 'Fechar configurações' : 'Configurar thresholds' }}
+            {{ mostrarConfig ? 'Fechar thresholds' : 'Configurar thresholds' }}
+          </button>
+          <button
+            class="alertas__btn-config"
+            type="button"
+            [attr.aria-expanded]="mostrarNotifConfig"
+            aria-controls="painel-notif-config"
+            (click)="toggleNotifConfig()"
+          >
+            {{ mostrarNotifConfig ? 'Fechar notificações' : 'Canais de notificação' }}
           </button>
         </div>
       </header>
@@ -161,54 +174,24 @@ import {
         </div>
       </aside>
 
+      <!-- ── Painel de canais de notificação ───────────────── -->
+      <div *ngIf="mostrarNotifConfig" id="painel-notif-config">
+        <app-notification-config-panel />
+      </div>
+
       <!-- ── Filtros ─────────────────────────────────────────── -->
       <form class="alertas__filtros" (ngSubmit)="aplicarFiltros()" role="search" aria-label="Filtrar alertas">
-
-        <label class="alertas__filtro-label">
-          Tipo
-          <select class="alertas__filtro-select" [(ngModel)]="kindFiltro" name="kind">
-            <option value="">Todos</option>
-            <option *ngFor="let k of kinds" [value]="k">{{ kindLabel(k) }}</option>
-          </select>
-        </label>
-
-        <label class="alertas__filtro-label">
-          Status
-          <select class="alertas__filtro-select" [(ngModel)]="statusFiltro" name="status">
-            <option value="">Todos</option>
-            <option *ngFor="let s of statuses" [value]="s">{{ statusLabel(s) }}</option>
-          </select>
-        </label>
-
-        <label class="alertas__filtro-label">
-          Agente (ID)
-          <input
-            class="alertas__filtro-input"
-            type="text"
-            [(ngModel)]="agentIdFiltro"
-            name="agentId"
-            placeholder="UUID do agente"
-            autocomplete="off"
-          />
-        </label>
-
-        <label class="alertas__filtro-label">
-          De
-          <input class="alertas__filtro-input" type="datetime-local" [(ngModel)]="fromFiltro" name="from" />
-        </label>
-
-        <label class="alertas__filtro-label">
-          Até
-          <input class="alertas__filtro-input" type="datetime-local" [(ngModel)]="toFiltro" name="to" />
-        </label>
-
+        <gov-select label="Tipo" [(ngModel)]="kindFiltro" name="kind"
+          placeholder="Todos" [options]="kindOptions" />
+        <gov-select label="Status" [(ngModel)]="statusFiltro" name="status"
+          placeholder="Todos" [options]="statusOptions" />
+        <gov-input label="Agente (ID)" type="text" [(ngModel)]="agentIdFiltro"
+          name="agentId" placeholder="UUID do agente" autocomplete="off" />
+        <gov-input label="De" type="datetime-local" [(ngModel)]="fromFiltro" name="from" />
+        <gov-input label="Até" type="datetime-local" [(ngModel)]="toFiltro" name="to" />
         <div class="alertas__filtro-acoes">
-          <button class="alertas__btn alertas__btn-filtrar" type="submit" aria-label="Aplicar filtros">
-            Filtrar
-          </button>
-          <button class="alertas__btn alertas__btn-limpar" type="button" (click)="limparFiltros()" aria-label="Limpar filtros">
-            Limpar
-          </button>
+          <gov-button type="submit" ariaLabel="Aplicar filtros">Filtrar</gov-button>
+          <gov-button variant="secondary" ariaLabel="Limpar filtros" (clicked)="limparFiltros()">Limpar</gov-button>
         </div>
       </form>
 
@@ -220,9 +203,9 @@ import {
         aria-live="assertive"
       >
         <p class="alertas__erro-msg">{{ store.error() }}</p>
-        <button class="alertas__btn alertas__btn-retry" type="button" (click)="retry()" aria-label="Tentar novamente">
+        <gov-button variant="danger" size="sm" ariaLabel="Tentar novamente" (clicked)="retry()">
           Tentar novamente
-        </button>
+        </gov-button>
       </div>
 
       <!-- ── Loading skeletons ──────────────────────────────── -->
@@ -716,10 +699,14 @@ export class AlertasListComponent implements OnInit, OnDestroy {
   readonly store    = inject(AlertasStore);
   readonly kinds    = ALERT_KINDS;
   readonly statuses = ALERT_STATUSES;
+
+  readonly kindOptions: SelectOption[]   = ALERT_KINDS.map(k => ({ value: k, label: KIND_LABELS[k] ?? k }));
+  readonly statusOptions: SelectOption[] = ALERT_STATUSES.map(s => ({ value: s, label: STATUS_LABELS[s] ?? s }));
   readonly skeletons  = Array(5).fill(0);
   readonly skeletons4 = Array(4).fill(0);
 
-  mostrarConfig = false;
+  mostrarConfig       = false;
+  mostrarNotifConfig  = false;
 
   // ── Campos de filtro ────────────────────────────────────────
   kindFiltro:    AlertKind | '' = '';
@@ -740,6 +727,10 @@ export class AlertasListComponent implements OnInit, OnDestroy {
 
   toggleConfig(): void {
     this.mostrarConfig = !this.mostrarConfig;
+  }
+
+  toggleNotifConfig(): void {
+    this.mostrarNotifConfig = !this.mostrarNotifConfig;
   }
 
   aplicarFiltros(): void {

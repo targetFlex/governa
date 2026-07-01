@@ -14,7 +14,7 @@
 // sem lógica de negócio, sem formatação de datas no service.
 // ============================================================
 
-import { Injectable, inject } from '@angular/core';
+import { inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import {
   signalStore,
@@ -30,7 +30,6 @@ import {
   AuditEvent,
   AuditEventPage,
   AuditFiltros,
-  Outcome,
 } from '../../shared/models/auditoria.model';
 
 // ── Estado do store ──────────────────────────────────────────
