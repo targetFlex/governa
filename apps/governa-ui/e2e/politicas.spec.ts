@@ -111,7 +111,7 @@ test('exibe banner de erro com retry quando GET retorna 503', async ({ page }) =
   });
 
   await navigateTo(page, POLICY_URL);
-  await expect(page.getByRole('alert')).toBeVisible();
+  await expect(page.locator('.pf__error')).toBeVisible();
   await expect(page.getByRole('button', { name: /Tentar novamente/ })).toBeVisible();
 });
 
