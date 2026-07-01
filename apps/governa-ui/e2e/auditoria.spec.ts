@@ -78,7 +78,7 @@ test.describe('Auditoria — /auditoria', () => {
   test('E2E-AUD-2: exibe título "Audit Trail"', async ({ page }) => {
     await mockAuditoriaRoute(page);
     await navigateTo(page, '/auditoria');
-    await expect(page.locator('h1')).toContainText('Audit Trail');
+    await expect(page.locator('.auditoria__titulo')).toContainText('Audit Trail');
   });
 
   test('E2E-AUD-3: filtros de agente, período e desfecho renderizam', async ({ page }) => {

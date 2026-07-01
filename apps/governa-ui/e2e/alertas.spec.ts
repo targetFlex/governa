@@ -85,14 +85,14 @@ test.describe('Alertas — /alertas', () => {
   test('E2E-ALT-2: exibe título "Alertas"', async ({ page }) => {
     await mockAlertasRoute(page);
     await navigateTo(page, '/alertas');
-    await expect(page.locator('h1')).toContainText('Alertas');
+    await expect(page.locator('.alertas__titulo')).toContainText('Alertas');
   });
 
   test('E2E-ALT-3: filtros de kind, status e agentId visíveis', async ({ page }) => {
     await mockAlertasRoute(page);
     await navigateTo(page, '/alertas');
     await expect(page.getByLabel('Tipo')).toBeVisible();
-    await expect(page.getByLabel('Status')).toBeVisible();
+    await expect(page.getByLabel('Status', { exact: true })).toBeVisible();
     await expect(page.getByLabel('Agente (ID)')).toBeVisible();
   });
 
