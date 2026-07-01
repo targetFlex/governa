@@ -240,6 +240,19 @@ describe('AR-10: exportEvents repassa outcome', () => {
   })
 })
 
+// AR-11a: GET /audit-events/export com parâmetro inválido → 400
+
+describe('AR-11a: GET /audit-events/export com outcome inválido', () => {
+  it('retorna 400 quando outcome é inválido', async () => {
+    const service        = makeMockService()
+    const { url, close } = await startApp(service)
+    try {
+      const { status } = await get(url, '/audit-events/export?outcome=INVALIDO', makeJwt())
+      expect(status).toBe(400)
+    } finally { close() }
+  })
+})
+
 // AR-11: isolamento tenant — tenantId do JWT, não da query
 
 describe('AR-11: tenantId extraído do JWT', () => {
