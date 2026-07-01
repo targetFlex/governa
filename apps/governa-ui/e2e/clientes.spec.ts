@@ -14,10 +14,12 @@
 //   - governa-gateway rodando com rota GET /clientes
 // ============================================================
 import { test, expect, type Page } from '@playwright/test';
+import { loginE2E, navigateTo } from './helpers';
 
 // ── Helper: intercepta e injeta resposta mockada ──────────────
 async function mockClientesAPI(page: Page, payload: object): Promise<void> {
-  await page.route('**/clientes**', (route) =>
+  // Usa regex para capturar /clientes com quaisquer query params
+  await page.route(/\/clientes(\?|$)/, (route) =>
     route.fulfill({
       status: 200,
       contentType: 'application/json',
@@ -67,44 +69,46 @@ const clientesMock = {
 // ── Testes ────────────────────────────────────────────────────
 test.describe('GET /clientes — listagem', () => {
 
+  test.beforeEach(async ({ page }) => {
+    await loginE2E(page);
+  });
+
   test('Given a rota /clientes, When carregada, Then título principal é visível', async ({ page }) => {
     await mockClientesAPI(page, clientesMock);
-    await page.goto('/clientes');
+    await navigateTo(page, '/clientes');
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
   });
 
   test('Given API com 2 clientes, When página carrega, Then exibe 2 cards', async ({ page }) => {
     await mockClientesAPI(page, clientesMock);
-    await page.goto('/clientes');
+    await navigateTo(page, '/clientes');
     const cards = page.locator('app-cliente-card');
     await expect(cards).toHaveCount(2);
   });
 
   test('Given API com 2 clientes, When página carrega, Then nome do primeiro cliente aparece', async ({ page }) => {
     await mockClientesAPI(page, clientesMock);
-    await page.goto('/clientes');
+    await navigateTo(page, '/clientes');
     await expect(page.getByText('Empresa Exemplo LTDA')).toBeVisible();
   });
 
   test('Given API com lista vazia, When página carrega, Then exibe mensagem de lista vazia', async ({ page }) => {
     await mockClientesAPI(page, { data: [], total: 0, page: 1, pageSize: 20 });
-    await page.goto('/clientes');
-    // Aguarda ausência de cards e mensagem de estado vazio
+    await navigateTo(page, '/clientes');
     await expect(page.locator('app-cliente-card')).toHaveCount(0);
-    // Componente deve exibir algum feedback ao usuário
     const emptyMsg = page.getByText(/nenhum cliente|sem clientes|lista vazia/i);
     await expect(emptyMsg).toBeVisible();
   });
 
   test('Given cliente inativo, When exibido, Then badge "Inativo" é visível', async ({ page }) => {
     await mockClientesAPI(page, clientesMock);
-    await page.goto('/clientes');
+    await navigateTo(page, '/clientes');
     await expect(page.getByText('Inativo')).toBeVisible();
   });
 
   test('Given cliente ativo, When link de email clicado, Then href é mailto correto', async ({ page }) => {
     await mockClientesAPI(page, clientesMock);
-    await page.goto('/clientes');
+    await navigateTo(page, '/clientes');
     const emailLink = page.locator('a[href^="mailto:contato@empresa.com"]');
     await expect(emailLink).toBeVisible();
     await expect(emailLink).toHaveAttribute('href', 'mailto:contato@empresa.com');

@@ -24,6 +24,7 @@ import {
   OnInit,
   OnDestroy,
   inject,
+  effect,
   ChangeDetectionStrategy,
 }                               from '@angular/core';
 import { CommonModule }         from '@angular/common';
@@ -604,12 +605,17 @@ export class PoliticaFormComponent implements OnInit, OnDestroy {
 
   private policyId = '';
 
+  constructor() {
+    // Re-sincroniza o formulário sempre que store.politica() mudar (ex.: após retry)
+    effect(() => { this.syncForm(); });
+  }
+
   ngOnInit(): void {
     this.policyId = this.route.snapshot.paramMap.get('id') ?? '';
     if (this.policyId) {
       this.store.loadPolitica(this.policyId);
     }
-    // Sincroniza form quando politica() carrega
+    // Sync imediato — cobre dados já em cache ou mock síncrono em testes
     this.syncForm();
   }
 

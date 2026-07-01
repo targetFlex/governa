@@ -6,6 +6,7 @@
 // ============================================================
 
 import { test, expect } from '@playwright/test';
+import { loginE2E, navigateTo } from './helpers';
 
 const POLICY_ID  = 'policy-test-1';
 const POLICY_URL = `/politicas/${POLICY_ID}`;
@@ -22,24 +23,31 @@ const POLICY_STUB = {
 };
 
 test.beforeEach(async ({ page }) => {
-  // Mock GET /policies/:id
-  await page.route(`${API_URL}`, (route) => {
+  await loginE2E(page);
+});
+
+test('exibe cabeçalho e versão atual da política', async ({ page }) => {
+  await page.route(API_URL, (route) => {
     if (route.request().method() === 'GET') {
       route.fulfill({ json: { data: POLICY_STUB } });
     } else {
       route.continue();
     }
   });
-});
-
-test('exibe cabeçalho e versão atual da política', async ({ page }) => {
-  await page.goto(POLICY_URL);
+  await navigateTo(page, POLICY_URL);
   await expect(page.getByRole('heading', { name: /Configurar Política/ })).toBeVisible();
   await expect(page.getByText('1.0.0')).toBeVisible();
 });
 
 test('renderiza 3 cards de nível; CONSULTIVO selecionado por padrão', async ({ page }) => {
-  await page.goto(POLICY_URL);
+  await page.route(API_URL, (route) => {
+    if (route.request().method() === 'GET') {
+      route.fulfill({ json: { data: POLICY_STUB } });
+    } else {
+      route.continue();
+    }
+  });
+  await navigateTo(page, POLICY_URL);
   const cards = page.locator('[role="radio"]');
   await expect(cards).toHaveCount(3);
   await expect(page.locator('[role="radio"][aria-checked="true"]'))
@@ -47,7 +55,14 @@ test('renderiza 3 cards de nível; CONSULTIVO selecionado por padrão', async ({
 });
 
 test('selecionar ASSISTIDO exibe seção de aprovadores e limites', async ({ page }) => {
-  await page.goto(POLICY_URL);
+  await page.route(API_URL, (route) => {
+    if (route.request().method() === 'GET') {
+      route.fulfill({ json: { data: POLICY_STUB } });
+    } else {
+      route.continue();
+    }
+  });
+  await navigateTo(page, POLICY_URL);
   await page.locator('[role="radio"]').filter({ hasText: 'Com Aprovação' }).click();
 
   await expect(page.getByLabel(/Valor máximo/)).toBeVisible();
@@ -56,7 +71,14 @@ test('selecionar ASSISTIDO exibe seção de aprovadores e limites', async ({ pag
 });
 
 test('selecionar AUTONOMO exibe limites mas não aprovadores', async ({ page }) => {
-  await page.goto(POLICY_URL);
+  await page.route(API_URL, (route) => {
+    if (route.request().method() === 'GET') {
+      route.fulfill({ json: { data: POLICY_STUB } });
+    } else {
+      route.continue();
+    }
+  });
+  await navigateTo(page, POLICY_URL);
   await page.locator('[role="radio"]').filter({ hasText: 'Ação Direta' }).click();
 
   await expect(page.getByLabel(/Valor máximo/)).toBeVisible();
@@ -74,13 +96,13 @@ test('salvar política chama PATCH e exibe banner de sucesso', async ({ page }) 
     }
   });
 
-  await page.goto(POLICY_URL);
+  await navigateTo(page, POLICY_URL);
   await page.getByLabel('Nome da política').clear();
   await page.getByLabel('Nome da política').fill('Novo Nome');
   await page.getByRole('button', { name: /Salvar política/ }).click();
 
   await expect(page.getByRole('status')).toContainText('atualizada com sucesso');
-  await expect(page.getByText('1.1.0')).toBeVisible();
+  await expect(page.getByText('1.1.0').first()).toBeVisible();
 });
 
 test('exibe banner de erro com retry quando GET retorna 503', async ({ page }) => {
@@ -88,8 +110,8 @@ test('exibe banner de erro com retry quando GET retorna 503', async ({ page }) =
     route.fulfill({ status: 503, json: {} });
   });
 
-  await page.goto(POLICY_URL);
-  await expect(page.getByRole('alert')).toBeVisible();
+  await navigateTo(page, POLICY_URL);
+  await expect(page.locator('.pf__error')).toBeVisible();
   await expect(page.getByRole('button', { name: /Tentar novamente/ })).toBeVisible();
 });
 
@@ -104,8 +126,8 @@ test('retry após erro dispara novo GET e carrega a política', async ({ page })
     }
   });
 
-  await page.goto(POLICY_URL);
+  await navigateTo(page, POLICY_URL);
   await page.getByRole('button', { name: /Tentar novamente/ }).click();
   await expect(page.getByRole('heading', { name: /Configurar Política/ })).toBeVisible();
-  await expect(page.getByText('Atendimento Consultivo')).toBeVisible();
+  await expect(page.getByLabel('Nome da política')).toHaveValue('Atendimento Consultivo');
 });

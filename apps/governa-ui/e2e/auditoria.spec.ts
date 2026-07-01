@@ -4,60 +4,91 @@
  * Cobre: carga inicial, filtros, paginação, export, erro, retry.
  */
 
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
+import { loginE2E, navigateTo } from './helpers';
 
-const BASE_URL  = 'http://localhost:4200';
-const AUDIT_URL = `${BASE_URL}/auditoria`;
+// ── Fixtures ─────────────────────────────────────────────────
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+const EVENTOS_MOCK = {
+  data: [
+    {
+      id:           'ev-1',
+      tenantId:     't1',
+      agentId:      'aaaaaaaa-0000-0000-0000-000000000001',
+      traceId:      'trace-001',
+      spanId:       'span-001',
+      action:       'read_protheus_pedido',
+      toolCalled:   'read_protheus_pedido',
+      inputSummary: 'Consulta de pedido PED-0001',
+      outcome:      'EXECUTADO',
+      legalBasis:   'Legítimo interesse',
+      latencyMs:    120,
+      createdAt:    '2026-06-01T10:00:00Z',
+    },
+  ],
+  total: 1,
+  page:  1,
+  limit: 20,
+};
 
-async function loginAndGoTo(page: import('@playwright/test').Page, path: string) {
-  // Injeta token fake no localStorage para passar o authGuard
-  await page.goto(`${BASE_URL}/login`);
-  await page.evaluate(() => {
-    localStorage.setItem('governa_token', 'fake-jwt-for-e2e');
-  });
-  await page.goto(path);
-  await page.waitForLoadState('networkidle');
+// ── Helpers de mock ──────────────────────────────────────────
+
+async function mockAuditoriaRoute(page: Page, payload = EVENTOS_MOCK): Promise<void> {
+  await page.route(/\/audit-events(\?|$)/, (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(payload),
+    }),
+  );
 }
 
-// ─── Testes ───────────────────────────────────────────────────────────────────
+async function mockExportRoute(page: Page): Promise<void> {
+  await page.route(/\/audit-events\/export/, (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ data: [], total: 0 }),
+    }),
+  );
+}
+
+// ── Testes ───────────────────────────────────────────────────
 
 test.describe('Auditoria — /auditoria', () => {
 
-  // E2E-AUD-1: carga inicial — request para /audit-events
+  test.beforeEach(async ({ page }) => {
+    await loginE2E(page);
+  });
 
   test('E2E-AUD-1: carga inicial faz request GET /audit-events', async ({ page }) => {
     const requests: string[] = [];
     page.on('request', (req) => {
-      if (req.url().includes('/audit-events') && !req.url().includes('/export')) {
+      if (/\/audit-events(\?|$)/.test(req.url())) {
         requests.push(req.url());
       }
     });
 
-    await loginAndGoTo(page, AUDIT_URL);
+    await mockAuditoriaRoute(page);
+    await navigateTo(page, '/auditoria');
+    await page.waitForLoadState('networkidle');
     expect(requests.length).toBeGreaterThan(0);
   });
 
-  // E2E-AUD-2: título visível
-
   test('E2E-AUD-2: exibe título "Audit Trail"', async ({ page }) => {
-    await loginAndGoTo(page, AUDIT_URL);
-    const titulo = page.locator('h1');
-    await expect(titulo).toContainText('Audit Trail');
+    await mockAuditoriaRoute(page);
+    await navigateTo(page, '/auditoria');
+    await expect(page.locator('.auditoria__titulo')).toContainText('Audit Trail');
   });
-
-  // E2E-AUD-3: filtros visíveis
 
   test('E2E-AUD-3: filtros de agente, período e desfecho renderizam', async ({ page }) => {
-    await loginAndGoTo(page, AUDIT_URL);
-    await expect(page.locator('#filtro-agente')).toBeVisible();
-    await expect(page.locator('#filtro-from')).toBeVisible();
-    await expect(page.locator('#filtro-to')).toBeVisible();
-    await expect(page.locator('#filtro-outcome')).toBeVisible();
+    await mockAuditoriaRoute(page);
+    await navigateTo(page, '/auditoria');
+    await expect(page.getByLabel('Agente (UUID)')).toBeVisible();
+    await expect(page.getByRole('textbox', { name: 'De', exact: true })).toBeVisible();
+    await expect(page.getByLabel('Até', { exact: true })).toBeVisible();
+    await expect(page.getByLabel('Desfecho', { exact: true })).toBeVisible();
   });
-
-  // E2E-AUD-4: filtro por outcome — envia param na query
 
   test('E2E-AUD-4: filtro outcome BLOQUEADO envia ?outcome=BLOQUEADO', async ({ page }) => {
     const requests: string[] = [];
@@ -67,23 +98,19 @@ test.describe('Auditoria — /auditoria', () => {
       }
     });
 
-    await loginAndGoTo(page, AUDIT_URL);
-    await page.selectOption('#filtro-outcome', 'BLOQUEADO');
-    await page.click('.auditoria__btn-filtrar');
+    await mockAuditoriaRoute(page);
+    await navigateTo(page, '/auditoria');
+    await page.getByLabel('Desfecho', { exact: true }).selectOption('BLOQUEADO');
+    await page.getByRole('button', { name: 'Aplicar filtros' }).click();
     await page.waitForLoadState('networkidle');
-
     expect(requests.length).toBeGreaterThan(0);
   });
 
-  // E2E-AUD-5: botão exportar visível
-
   test('E2E-AUD-5: botão "Exportar PDF" está visível', async ({ page }) => {
-    await loginAndGoTo(page, AUDIT_URL);
-    const btn = page.locator('.auditoria__btn-export');
-    await expect(btn).toBeVisible();
+    await mockAuditoriaRoute(page);
+    await navigateTo(page, '/auditoria');
+    await expect(page.getByRole('button', { name: 'Exportar audit trail como PDF' })).toBeVisible();
   });
-
-  // E2E-AUD-6: botão exportar dispara request para /export
 
   test('E2E-AUD-6: click em Exportar faz request GET /audit-events/export', async ({ page }) => {
     const requests: string[] = [];
@@ -93,20 +120,23 @@ test.describe('Auditoria — /auditoria', () => {
       }
     });
 
-    await loginAndGoTo(page, AUDIT_URL);
-    await page.click('.auditoria__btn-export');
-    // aguarda request (export pode abrir popup, desligamos)
+    await mockAuditoriaRoute(page);
+    await mockExportRoute(page);
+    await navigateTo(page, '/auditoria');
+    // Fecha popup de impressão automaticamente se abrir
+    page.on('popup', (popup) => popup.close());
+    await page.getByRole('button', { name: 'Exportar audit trail como PDF' }).click();
     await page.waitForTimeout(1000);
     expect(requests.length).toBeGreaterThan(0);
   });
 
-  // E2E-AUD-7: limpar filtros reseta campos
-
   test('E2E-AUD-7: botão limpar reseta campos de filtro', async ({ page }) => {
-    await loginAndGoTo(page, AUDIT_URL);
-    await page.fill('#filtro-agente', '00000000-0000-0000-0000-000000000001');
-    await page.selectOption('#filtro-outcome', 'EXECUTADO');
-    await page.click('.auditoria__btn-limpar');
-    await expect(page.locator('#filtro-agente')).toHaveValue('');
+    await mockAuditoriaRoute(page);
+    await navigateTo(page, '/auditoria');
+    await page.getByLabel('Agente (UUID)').fill('00000000-0000-0000-0000-000000000001');
+    await page.getByLabel('Desfecho', { exact: true }).selectOption('EXECUTADO');
+    await page.getByRole('button', { name: 'Limpar filtros' }).click();
+    await expect(page.getByLabel('Agente (UUID)')).toHaveValue('');
   });
+
 });
