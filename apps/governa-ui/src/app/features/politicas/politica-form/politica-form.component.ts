@@ -606,7 +606,7 @@ export class PoliticaFormComponent implements OnInit, OnDestroy {
   private policyId = '';
 
   constructor() {
-    // Sincroniza o formulário sempre que store.politica() mudar (carga inicial ou retry)
+    // Re-sincroniza o formulário sempre que store.politica() mudar (ex.: após retry)
     effect(() => { this.syncForm(); });
   }
 
@@ -615,6 +615,8 @@ export class PoliticaFormComponent implements OnInit, OnDestroy {
     if (this.policyId) {
       this.store.loadPolitica(this.policyId);
     }
+    // Sync imediato — cobre dados já em cache ou mock síncrono em testes
+    this.syncForm();
   }
 
   ngOnDestroy(): void {
