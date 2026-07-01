@@ -10,7 +10,6 @@ import {
   AnchorAgentMaxTurnsError,
   type ChatInput,
   type ChatOutput,
-  type EscalationResult,
   type ToolCallRecord,
 } from '../domain/anchor-agent.types'
 
