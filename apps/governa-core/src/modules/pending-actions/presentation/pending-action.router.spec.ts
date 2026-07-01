@@ -132,6 +132,15 @@ describe('POST /pending-actions/:id/approve', () => {
     } finally { close() }
   })
 
+  it('When not found, Then returns 404', async () => {
+    const svc = { approve: jest.fn().mockRejectedValue(new PendingActionNotFoundError('pa-x')) }
+    const { url, close } = await startApp(svc)
+    try {
+      const { status } = await req(url, 'POST', '/pending-actions/pa-x/approve', { approverId: 'op-1' })
+      expect(status).toBe(404)
+    } finally { close() }
+  })
+
   it('When already resolved, Then returns 409', async () => {
     const svc = { findById: jest.fn().mockResolvedValue(makeAction()), approve: jest.fn().mockRejectedValue(new PendingActionAlreadyResolvedError('pa-1', 'APPROVED')) }
     const { url, close } = await startApp(svc)
@@ -159,6 +168,24 @@ describe('POST /pending-actions/:id/reject', () => {
     try {
       const { status } = await req(url, 'POST', '/pending-actions/pa-1/reject', {})
       expect(status).toBe(400)
+    } finally { close() }
+  })
+
+  it('When not found, Then returns 404', async () => {
+    const svc = { reject: jest.fn().mockRejectedValue(new PendingActionNotFoundError('pa-x')) }
+    const { url, close } = await startApp(svc)
+    try {
+      const { status } = await req(url, 'POST', '/pending-actions/pa-x/reject', { approverId: 'op-1' })
+      expect(status).toBe(404)
+    } finally { close() }
+  })
+
+  it('When already resolved, Then returns 409', async () => {
+    const svc = { reject: jest.fn().mockRejectedValue(new PendingActionAlreadyResolvedError('pa-1', 'REJECTED')) }
+    const { url, close } = await startApp(svc)
+    try {
+      const { status } = await req(url, 'POST', '/pending-actions/pa-1/reject', { approverId: 'op-1' })
+      expect(status).toBe(409)
     } finally { close() }
   })
 })
