@@ -4,7 +4,7 @@
 // TDD — Given/When/Then + jest-axe WCAG 2.1 AA
 // ============================================================
 
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { TestBed } from '@angular/core/testing';
 import { axe, toHaveNoViolations }   from 'jest-axe';
 import { AuditoriaListComponent }    from './auditoria-list.component';
 import { AuditoriaStore }            from '../auditoria.service';

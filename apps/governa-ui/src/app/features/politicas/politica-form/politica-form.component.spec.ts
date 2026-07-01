@@ -4,9 +4,8 @@
 // TDD — Given/When/Then  (13 testes)
 // ============================================================
 
-import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { ActivatedRoute }            from '@angular/router';
-import { of }                        from 'rxjs';
+import { TestBed }         from '@angular/core/testing';
+import { ActivatedRoute } from '@angular/router';
 import { axe, toHaveNoViolations }   from 'jest-axe';
 import { PoliticaFormComponent }     from './politica-form.component';
 import { PoliticasStore }            from '../politicas.service';

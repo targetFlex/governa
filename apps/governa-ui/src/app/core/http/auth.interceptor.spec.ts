@@ -12,7 +12,6 @@ import {
   HttpTestingController,
   provideHttpClientTesting,
 } from '@angular/common/http/testing';
-import { signal } from '@angular/core';
 
 import { authInterceptor } from './auth.interceptor';
 import { AuthService } from '../auth/auth.service';

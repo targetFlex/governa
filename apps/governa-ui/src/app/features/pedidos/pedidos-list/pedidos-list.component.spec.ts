@@ -37,8 +37,7 @@ function makePedido(override: Partial<Pedido> = {}): Pedido {
 // ── Suite ─────────────────────────────────────────────────────
 
 describe('PedidosListComponent', () => {
-  let fixture:   ComponentFixture<PedidosListComponent>;
-  let component: PedidosListComponent;
+  let fixture: ComponentFixture<PedidosListComponent>;
 
   let pedidos:          WritableSignal<Pedido[]>;
   let loading:          WritableSignal<boolean>;
@@ -74,8 +73,7 @@ describe('PedidosListComponent', () => {
       ],
     });
 
-    fixture   = TestBed.createComponent(PedidosListComponent);
-    component = fixture.componentInstance;
+    fixture = TestBed.createComponent(PedidosListComponent);
     // NÃO chamar detectChanges() aqui — cada teste controla o estado antes
   });
 
