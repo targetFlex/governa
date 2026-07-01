@@ -102,7 +102,7 @@ test('salvar política chama PATCH e exibe banner de sucesso', async ({ page }) 
   await page.getByRole('button', { name: /Salvar política/ }).click();
 
   await expect(page.getByRole('status')).toContainText('atualizada com sucesso');
-  await expect(page.getByText('1.1.0')).toBeVisible();
+  await expect(page.getByText('1.1.0').first()).toBeVisible();
 });
 
 test('exibe banner de erro com retry quando GET retorna 503', async ({ page }) => {
@@ -129,5 +129,5 @@ test('retry após erro dispara novo GET e carrega a política', async ({ page })
   await navigateTo(page, POLICY_URL);
   await page.getByRole('button', { name: /Tentar novamente/ }).click();
   await expect(page.getByRole('heading', { name: /Configurar Política/ })).toBeVisible();
-  await expect(page.getByText('Atendimento Consultivo')).toBeVisible();
+  await expect(page.getByLabel('Nome da política')).toHaveValue('Atendimento Consultivo');
 });

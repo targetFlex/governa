@@ -85,9 +85,9 @@ test.describe('Auditoria — /auditoria', () => {
     await mockAuditoriaRoute(page);
     await navigateTo(page, '/auditoria');
     await expect(page.getByLabel('Agente (UUID)')).toBeVisible();
-    await expect(page.getByLabel('De')).toBeVisible();
-    await expect(page.getByLabel('Até')).toBeVisible();
-    await expect(page.getByLabel('Desfecho')).toBeVisible();
+    await expect(page.getByRole('textbox', { name: 'De', exact: true })).toBeVisible();
+    await expect(page.getByLabel('Até', { exact: true })).toBeVisible();
+    await expect(page.getByLabel('Desfecho', { exact: true })).toBeVisible();
   });
 
   test('E2E-AUD-4: filtro outcome BLOQUEADO envia ?outcome=BLOQUEADO', async ({ page }) => {
@@ -100,7 +100,7 @@ test.describe('Auditoria — /auditoria', () => {
 
     await mockAuditoriaRoute(page);
     await navigateTo(page, '/auditoria');
-    await page.getByLabel('Desfecho').selectOption('BLOQUEADO');
+    await page.getByLabel('Desfecho', { exact: true }).selectOption('BLOQUEADO');
     await page.getByRole('button', { name: 'Aplicar filtros' }).click();
     await page.waitForLoadState('networkidle');
     expect(requests.length).toBeGreaterThan(0);
@@ -134,7 +134,7 @@ test.describe('Auditoria — /auditoria', () => {
     await mockAuditoriaRoute(page);
     await navigateTo(page, '/auditoria');
     await page.getByLabel('Agente (UUID)').fill('00000000-0000-0000-0000-000000000001');
-    await page.getByLabel('Desfecho').selectOption('EXECUTADO');
+    await page.getByLabel('Desfecho', { exact: true }).selectOption('EXECUTADO');
     await page.getByRole('button', { name: 'Limpar filtros' }).click();
     await expect(page.getByLabel('Agente (UUID)')).toHaveValue('');
   });
