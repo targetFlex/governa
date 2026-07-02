@@ -164,6 +164,10 @@ services:
       DD_API_KEY: ${DD_API_KEY}
       DD_SITE:    ${DD_SITE:-datadoghq.com}
       DEPLOYMENT_ENV: ${DEPLOYMENT_ENV:-development}
+      # SigNoz — Cloud: definir SIGNOZ_OTLP_ENDPOINT + SIGNOZ_INGESTION_KEY no .env
+      # Self-hosted: deixar vazio (coletor tenta localhost:4317 por padrão)
+      SIGNOZ_OTLP_ENDPOINT:  ${SIGNOZ_OTLP_ENDPOINT:-}
+      SIGNOZ_INGESTION_KEY:  ${SIGNOZ_INGESTION_KEY:-}
     ports:
       - "4317:4317"    # OTLP gRPC
       - "4318:4318"    # OTLP HTTP

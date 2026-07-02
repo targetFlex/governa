@@ -65,11 +65,15 @@ exporters:
       key: ${DD_API_KEY}
       site: ${DD_SITE:-datadoghq.com}
 
-  # Para SigNoz (alternativa ao Datadog — descomentar em produção):
-  # otlp/signoz:
-  #   endpoint: ${SIGNOZ_OTLP_ENDPOINT:-http://signoz:4317}
-  #   tls:
-  #     insecure: true
+  # SigNoz — ativo quando SIGNOZ_OTLP_ENDPOINT estiver definido.
+  # Cloud:       SIGNOZ_OTLP_ENDPOINT=https://ingest.{region}.signoz.cloud:443
+  # Self-hosted: SIGNOZ_OTLP_ENDPOINT=http://localhost:4317
+  otlp/signoz:
+    endpoint: ${SIGNOZ_OTLP_ENDPOINT:-http://localhost:4317}
+    tls:
+      insecure: true
+    headers:
+      signoz-ingestion-key: ${SIGNOZ_INGESTION_KEY:-}
 
 service:
   telemetry:
@@ -80,14 +84,14 @@ service:
     traces:
       receivers:  [otlp]
       processors: [attributes/remove_pii, batch]
-      exporters:  [debug, datadog]
+      exporters:  [debug, datadog, otlp/signoz]
 
     metrics:
       receivers:  [otlp]
       processors: [batch]
-      exporters:  [debug, prometheus, datadog]
+      exporters:  [debug, prometheus, datadog, otlp/signoz]
 
     logs:
       receivers:  [otlp]
       processors: [attributes/remove_pii, resource/add_env, batch]
-      exporters:  [debug, file/logs, datadog]
+      exporters:  [debug, file/logs, datadog, otlp/signoz]

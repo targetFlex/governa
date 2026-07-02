@@ -12,6 +12,7 @@ import {
   type ChatOutput,
   type ToolCallRecord,
 } from '../domain/anchor-agent.types'
+import { recordAgentDecision } from '../../../infra/telemetry'
 
 const SYSTEM_PROMPT = `Você é um agente de atendimento consultivo da AICOCKPIT, especializado em operações com o ERP Protheus da TOTVS.
 
@@ -74,6 +75,7 @@ export class AnchorAgentService {
 
       if (result.stopReason !== 'tool_use') {
         const reply = this.extractText(result.content)
+        recordAgentDecision({ outcome: 'approved', tenantId: input.tenantId })
         return { reply, toolCalls: toolCallRecords, sessionId }
       }
 
@@ -87,6 +89,7 @@ export class AnchorAgentService {
         if (block.name === ESCALATE_TOOL_NAME) {
           const { reason, summary } = block.input as EscalateToolInput
           const reply = this.extractText(result.content)
+          recordAgentDecision({ outcome: 'escalated', tenantId: input.tenantId })
           return { reply, toolCalls: toolCallRecords, sessionId, escalation: { reason, summary } }
         }
 
@@ -96,6 +99,7 @@ export class AnchorAgentService {
         } catch (err) {
           if (err instanceof ToolBlockedError) {
             const summary = `Tool '${block.name}' necessária para resolver a solicitação está bloqueada pela política de autonomia (${scope.autonomyLevel}).`
+            recordAgentDecision({ outcome: 'escalated', tenantId: input.tenantId })
             return {
               reply:     '',
               toolCalls: toolCallRecords,
@@ -144,6 +148,7 @@ export class AnchorAgentService {
       // ── E3.2: escalonamento por excesso de erros de tool ────────────────────
       if (toolErrorCount >= TOOL_ERROR_THRESHOLD) {
         const summary = `${toolErrorCount} falhas consecutivas de ferramentas de consulta ao Protheus na mesma sessão. Possível instabilidade no gateway.`
+        recordAgentDecision({ outcome: 'escalated', tenantId: input.tenantId })
         return {
           reply:     '',
           toolCalls: toolCallRecords,

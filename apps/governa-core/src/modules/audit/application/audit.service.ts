@@ -11,6 +11,7 @@ import { InvalidAuditInputError } from './audit.errors'
 import { GENESIS_PREV_HASH, computeHash } from './hash-chain'
 import { PiiDetector } from './pii-detector'
 import type { PolicyViolationAlertService } from '../../alerts/application/policy-violation-alert.service'
+import { recordAuditEvent } from '../../../infra/telemetry'
 
 /**
  * AuditService — caso de uso de gravação de evento de auditoria.
@@ -99,6 +100,9 @@ export class AuditService {
         return { ...insert, hash }
       },
     )
+
+    // E5 — métrica best-effort (no-op se SDK não inicializado)
+    recordAuditEvent({ kind: input.action, tenantId: input.tenantId })
 
     // E5.3 — disparo automático best-effort (não bloqueia nem falha o audit)
     void this.policyViolationAlertSvc?.evaluate({

@@ -15,6 +15,7 @@ import express, { type Application, type Request, type Response, type NextFuncti
 import helmet from 'helmet'
 import cors   from 'cors'
 
+import { recordHttpRequest }                            from './infra/telemetry'
 import { tenantMiddleware }                             from './shared/middleware/tenant.middleware'
 import { createAgentRouter }                            from './modules/agents/presentation/agent.router'
 import { createPedidosRouter }                          from './modules/pedidos/presentation/pedidos.router'
@@ -73,6 +74,20 @@ export function createApp(deps: AppDependencies): Application {
   app.use(helmet())
   app.use(cors())
   app.use(express.json())
+
+  // ── OTel HTTP metrics — mede latência de toda requisição ────────────────────
+  app.use((req: Request, res: Response, next: NextFunction): void => {
+    const start = Date.now()
+    res.on('finish', () => {
+      recordHttpRequest({
+        method:     req.method,
+        route:      req.route?.path ?? req.path,
+        statusCode: res.statusCode,
+        durationMs: Date.now() - start,
+      })
+    })
+    next()
+  })
 
   // ── Health check (sem autenticação) ─────────────────────────────────────────
   app.get('/health', (_req: Request, res: Response) => {
