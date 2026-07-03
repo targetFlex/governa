@@ -76,8 +76,21 @@ jobs:
     if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
 
     steps:
+      - name: Check VPS secrets
+        id: vps
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+        run: |
+          if [ -z "$VPS_HOST" ]; then
+            echo "::warning::VPS_HOST não configurado — deploy ignorado até o VPS estar provisionado"
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Resolve image tag
         id: tag
+        if: steps.vps.outputs.ready == 'true'
         run: |
           if [ -n "${{ github.event.inputs.image_tag }}" ]; then
             echo "value=${{ github.event.inputs.image_tag }}" >> "$GITHUB_OUTPUT"
@@ -86,6 +99,7 @@ jobs:
           fi
 
       - name: Deploy via SSH
+        if: steps.vps.outputs.ready == 'true'
         uses: appleboy/ssh-action@v1.2.0
         env:
           IMAGE_TAG: ${{ steps.tag.outputs.value }}
