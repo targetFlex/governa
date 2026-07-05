@@ -32,3 +32,12 @@ export interface AgentesResponse {
   data:  Agente[];
   total: number;
 }
+
+export interface CreateAgenteDto {
+  name:         string;
+  description?: string;
+  ownerId:      string;
+  policyId?:    string | null;
+  modelId:      string;
+  tools?:       string[];
+}

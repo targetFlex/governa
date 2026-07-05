@@ -153,4 +153,49 @@ describe('AuthService', () => {
       expect(service.getToken()).toBe(TOKEN_RESPONSE.token);
     });
   });
+
+  // ── userId computed ───────────────────────────────────────
+
+  describe('userId', () => {
+    it('deve retornar null quando não autenticado', () => {
+      expect(service.userId()).toBeNull();
+    });
+
+    it('deve extrair userId do payload JWT após login', () => {
+      // JWT com payload { userId: 'user-abc', tenantId: 'tenant-1' }
+      const payload = btoa(JSON.stringify({ userId: 'user-abc', tenantId: 'tenant-1' }));
+      const jwtWithUserId = `header.${payload}.signature`;
+
+      service.login(CREDENTIALS).subscribe();
+      http.expectOne(`${environment.gatewayBaseUrl}/auth/login`).flush({
+        token: jwtWithUserId,
+        expiresIn: 3600,
+      });
+
+      expect(service.userId()).toBe('user-abc');
+    });
+
+    it('deve retornar null quando payload não tem userId', () => {
+      const payload = btoa(JSON.stringify({ tenantId: 'tenant-1' }));
+      const jwtWithoutUserId = `header.${payload}.signature`;
+
+      service.login(CREDENTIALS).subscribe();
+      http.expectOne(`${environment.gatewayBaseUrl}/auth/login`).flush({
+        token: jwtWithoutUserId,
+        expiresIn: 3600,
+      });
+
+      expect(service.userId()).toBeNull();
+    });
+
+    it('deve retornar null quando token é malformado (sem payload base64 válido)', () => {
+      service.login(CREDENTIALS).subscribe();
+      http.expectOne(`${environment.gatewayBaseUrl}/auth/login`).flush({
+        token: 'token-invalido-sem-pontos',
+        expiresIn: 3600,
+      });
+
+      expect(service.userId()).toBeNull();
+    });
+  });
 });

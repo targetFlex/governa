@@ -29,7 +29,7 @@ import {
 } from '@ngrx/signals';
 import { EMPTY, catchError, finalize, tap, throwError } from 'rxjs';
 import { environment } from '@env/environment';
-import { Agente, AgentStatus, AgentesResponse } from '../../shared/models/agente.model';
+import { Agente, AgentStatus, AgentesResponse, CreateAgenteDto } from '../../shared/models/agente.model';
 
 // ── Estado do store ──────────────────────────────────────────
 
@@ -42,6 +42,10 @@ interface AgentesState {
   /** IDs de agentes com ação (pause/ativar) em andamento */
   acoesEmAndamento: string[];
   lastRefreshed:    Date | null;
+  creating:         boolean;
+  createError:      string | null;
+  /** Agente recém-criado — não-null por um ciclo após POST /agents bem-sucedido */
+  createdAgent:     Agente | null;
 }
 
 const initialState: AgentesState = {
@@ -52,6 +56,9 @@ const initialState: AgentesState = {
   filtroStatus:     'TODOS',
   acoesEmAndamento: [],
   lastRefreshed:    null,
+  creating:         false,
+  createError:      null,
+  createdAgent:     null,
 };
 
 // ── SignalStore ──────────────────────────────────────────────
@@ -190,12 +197,49 @@ export const AgentesStore = signalStore(
         .subscribe();
     },
 
+    /** Cria novo agente via POST /agents (status inicial: SANDBOX) */
+    createAgente(dto: CreateAgenteDto): void {
+      patchState(store, { creating: true, createError: null, createdAgent: null });
+
+      http
+        .post<{ data: Agente }>(`${environment.coreBaseUrl}/agents`, dto)
+        .pipe(
+          tap((res) =>
+            patchState(store, {
+              agentes:      [res.data, ...store.agentes()],
+              total:        store.total() + 1,
+              createdAgent: res.data,
+            }),
+          ),
+          catchError((err) => {
+            const msg =
+              err?.error?.message ??
+              err?.error?.issues?.[0]?.message ??
+              err?.message ??
+              /* istanbul ignore next */
+              'Erro ao criar agente. Tente novamente.';
+            patchState(store, { createError: msg });
+            return throwError(() => err);
+          }),
+          finalize(() => patchState(store, { creating: false })),
+        )
+        .subscribe();
+    },
+
     setFiltroStatus(filtro: AgentStatus | 'TODOS'): void {
       patchState(store, { filtroStatus: filtro });
     },
 
     clearError(): void {
       patchState(store, { error: null });
+    },
+
+    clearCreateError(): void {
+      patchState(store, { createError: null });
+    },
+
+    clearCreatedAgent(): void {
+      patchState(store, { createdAgent: null });
     },
   })),
 );
@@ -217,11 +261,17 @@ export class AgentesService {
   readonly contagemPorStatus = this.store.contagemPorStatus;
   readonly acoesEmAndamento  = this.store.acoesEmAndamento;
   readonly lastRefreshed     = this.store.lastRefreshed;
+  readonly creating          = this.store.creating;
+  readonly createError       = this.store.createError;
+  readonly createdAgent      = this.store.createdAgent;
 
   loadAgentes():                             void { this.store.loadAgentes(); }
   refreshAgentes():                          void { this.store.refreshAgentes(); }
   pauseAgente(id: string):                   void { this.store.pauseAgente(id); }
   activateAgente(id: string):                void { this.store.activateAgente(id); }
+  createAgente(dto: CreateAgenteDto):        void { this.store.createAgente(dto); }
   setFiltroStatus(f: AgentStatus | 'TODOS'): void { this.store.setFiltroStatus(f); }
   clearError():                              void { this.store.clearError(); }
+  clearCreateError():                        void { this.store.clearCreateError(); }
+  clearCreatedAgent():                       void { this.store.clearCreatedAgent(); }
 }

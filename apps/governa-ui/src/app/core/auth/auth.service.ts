@@ -39,8 +39,20 @@ export class AuthService {
 
   private readonly _token = signal<string | null>(null);
 
-  readonly token          = this._token.asReadonly();
+  readonly token           = this._token.asReadonly();
   readonly isAuthenticated = computed(() => this._token() !== null);
+
+  /** userId extraído do payload JWT — null se não autenticado */
+  readonly userId = computed<string | null>(() => {
+    const token = this._token();
+    if (!token) return null;
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      return (payload as { userId?: string }).userId ?? null;
+    } catch {
+      return null;
+    }
+  });
 
   // ── Métodos públicos ──────────────────────────────────────
 

@@ -26,6 +26,7 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import { interval } from 'rxjs';
 import { AgentesStore } from '../agentes.service';
 import { AgenteCardComponent } from '../../../shared/components/agente-card/agente-card.component';
@@ -52,7 +53,7 @@ const AGENTES_REFRESH_INTERVAL_MS = 30_000;
   selector: 'app-agentes-list',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, AgenteCardComponent],
+  imports: [CommonModule, RouterLink, AgenteCardComponent],
   template: `
     <section class="agentes-list" aria-label="Inventário de agentes">
 
@@ -64,11 +65,18 @@ const AGENTES_REFRESH_INTERVAL_MS = 30_000;
             Gerencie o ciclo de vida dos agentes do tenant.
           </p>
         </div>
-        @if (store.lastRefreshed()) {
-          <p class="agentes-list__refresh-hint" aria-live="polite" aria-atomic="true">
-            Atualizado às {{ store.lastRefreshed() | date: 'HH:mm:ss' }}
-          </p>
-        }
+        <div class="agentes-list__header-right">
+          @if (store.lastRefreshed()) {
+            <p class="agentes-list__refresh-hint" aria-live="polite" aria-atomic="true">
+              Atualizado às {{ store.lastRefreshed() | date: 'HH:mm:ss' }}
+            </p>
+          }
+          <a
+            routerLink="/agentes/novo"
+            class="agentes-list__novo-btn"
+            aria-label="Criar novo agente"
+          >+ Novo Agente</a>
+        </div>
       </header>
 
       <!-- ── Chips de filtro ──────────────────────────────────── -->
@@ -188,13 +196,34 @@ const AGENTES_REFRESH_INTERVAL_MS = 30_000;
       margin: 0;
     }
 
+    .agentes-list__header-right {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: var(--gov-space-2);
+    }
+
     .agentes-list__refresh-hint {
       font-size: var(--gov-font-size-xs);
       color: var(--gov-color-text-secondary);
       margin: 0;
-      padding-top: var(--gov-space-1);
       white-space: nowrap;
     }
+
+    .agentes-list__novo-btn {
+      display: inline-flex;
+      align-items: center;
+      padding: var(--gov-space-2) var(--gov-space-4);
+      background: var(--gov-color-brand);
+      color: var(--gov-color-text-inverse);
+      border-radius: var(--gov-radius-md);
+      font-size: var(--gov-font-size-sm);
+      font-weight: var(--gov-font-weight-medium);
+      text-decoration: none;
+      white-space: nowrap;
+      transition: background var(--gov-transition-fast);
+    }
+    .agentes-list__novo-btn:hover { background: var(--gov-color-brand-hover); }
 
     /* ── Chips de filtro ── */
     .agentes-list__filtros {

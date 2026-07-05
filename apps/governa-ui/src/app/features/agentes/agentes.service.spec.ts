@@ -15,7 +15,7 @@
 import { TestBed } from '@angular/core/testing';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
 import { AgentesService, AgentesStore } from './agentes.service';
-import { Agente, AgentesResponse } from '../../shared/models/agente.model';
+import { Agente, AgentesResponse, CreateAgenteDto } from '../../shared/models/agente.model';
 import { environment } from '@env/environment';
 
 // ── Fixtures ─────────────────────────────────────────────────
@@ -380,6 +380,97 @@ describe('AgentesService', () => {
 
     expect(service.error()).toBeNull();
     expect(service.loading()).toBe(false);
+  });
+
+  // ── createAgente ────────────────────────────────────────────
+
+  const CREATE_DTO: CreateAgenteDto = {
+    name:    'Agente Novo',
+    ownerId: 'user-uuid-123',
+    modelId: 'claude-sonnet-4-6',
+    tools:   ['read_protheus_pedido'],
+  };
+
+  const novoAgente = makeAgente({ id: 'ag-novo', name: 'Agente Novo', status: 'SANDBOX', modelId: 'claude-sonnet-4-6' });
+
+  it('deve iniciar com creating=false e createError=null', () => {
+    expect(service.creating()).toBe(false);
+    expect(service.createError()).toBeNull();
+    expect(service.createdAgent()).toBeNull();
+  });
+
+  it('createAgente deve emitir creating=true antes da resposta', () => {
+    service.createAgente(CREATE_DTO);
+    expect(service.creating()).toBe(true);
+    httpMock.expectOne({ method: 'POST', url: AGENTS_URL }).flush({ data: novoAgente });
+  });
+
+  it('createAgente deve adicionar agente à lista e setar createdAgent após 201', () => {
+    service.loadAgentes();
+    httpMock.expectOne(AGENTS_URL).flush(mockResponse);
+
+    service.createAgente(CREATE_DTO);
+    httpMock
+      .expectOne({ method: 'POST', url: AGENTS_URL })
+      .flush({ data: novoAgente });
+
+    expect(service.agentes()).toHaveLength(5);
+    expect(service.agentes()[0].id).toBe('ag-novo');
+    expect(service.total()).toBe(5);
+    expect(service.creating()).toBe(false);
+    expect(service.createdAgent()?.id).toBe('ag-novo');
+  });
+
+  it('createAgente deve setar createError e não alterar a lista em caso de erro', () => {
+    service.loadAgentes();
+    httpMock.expectOne(AGENTS_URL).flush(mockResponse);
+
+    service.createAgente(CREATE_DTO);
+    httpMock
+      .expectOne({ method: 'POST', url: AGENTS_URL })
+      .flush(
+        { message: 'Dados inválidos' },
+        { status: 400, statusText: 'Bad Request' },
+      );
+
+    expect(service.createError()).toBe('Dados inválidos');
+    expect(service.creating()).toBe(false);
+    expect(service.agentes()).toHaveLength(4);
+    expect(service.createdAgent()).toBeNull();
+  });
+
+  it('createAgente deve usar issues[0].message de resposta Zod quando disponível', () => {
+    service.createAgente(CREATE_DTO);
+    httpMock
+      .expectOne({ method: 'POST', url: AGENTS_URL })
+      .flush(
+        { issues: [{ message: 'name é obrigatório' }] },
+        { status: 400, statusText: 'Bad Request' },
+      );
+
+    expect(service.createError()).toBe('name é obrigatório');
+  });
+
+  it('clearCreateError deve limpar createError', () => {
+    service.createAgente(CREATE_DTO);
+    httpMock
+      .expectOne({ method: 'POST', url: AGENTS_URL })
+      .flush({ message: 'Erro' }, { status: 500, statusText: 'Internal Server Error' });
+
+    service.clearCreateError();
+
+    expect(service.createError()).toBeNull();
+  });
+
+  it('clearCreatedAgent deve limpar createdAgent', () => {
+    service.createAgente(CREATE_DTO);
+    httpMock.expectOne({ method: 'POST', url: AGENTS_URL }).flush({ data: novoAgente });
+
+    expect(service.createdAgent()).not.toBeNull();
+
+    service.clearCreatedAgent();
+
+    expect(service.createdAgent()).toBeNull();
   });
 
 });
