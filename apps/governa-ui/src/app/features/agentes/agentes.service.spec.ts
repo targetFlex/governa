@@ -473,4 +473,89 @@ describe('AgentesService', () => {
     expect(service.createdAgent()).toBeNull();
   });
 
+  // ── updateAgente ────────────────────────────────────────────
+
+  const UPDATE_DTO = { name: 'Agente Renomeado', modelId: 'gpt-4o', tools: [] as string[], policyId: null };
+  const agenteAtualizado = makeAgente({ id: 'ag-1', name: 'Agente Renomeado', modelId: 'gpt-4o', tools: [], policyId: null });
+
+  it('updateAgente deve setar updating=true durante a requisição', () => {
+    service.loadAgentes();
+    httpMock.expectOne(AGENTS_URL).flush(mockResponse);
+
+    service.updateAgente('ag-1', UPDATE_DTO);
+    expect(service.updating()).toBe(true);
+
+    httpMock.expectOne({ method: 'PATCH', url: `${AGENTS_URL}/ag-1` }).flush({ data: agenteAtualizado });
+    expect(service.updating()).toBe(false);
+  });
+
+  it('updateAgente bem-sucedido deve atualizar agente na lista e setar updatedAgent', () => {
+    service.loadAgentes();
+    httpMock.expectOne(AGENTS_URL).flush(mockResponse);
+
+    service.updateAgente('ag-1', UPDATE_DTO);
+    httpMock.expectOne({ method: 'PATCH', url: `${AGENTS_URL}/ag-1` }).flush({ data: agenteAtualizado });
+
+    const updated = service.agentes().find((a) => a.id === 'ag-1');
+    expect(updated?.name).toBe('Agente Renomeado');
+    expect(updated?.modelId).toBe('gpt-4o');
+    expect(service.updatedAgent()?.id).toBe('ag-1');
+    expect(service.updateError()).toBeNull();
+  });
+
+  it('updateAgente com erro deve setar updateError e manter lista inalterada', () => {
+    service.loadAgentes();
+    httpMock.expectOne(AGENTS_URL).flush(mockResponse);
+
+    service.updateAgente('ag-1', UPDATE_DTO);
+    httpMock
+      .expectOne({ method: 'PATCH', url: `${AGENTS_URL}/ag-1` })
+      .flush(
+        { message: 'Agente não encontrado' },
+        { status: 404, statusText: 'Not Found' },
+      );
+
+    expect(service.updateError()).toBe('Agente não encontrado');
+    expect(service.updating()).toBe(false);
+    expect(service.updatedAgent()).toBeNull();
+    expect(service.agentes().find((a) => a.id === 'ag-1')?.name).toBe('Agente Alpha');
+  });
+
+  it('updateAgente deve usar issues[0].message de resposta Zod quando disponível', () => {
+    service.updateAgente('ag-1', UPDATE_DTO);
+    httpMock
+      .expectOne({ method: 'PATCH', url: `${AGENTS_URL}/ag-1` })
+      .flush(
+        { issues: [{ message: 'name não pode ser vazio' }] },
+        { status: 400, statusText: 'Bad Request' },
+      );
+
+    expect(service.updateError()).toBe('name não pode ser vazio');
+  });
+
+  it('clearUpdateError deve limpar updateError', () => {
+    service.updateAgente('ag-1', UPDATE_DTO);
+    httpMock
+      .expectOne({ method: 'PATCH', url: `${AGENTS_URL}/ag-1` })
+      .flush({ message: 'Erro' }, { status: 500, statusText: 'Internal Server Error' });
+
+    service.clearUpdateError();
+
+    expect(service.updateError()).toBeNull();
+  });
+
+  it('clearUpdatedAgent deve limpar updatedAgent', () => {
+    service.loadAgentes();
+    httpMock.expectOne(AGENTS_URL).flush(mockResponse);
+
+    service.updateAgente('ag-1', UPDATE_DTO);
+    httpMock.expectOne({ method: 'PATCH', url: `${AGENTS_URL}/ag-1` }).flush({ data: agenteAtualizado });
+
+    expect(service.updatedAgent()).not.toBeNull();
+
+    service.clearUpdatedAgent();
+
+    expect(service.updatedAgent()).toBeNull();
+  });
+
 });

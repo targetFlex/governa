@@ -91,6 +91,14 @@ const STATUS_META: Record<AgentStatus, StatusMeta> = {
             @if (agente()!.status !== 'DEPRECATED') {
               <div class="agente-detail__acoes">
 
+                <a
+                  class="agente-detail__btn agente-detail__btn--editar"
+                  [routerLink]="['/agentes', agente()!.id, 'editar']"
+                  aria-label="Editar agente"
+                >
+                  Editar
+                </a>
+
                 @if (agente()!.status === 'ACTIVE') {
                   <button
                     class="agente-detail__btn agente-detail__btn--pausar"
@@ -313,6 +321,16 @@ const STATUS_META: Record<AgentStatus, StatusMeta> = {
       &:focus-visible {
         outline: 3px solid currentColor;
         outline-offset: 2px;
+      }
+    }
+
+    .agente-detail__btn--editar {
+      background: var(--gov-color-neutral-100);
+      color: var(--gov-color-text-primary);
+      text-decoration: none;
+
+      &:not(:disabled):hover {
+        background: var(--gov-color-neutral-300);
       }
     }
 

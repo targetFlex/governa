@@ -41,3 +41,11 @@ export interface CreateAgenteDto {
   modelId:      string;
   tools?:       string[];
 }
+
+export interface UpdateAgenteDto {
+  name?:        string;
+  description?: string;
+  modelId?:     string;
+  tools?:       string[];
+  policyId?:    string | null;
+}

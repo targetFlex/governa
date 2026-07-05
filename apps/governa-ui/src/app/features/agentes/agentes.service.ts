@@ -29,7 +29,7 @@ import {
 } from '@ngrx/signals';
 import { EMPTY, catchError, finalize, tap, throwError } from 'rxjs';
 import { environment } from '@env/environment';
-import { Agente, AgentStatus, AgentesResponse, CreateAgenteDto } from '../../shared/models/agente.model';
+import { Agente, AgentStatus, AgentesResponse, CreateAgenteDto, UpdateAgenteDto } from '../../shared/models/agente.model';
 
 // ── Estado do store ──────────────────────────────────────────
 
@@ -46,6 +46,10 @@ interface AgentesState {
   createError:      string | null;
   /** Agente recém-criado — não-null por um ciclo após POST /agents bem-sucedido */
   createdAgent:     Agente | null;
+  updating:         boolean;
+  updateError:      string | null;
+  /** Agente recém-editado — não-null por um ciclo após PATCH /agents/:id bem-sucedido */
+  updatedAgent:     Agente | null;
 }
 
 const initialState: AgentesState = {
@@ -59,6 +63,9 @@ const initialState: AgentesState = {
   creating:         false,
   createError:      null,
   createdAgent:     null,
+  updating:         false,
+  updateError:      null,
+  updatedAgent:     null,
 };
 
 // ── SignalStore ──────────────────────────────────────────────
@@ -241,6 +248,42 @@ export const AgentesStore = signalStore(
     clearCreatedAgent(): void {
       patchState(store, { createdAgent: null });
     },
+
+    /** Edita agente via PATCH /agents/:id */
+    updateAgente(id: string, dto: UpdateAgenteDto): void {
+      patchState(store, { updating: true, updateError: null, updatedAgent: null });
+
+      http
+        .patch<{ data: Agente }>(`${environment.coreBaseUrl}/agents/${id}`, dto)
+        .pipe(
+          tap((res) =>
+            patchState(store, {
+              agentes:      store.agentes().map((a) => (a.id === id ? res.data : a)),
+              updatedAgent: res.data,
+            }),
+          ),
+          catchError((err) => {
+            const msg =
+              err?.error?.message ??
+              err?.error?.issues?.[0]?.message ??
+              err?.message ??
+              /* istanbul ignore next */
+              'Erro ao editar agente. Tente novamente.';
+            patchState(store, { updateError: msg });
+            return throwError(() => err);
+          }),
+          finalize(() => patchState(store, { updating: false })),
+        )
+        .subscribe();
+    },
+
+    clearUpdateError(): void {
+      patchState(store, { updateError: null });
+    },
+
+    clearUpdatedAgent(): void {
+      patchState(store, { updatedAgent: null });
+    },
   })),
 );
 
@@ -264,14 +307,20 @@ export class AgentesService {
   readonly creating          = this.store.creating;
   readonly createError       = this.store.createError;
   readonly createdAgent      = this.store.createdAgent;
+  readonly updating          = this.store.updating;
+  readonly updateError       = this.store.updateError;
+  readonly updatedAgent      = this.store.updatedAgent;
 
-  loadAgentes():                             void { this.store.loadAgentes(); }
-  refreshAgentes():                          void { this.store.refreshAgentes(); }
-  pauseAgente(id: string):                   void { this.store.pauseAgente(id); }
-  activateAgente(id: string):                void { this.store.activateAgente(id); }
-  createAgente(dto: CreateAgenteDto):        void { this.store.createAgente(dto); }
-  setFiltroStatus(f: AgentStatus | 'TODOS'): void { this.store.setFiltroStatus(f); }
-  clearError():                              void { this.store.clearError(); }
-  clearCreateError():                        void { this.store.clearCreateError(); }
-  clearCreatedAgent():                       void { this.store.clearCreatedAgent(); }
+  loadAgentes():                              void { this.store.loadAgentes(); }
+  refreshAgentes():                           void { this.store.refreshAgentes(); }
+  pauseAgente(id: string):                    void { this.store.pauseAgente(id); }
+  activateAgente(id: string):                 void { this.store.activateAgente(id); }
+  createAgente(dto: CreateAgenteDto):         void { this.store.createAgente(dto); }
+  updateAgente(id: string, dto: UpdateAgenteDto): void { this.store.updateAgente(id, dto); }
+  setFiltroStatus(f: AgentStatus | 'TODOS'):  void { this.store.setFiltroStatus(f); }
+  clearError():                               void { this.store.clearError(); }
+  clearCreateError():                         void { this.store.clearCreateError(); }
+  clearCreatedAgent():                        void { this.store.clearCreatedAgent(); }
+  clearUpdateError():                         void { this.store.clearUpdateError(); }
+  clearUpdatedAgent():                        void { this.store.clearUpdatedAgent(); }
 }

@@ -37,6 +37,12 @@ export const APP_ROUTES: Routes = [
           import('./features/agentes/agente-form/agente-form.component').then(m => m.AgenteFormComponent),
       },
       {
+        path: 'agentes/:id/editar',
+        data: { title: 'Editar Agente' },
+        loadComponent: () =>
+          import('./features/agentes/agente-edit/agente-edit.component').then(m => m.AgenteEditComponent),
+      },
+      {
         path: 'agentes/:id',
         data: { title: 'Detalhe do Agente' },
         loadComponent: () =>
