@@ -27,8 +27,14 @@ END
 $$;
 
 -- 2) Permissão de conexão ao banco e uso do schema
-GRANT CONNECT ON DATABASE governa_dev TO governa_app;
-GRANT USAGE   ON SCHEMA public        TO governa_app;
+-- GRANT CONNECT usa SQL dinâmico para funcionar em qualquer nome de banco
+-- (governa_dev, governa_prod, etc.) sem hardcode.
+DO $$
+BEGIN
+  EXECUTE 'GRANT CONNECT ON DATABASE ' || quote_ident(current_database()) || ' TO governa_app';
+END
+$$;
+GRANT USAGE ON SCHEMA public TO governa_app;
 
 -- 3) Grants amplos nas tabelas operacionais (read/write normais)
 GRANT SELECT, INSERT, UPDATE, DELETE

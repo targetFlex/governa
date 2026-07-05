@@ -1,0 +1,164 @@
+# ============================================================
+# AICOCKPIT — Prod-Local Docker Compose
+# Valida a stack de produção sem VPS, DNS ou TLS.
+#
+# Diferenças em relação a docker-compose.prod.yml:
+#   - Traefik HTTP-only na porta 8088 (sem ACME/TLS)
+#   - governa-core e governa-gateway: build local (sem GHCR)
+#   - OTel: config simplificada (sem Datadog/SigNoz)
+#   - Nomes de rede e container com sufixo _local (sem conflito com dev)
+#
+# Uso:
+#   scripts/validate-prod-local.sh
+#
+# Pré-requisito: stack de dev (docker-compose.yml) deve estar parada.
+# ============================================================
+
+services:
+
+  # ── Traefik (HTTP apenas — file provider, sem ACME) ──────────────────────
+  # NOTA: o Docker provider do Traefik v3.x é incompatível com Docker Desktop
+  # 4.73+ (API 1.54) no macOS. No VPS Linux, usar docker-compose.prod.yml
+  # que usa o Docker provider via labels. Aqui usamos file provider estático.
+  traefik:
+    image: traefik:v3.1
+    container_name: governa_local_traefik
+    restart: unless-stopped
+    command:
+      - --entrypoints.web.address=:80
+      - --providers.file.filename=/etc/traefik/dynamic-local.yml
+      - --providers.file.watch=true
+      - --log.level=INFO
+    ports:
+      - "8088:80"
+    volumes:
+      - ./traefik-dynamic-local.yml:/etc/traefik/dynamic-local.yml:ro
+    networks:
+      - public
+
+  # ── PostgreSQL ────────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: governa_local_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - backend
+
+  # ── Redis ─────────────────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: governa_local_redis
+    restart: unless-stopped
+    command: >
+      redis-server
+      --appendonly yes
+      --requirepass ${REDIS_PASSWORD}
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - backend
+
+  # ── OpenTelemetry Collector (config simplificada) ─────────────────────────
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.103.0
+    container_name: governa_local_otel
+    restart: unless-stopped
+    command: ["--config=/etc/otel/config.yaml"]
+    volumes:
+      - ./otel-collector-config-local.yaml:/etc/otel/config.yaml:ro
+    networks:
+      - backend
+
+  # ── governa-gateway (build local) ────────────────────────────────────────
+  governa-gateway:
+    build:
+      context: ../../apps/governa-gateway
+      dockerfile: Dockerfile
+    container_name: governa_local_gateway
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      GATEWAY_PORT: "3100"
+      OTEL_SERVICE_NAME: governa-gateway
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+      PROTHEUS_BASE_URL: ${PROTHEUS_BASE_URL}
+      PROTHEUS_AUTH_MODE: ${PROTHEUS_AUTH_MODE:-oauth2}
+      PROTHEUS_CLIENT_ID: ${PROTHEUS_CLIENT_ID}
+      PROTHEUS_CLIENT_SECRET: ${PROTHEUS_CLIENT_SECRET}
+      PROTHEUS_BASIC_USER: ${PROTHEUS_BASIC_USER}
+      PROTHEUS_BASIC_PASS: ${PROTHEUS_BASIC_PASS}
+      PROTHEUS_TIMEOUT_MS: "10000"
+      PROTHEUS_MAX_RETRIES: "3"
+      PROTHEUS_TOKEN_TTL_BUFFER_S: "30"
+      PII_HMAC_SECRET: ${PII_HMAC_SECRET}
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:3100/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    depends_on:
+      otel-collector:
+        condition: service_started
+    networks:
+      - backend
+
+  # ── governa-core (build local, roteado via Traefik HTTP) ─────────────────
+  governa-core:
+    build:
+      context: ../../apps/governa-core
+      dockerfile: Dockerfile
+    container_name: governa_local_core
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?schema=public
+      GATEWAY_BASE_URL: http://governa-gateway:3100
+      JWT_SECRET: ${JWT_SECRET}
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
+      OTEL_SERVICE_NAME: governa-core
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+    depends_on:
+      postgres:
+        condition: service_healthy
+      governa-gateway:
+        condition: service_healthy
+      otel-collector:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:3000/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - public
+      - backend
+
+networks:
+  public:
+    name: governa_local_public
+  backend:
+    name: governa_local_backend
+    internal: true
+
+volumes:
+  postgres_data:
+  redis_data:

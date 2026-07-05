@@ -1,0 +1,15 @@
+# Configuração dinâmica do Traefik para validação local.
+# Usada no docker-compose.prod-local.yml (sem Docker provider, sem ACME).
+# Substitui os labels do governa-core com roteamento estático HTTP.
+http:
+  routers:
+    core:
+      rule: "Host(`localhost`)"
+      entryPoints: ["web"]
+      service: governa-core
+
+  services:
+    governa-core:
+      loadBalancer:
+        servers:
+          - url: "http://governa-core:3000"
