@@ -9,3 +9,6 @@ export type { InputType }                            from './input/gov-input.com
 
 export { GovSelectComponent }                        from './select/gov-select.component';
 export type { SelectOption }                         from './select/gov-select.component';
+
+export { GovKpiCardComponent }                       from './kpi-card/gov-kpi-card.component';
+export type { KpiVariant }                           from './kpi-card/gov-kpi-card.component';
