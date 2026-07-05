@@ -16,6 +16,7 @@ import {
   TestBed,
   fakeAsync,
   tick,
+  discardPeriodicTasks,
 } from '@angular/core/testing';
 import { signal } from '@angular/core';
 import { RouterTestingModule } from '@angular/router/testing';
@@ -61,10 +62,12 @@ function createStoreMock() {
     hasError:         signal(false),
     agentesFiltrados: signal<Agente[]>([]),
     acoesEmAndamento: signal<string[]>([]),
+    lastRefreshed:    signal<Date | null>(null),
     contagemPorStatus: signal({
       TODOS: 0, ACTIVE: 0, PAUSED: 0, SANDBOX: 0, DEPRECATED: 0,
     }),
     loadAgentes:     jest.fn(),
+    refreshAgentes:  jest.fn(),
     pauseAgente:     jest.fn(),
     activateAgente:  jest.fn(),
     setFiltroStatus: jest.fn(),
@@ -299,6 +302,7 @@ describe('AgentesListComponent — ações', () => {
 
     // Then
     expect(store.pauseAgente).toHaveBeenCalledWith('ag-pause');
+    discardPeriodicTasks();
   }));
 
   it('chama activateAgente na store ao receber evento ativar do card', fakeAsync(() => {
@@ -318,6 +322,7 @@ describe('AgentesListComponent — ações', () => {
 
     // Then
     expect(store.activateAgente).toHaveBeenCalledWith('ag-act');
+    discardPeriodicTasks();
   }));
 
   it('isEmAndamento retorna true para id em acoesEmAndamento', () => {
@@ -376,4 +381,41 @@ describe('AgentesListComponent — filtroLabel', () => {
     const fixture = setup(store);
     expect(fixture.componentInstance.filtroLabel).toBe('');
   });
+});
+
+// ── Suite 9: live refresh ─────────────────────────────────────
+
+describe('AgentesListComponent — live refresh', () => {
+
+  it('chama refreshAgentes após 30 s de intervalo', fakeAsync(() => {
+    const store = makeStoreMock();
+    setup(store);
+
+    expect(store.refreshAgentes).not.toHaveBeenCalled();
+    tick(30_000);
+    expect(store.refreshAgentes).toHaveBeenCalledTimes(1);
+
+    discardPeriodicTasks();
+  }));
+
+  it('chama refreshAgentes duas vezes após 60 s', fakeAsync(() => {
+    const store = makeStoreMock();
+    setup(store);
+
+    tick(60_000);
+    expect(store.refreshAgentes).toHaveBeenCalledTimes(2);
+
+    discardPeriodicTasks();
+  }));
+
+  it('não altera loading durante refresh em background', fakeAsync(() => {
+    const store = makeStoreMock({ loading: signal(false) });
+    setup(store);
+
+    tick(30_000);
+    expect(store.loading()).toBe(false);
+
+    discardPeriodicTasks();
+  }));
+
 });

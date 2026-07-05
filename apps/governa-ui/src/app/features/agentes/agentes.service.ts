@@ -27,7 +27,7 @@ import {
   withComputed,
   patchState,
 } from '@ngrx/signals';
-import { catchError, finalize, tap, throwError } from 'rxjs';
+import { EMPTY, catchError, finalize, tap, throwError } from 'rxjs';
 import { environment } from '@env/environment';
 import { Agente, AgentStatus, AgentesResponse } from '../../shared/models/agente.model';
 
@@ -41,6 +41,7 @@ interface AgentesState {
   filtroStatus:     AgentStatus | 'TODOS';
   /** IDs de agentes com ação (pause/ativar) em andamento */
   acoesEmAndamento: string[];
+  lastRefreshed:    Date | null;
 }
 
 const initialState: AgentesState = {
@@ -50,6 +51,7 @@ const initialState: AgentesState = {
   error:            null,
   filtroStatus:     'TODOS',
   acoesEmAndamento: [],
+  lastRefreshed:    null,
 };
 
 // ── SignalStore ──────────────────────────────────────────────
@@ -92,7 +94,7 @@ export const AgentesStore = signalStore(
       http
         .get<AgentesResponse>(`${environment.coreBaseUrl}/agents`)
         .pipe(
-          tap((res) => patchState(store, { agentes: res.data, total: res.total })),
+          tap((res) => patchState(store, { agentes: res.data, total: res.total, lastRefreshed: new Date() })),
           catchError((err) => {
             const msg =
               err?.error?.message ??
@@ -103,6 +105,19 @@ export const AgentesStore = signalStore(
             return throwError(() => err);
           }),
           finalize(() => patchState(store, { loading: false })),
+        )
+        .subscribe();
+    },
+
+    /** Atualiza inventário silenciosamente (sem skeleton, sem propagar erros) */
+    refreshAgentes(): void {
+      http
+        .get<AgentesResponse>(`${environment.coreBaseUrl}/agents`)
+        .pipe(
+          tap((res) =>
+            patchState(store, { agentes: res.data, total: res.total, lastRefreshed: new Date() }),
+          ),
+          catchError(() => EMPTY),
         )
         .subscribe();
     },
@@ -191,18 +206,20 @@ export const AgentesStore = signalStore(
 export class AgentesService {
   readonly store = inject(AgentesStore);
 
-  readonly agentes          = this.store.agentes;
-  readonly loading          = this.store.loading;
-  readonly error            = this.store.error;
-  readonly total            = this.store.total;
-  readonly filtroStatus     = this.store.filtroStatus;
-  readonly isEmpty          = this.store.isEmpty;
-  readonly hasError         = this.store.hasError;
-  readonly agentesFiltrados = this.store.agentesFiltrados;
+  readonly agentes           = this.store.agentes;
+  readonly loading           = this.store.loading;
+  readonly error             = this.store.error;
+  readonly total             = this.store.total;
+  readonly filtroStatus      = this.store.filtroStatus;
+  readonly isEmpty           = this.store.isEmpty;
+  readonly hasError          = this.store.hasError;
+  readonly agentesFiltrados  = this.store.agentesFiltrados;
   readonly contagemPorStatus = this.store.contagemPorStatus;
-  readonly acoesEmAndamento = this.store.acoesEmAndamento;
+  readonly acoesEmAndamento  = this.store.acoesEmAndamento;
+  readonly lastRefreshed     = this.store.lastRefreshed;
 
   loadAgentes():                             void { this.store.loadAgentes(); }
+  refreshAgentes():                          void { this.store.refreshAgentes(); }
   pauseAgente(id: string):                   void { this.store.pauseAgente(id); }
   activateAgente(id: string):                void { this.store.activateAgente(id); }
   setFiltroStatus(f: AgentStatus | 'TODOS'): void { this.store.setFiltroStatus(f); }

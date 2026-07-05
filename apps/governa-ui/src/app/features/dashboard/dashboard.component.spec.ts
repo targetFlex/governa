@@ -1,4 +1,4 @@
-import { TestBed } from '@angular/core/testing';
+import { TestBed, fakeAsync, tick, discardPeriodicTasks } from '@angular/core/testing';
 import { of, throwError } from 'rxjs';
 import { DashboardComponent } from './dashboard.component';
 import { DashboardService, CockpitData } from './dashboard.service';
@@ -179,4 +179,53 @@ describe('DashboardComponent', () => {
     setup();
     expect(component.severityBadge('LOW')).toBe('neutral');
   });
+
+  it('deve definir lastRefreshed após carga inicial', () => {
+    setup();
+    component.ngOnInit();
+    expect(component['lastRefreshed']()).toBeInstanceOf(Date);
+  });
+
+  it('lastRefreshed deve ser null antes de qualquer carga', () => {
+    setup();
+    expect(component['lastRefreshed']()).toBeNull();
+  });
+
+  it('background refresh chama loadCockpit silenciosamente sem alterar loading', fakeAsync(() => {
+    setup();
+    component.ngOnInit();
+    expect(svc.loadCockpit).toHaveBeenCalledTimes(1);
+    expect(component['loading']()).toBe(false);
+
+    tick(30_000);
+    expect(svc.loadCockpit).toHaveBeenCalledTimes(2);
+    expect(component['loading']()).toBe(false);
+
+    discardPeriodicTasks();
+  }));
+
+  it('background refresh atualiza dados e lastRefreshed', fakeAsync(() => {
+    setup();
+    component.ngOnInit();
+    const primeiroRefresh = component['lastRefreshed']()!.getTime();
+
+    tick(30_000);
+    expect(svc.loadCockpit).toHaveBeenCalledTimes(2);
+    expect(component['lastRefreshed']()!.getTime()).toBeGreaterThanOrEqual(primeiroRefresh);
+
+    discardPeriodicTasks();
+  }));
+
+  it('background refresh ignora erros silenciosamente', fakeAsync(() => {
+    setup();
+    component.ngOnInit();
+
+    svc.loadCockpit.mockReturnValue(throwError(() => ({ error: { message: 'Falha' } })));
+    tick(30_000);
+
+    expect(component['error']()).toBeNull();
+    expect(component['loading']()).toBe(false);
+
+    discardPeriodicTasks();
+  }));
 });

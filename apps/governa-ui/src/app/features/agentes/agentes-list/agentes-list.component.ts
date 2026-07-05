@@ -20,10 +20,13 @@
 import {
   Component,
   OnInit,
+  DestroyRef,
   inject,
   ChangeDetectionStrategy,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
+import { interval } from 'rxjs';
 import { AgentesStore } from '../agentes.service';
 import { AgenteCardComponent } from '../../../shared/components/agente-card/agente-card.component';
 import { AgentStatus } from '../../../shared/models/agente.model';
@@ -43,6 +46,8 @@ const CHIPS: ChipFiltro[] = [
   { valor: 'DEPRECATED', label: 'Depreciados'},
 ];
 
+const AGENTES_REFRESH_INTERVAL_MS = 30_000;
+
 @Component({
   selector: 'app-agentes-list',
   standalone: true,
@@ -53,10 +58,17 @@ const CHIPS: ChipFiltro[] = [
 
       <!-- ── Cabeçalho ────────────────────────────────────────── -->
       <header class="agentes-list__header">
-        <h1 class="agentes-list__titulo">Agentes</h1>
-        <p class="agentes-list__subtitulo">
-          Gerencie o ciclo de vida dos agentes do tenant.
-        </p>
+        <div class="agentes-list__header-text">
+          <h1 class="agentes-list__titulo">Agentes</h1>
+          <p class="agentes-list__subtitulo">
+            Gerencie o ciclo de vida dos agentes do tenant.
+          </p>
+        </div>
+        @if (store.lastRefreshed()) {
+          <p class="agentes-list__refresh-hint" aria-live="polite" aria-atomic="true">
+            Atualizado às {{ store.lastRefreshed() | date: 'HH:mm:ss' }}
+          </p>
+        }
       </header>
 
       <!-- ── Chips de filtro ──────────────────────────────────── -->
@@ -152,6 +164,13 @@ const CHIPS: ChipFiltro[] = [
     /* ── Cabeçalho ── */
     .agentes-list__header {
       display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: var(--gov-space-4);
+    }
+
+    .agentes-list__header-text {
+      display: flex;
       flex-direction: column;
       gap: var(--gov-space-1);
     }
@@ -167,6 +186,14 @@ const CHIPS: ChipFiltro[] = [
       font-size: var(--gov-font-size-sm);
       color: var(--gov-color-text-secondary);
       margin: 0;
+    }
+
+    .agentes-list__refresh-hint {
+      font-size: var(--gov-font-size-xs);
+      color: var(--gov-color-text-secondary);
+      margin: 0;
+      padding-top: var(--gov-space-1);
+      white-space: nowrap;
     }
 
     /* ── Chips de filtro ── */
@@ -323,12 +350,18 @@ const CHIPS: ChipFiltro[] = [
   `],
 })
 export class AgentesListComponent implements OnInit {
-  readonly store = inject(AgentesStore);
-  readonly chips = CHIPS;
-  readonly skeletons = Array(6).fill(null);
+  readonly store      = inject(AgentesStore);
+  readonly chips      = CHIPS;
+  readonly skeletons  = Array(6).fill(null);
+
+  private readonly destroyRef = inject(DestroyRef);
 
   ngOnInit(): void {
     this.store.loadAgentes();
+
+    interval(AGENTES_REFRESH_INTERVAL_MS)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.store.refreshAgentes());
   }
 
   get filtroLabel(): string {

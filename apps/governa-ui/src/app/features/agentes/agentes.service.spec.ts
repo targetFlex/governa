@@ -77,6 +77,7 @@ describe('AgentesService', () => {
     expect(service.error()).toBeNull();
     expect(service.filtroStatus()).toBe('TODOS');
     expect(service.acoesEmAndamento()).toEqual([]);
+    expect(service.lastRefreshed()).toBeNull();
   });
 
   it('isEmpty deve ser true no estado inicial', () => {
@@ -116,6 +117,13 @@ describe('AgentesService', () => {
     expect(service.total()).toBe(4);
     expect(service.loading()).toBe(false);
     expect(service.error()).toBeNull();
+  });
+
+  it('deve definir lastRefreshed após carga bem-sucedida', () => {
+    service.loadAgentes();
+    httpMock.expectOne(AGENTS_URL).flush(mockResponse);
+
+    expect(service.lastRefreshed()).toBeInstanceOf(Date);
   });
 
   it('isEmpty deve ser false após carregar agentes', () => {
@@ -341,6 +349,37 @@ describe('AgentesService', () => {
     const c = service.contagemPorStatus();
     expect(c.ACTIVE).toBe(0);
     expect(c.PAUSED).toBe(2);
+  });
+
+  // ── refreshAgentes ──────────────────────────────────────────
+
+  it('refreshAgentes deve atualizar agentes sem alterar loading', () => {
+    service.refreshAgentes();
+    expect(service.loading()).toBe(false);
+
+    httpMock.expectOne(AGENTS_URL).flush(mockResponse);
+
+    expect(service.agentes()).toHaveLength(4);
+    expect(service.total()).toBe(4);
+    expect(service.loading()).toBe(false);
+  });
+
+  it('refreshAgentes deve definir lastRefreshed após sucesso', () => {
+    service.refreshAgentes();
+    httpMock.expectOne(AGENTS_URL).flush(mockResponse);
+
+    expect(service.lastRefreshed()).toBeInstanceOf(Date);
+  });
+
+  it('refreshAgentes deve ignorar erro sem alterar estado de error', () => {
+    service.refreshAgentes();
+    httpMock.expectOne(AGENTS_URL).flush(
+      { message: 'Erro interno' },
+      { status: 500, statusText: 'Internal Server Error' },
+    );
+
+    expect(service.error()).toBeNull();
+    expect(service.loading()).toBe(false);
   });
 
 });

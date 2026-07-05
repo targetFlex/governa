@@ -1,7 +1,10 @@
-import { Component, OnInit, inject, signal, computed } from '@angular/core';
+import { Component, OnInit, DestroyRef, inject, signal, computed } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule, DatePipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
-import { DashboardService } from './dashboard.service';
+import { interval, EMPTY } from 'rxjs';
+import { catchError } from 'rxjs/operators';
+import { DashboardService, CockpitData } from './dashboard.service';
 import { GovKpiCardComponent, KpiVariant } from '../../shared/ui/kpi-card/gov-kpi-card.component';
 import { GovBadgeComponent, BadgeVariant } from '../../shared/ui/badge/gov-badge.component';
 import { Alert, AlertSeverity, KIND_LABELS, SEVERITY_LABELS } from '../../shared/models/alertas.model';
@@ -28,6 +31,8 @@ const SEVERITY_ORDER: Record<AlertSeverity, number> = {
   CRITICAL: 4, HIGH: 3, MEDIUM: 2, LOW: 1,
 };
 
+const COCKPIT_REFRESH_INTERVAL_MS = 30_000;
+
 // ── SVG paths ────────────────────────────────────────────────
 
 const ICON_AGENTES   = 'M8.25 3v1.5M4.5 8.25H3m18 0h-1.5M4.5 12H3m18 0h-1.5m-15 3.75H3m18 0h-1.5M8.25 19.5V21M12 3v1.5m0 15V21m3.75-18v1.5m0 15V21m-9-1.5h10.5a2.25 2.25 0 002.25-2.25V6.75a2.25 2.25 0 00-2.25-2.25H6.75A2.25 2.25 0 004.5 6.75v10.5a2.25 2.25 0 002.25 2.25zm.75-12h9v9h-9v-9z';
@@ -50,6 +55,13 @@ const ICON_BLOQUEADO = 'M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.5
             Tentar novamente
           </button>
         </div>
+      }
+
+      <!-- ── Refresh hint ─────────────────────────────────────── -->
+      @if (lastRefreshed()) {
+        <p class="cockpit__refresh-hint" aria-live="polite" aria-atomic="true">
+          Atualizado às {{ lastRefreshed() | date: 'HH:mm:ss' }}
+        </p>
       }
 
       <!-- ── KPI Cards ─────────────────────────────────────────── -->
@@ -203,6 +215,14 @@ const ICON_BLOQUEADO = 'M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.5
       display: flex;
       flex-direction: column;
       gap: var(--gov-space-8);
+    }
+
+    /* ── Refresh hint ───────────────────────────────────────── */
+    .cockpit__refresh-hint {
+      text-align: right;
+      font-size: var(--gov-font-size-xs);
+      color: var(--gov-color-text-secondary);
+      margin: 0;
     }
 
     /* ── KPI grid ───────────────────────────────────────────── */
@@ -396,10 +416,12 @@ const ICON_BLOQUEADO = 'M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.5
   `],
 })
 export class DashboardComponent implements OnInit {
-  private readonly svc = inject(DashboardService);
+  private readonly svc        = inject(DashboardService);
+  private readonly destroyRef = inject(DestroyRef);
 
   protected readonly loading          = signal(true);
   protected readonly error            = signal<string | null>(null);
+  protected readonly lastRefreshed    = signal<Date | null>(null);
 
   protected readonly agentesAtivos    = signal(0);
   protected readonly alertasAbertos   = signal(0);
@@ -423,6 +445,10 @@ export class DashboardComponent implements OnInit {
 
   ngOnInit(): void {
     this.load();
+
+    interval(COCKPIT_REFRESH_INTERVAL_MS)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.refreshBackground());
   }
 
   load(): void {
@@ -431,14 +457,8 @@ export class DashboardComponent implements OnInit {
 
     this.svc.loadCockpit().subscribe({
       next: (data) => {
-        this.agentesAtivos.set(
-          data.agentes.data.filter((a) => a.status === 'ACTIVE').length,
-        );
-        this.alertasAbertos.set(data.alertas.total);
-        this.alertasTop5.set(data.alertas.data);
-        this.totalDecisoes.set(data.decisoes.total);
-        this.eventosRecentes.set(data.decisoes.data);
-        this.totalBloqueados.set(data.bloqueados.total);
+        this.applyData(data);
+        this.lastRefreshed.set(new Date());
         this.loading.set(false);
       },
       error: (err) => {
@@ -447,6 +467,24 @@ export class DashboardComponent implements OnInit {
         );
         this.loading.set(false);
       },
+    });
+  }
+
+  private applyData(data: CockpitData): void {
+    this.agentesAtivos.set(data.agentes.data.filter((a) => a.status === 'ACTIVE').length);
+    this.alertasAbertos.set(data.alertas.total);
+    this.alertasTop5.set(data.alertas.data);
+    this.totalDecisoes.set(data.decisoes.total);
+    this.eventosRecentes.set(data.decisoes.data);
+    this.totalBloqueados.set(data.bloqueados.total);
+  }
+
+  private refreshBackground(): void {
+    this.svc.loadCockpit().pipe(
+      catchError(() => EMPTY),
+    ).subscribe((data) => {
+      this.applyData(data);
+      this.lastRefreshed.set(new Date());
     });
   }
 
