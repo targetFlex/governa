@@ -20,6 +20,7 @@
 // ============================================================
 import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import { Agente, AgentStatus } from '../../models/agente.model';
 
 type StatusMeta = { label: string; bg: string; color: string };
@@ -34,7 +35,7 @@ const STATUS_META: Record<AgentStatus, StatusMeta> = {
 @Component({
   selector: 'app-agente-card',
   standalone: true,
-  imports: [CommonModule, DatePipe],
+  imports: [CommonModule, DatePipe, RouterLink],
   template: `
     <article
       class="agente-card"
@@ -43,7 +44,11 @@ const STATUS_META: Record<AgentStatus, StatusMeta> = {
     >
       <!-- Cabeçalho ─────────────────────────────────────── -->
       <header class="agente-card__header">
-        <h2 class="agente-card__nome">{{ agente.name }}</h2>
+        <h2 class="agente-card__nome">
+          <a [routerLink]="['/agentes', agente.id]" class="agente-card__nome-link">
+            {{ agente.name }}
+          </a>
+        </h2>
         <span
           class="agente-card__status"
           [style.background]="statusMeta.bg"
@@ -163,6 +168,18 @@ const STATUS_META: Record<AgentStatus, StatusMeta> = {
       margin: 0;
       color: var(--gov-color-text-primary);
       line-height: var(--gov-line-height-tight);
+    }
+
+    .agente-card__nome-link {
+      color: inherit;
+      text-decoration: none;
+
+      &:hover { color: var(--gov-color-brand); text-decoration: underline; }
+      &:focus-visible {
+        outline: 2px solid var(--gov-color-brand);
+        outline-offset: 2px;
+        border-radius: 2px;
+      }
     }
 
     .agente-card__status {

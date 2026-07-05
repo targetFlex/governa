@@ -18,6 +18,7 @@ import {
   tick,
 } from '@angular/core/testing';
 import { signal } from '@angular/core';
+import { RouterTestingModule } from '@angular/router/testing';
 import { axe, toHaveNoViolations } from 'jest-axe';
 import { AgentesListComponent } from './agentes-list.component';
 import { AgentesStore } from '../agentes.service';
@@ -73,7 +74,7 @@ function createStoreMock() {
 
 function setup(storeMock: ReturnType<typeof createStoreMock>): ComponentFixture<AgentesListComponent> {
   TestBed.configureTestingModule({
-    imports: [AgentesListComponent],
+    imports: [AgentesListComponent, RouterTestingModule],
     providers: [
       { provide: AgentesStore, useValue: storeMock },
     ],

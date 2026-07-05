@@ -9,6 +9,7 @@
 //   4. Acessibilidade WCAG 2.1 AA (jest-axe)
 // ============================================================
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { RouterTestingModule } from '@angular/router/testing';
 import { axe, toHaveNoViolations } from 'jest-axe';
 import { AgenteCardComponent } from './agente-card.component';
 import { Agente } from '../../models/agente.model';
@@ -38,7 +39,7 @@ function makeAgente(overrides: Partial<Agente> = {}): Agente {
 
 function setup(agente: Agente, emAndamento = false): ComponentFixture<AgenteCardComponent> {
   TestBed.configureTestingModule({
-    imports: [AgenteCardComponent],
+    imports: [AgenteCardComponent, RouterTestingModule],
   });
   const fixture = TestBed.createComponent(AgenteCardComponent);
   fixture.componentInstance.agente = agente;

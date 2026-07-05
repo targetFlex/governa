@@ -31,6 +31,12 @@ export const APP_ROUTES: Routes = [
           import('./features/agentes/agentes-list/agentes-list.component').then(m => m.AgentesListComponent),
       },
       {
+        path: 'agentes/:id',
+        data: { title: 'Detalhe do Agente' },
+        loadComponent: () =>
+          import('./features/agentes/agente-detail/agente-detail.component').then(m => m.AgenteDetailComponent),
+      },
+      {
         path: 'alertas',
         data: { title: 'Alertas' },
         loadComponent: () =>

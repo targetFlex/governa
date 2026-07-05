@@ -121,7 +121,11 @@ const ICON_BLOQUEADO = 'M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.5
                     <td class="cockpit__td--mono">
                       {{ ev.createdAt | date: 'dd/MM/yy HH:mm' }}
                     </td>
-                    <td class="cockpit__td--mono">{{ ev.agentId | slice:0:8 }}…</td>
+                    <td class="cockpit__td--mono">
+                      <a [routerLink]="['/agentes', ev.agentId]" class="cockpit__id-link">
+                        {{ ev.agentId | slice:0:8 }}…
+                      </a>
+                    </td>
                     <td>{{ ev.action }}</td>
                     <td>
                       <gov-badge [variant]="outcomeBadge(ev.outcome)" size="sm">
@@ -166,7 +170,11 @@ const ICON_BLOQUEADO = 'M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.5
               <tbody>
                 @for (al of alertasSorted(); track al.id) {
                   <tr>
-                    <td class="cockpit__td--mono">{{ al.agentId | slice:0:8 }}…</td>
+                    <td class="cockpit__td--mono">
+                      <a [routerLink]="['/agentes', al.agentId]" class="cockpit__id-link">
+                        {{ al.agentId | slice:0:8 }}…
+                      </a>
+                    </td>
                     <td>{{ kindLabel(al.kind) }}</td>
                     <td>
                       <gov-badge [variant]="severityBadge(al.severity)" size="sm">
@@ -296,6 +304,14 @@ const ICON_BLOQUEADO = 'M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.5
       font-family: var(--gov-font-family-mono);
       font-size: var(--gov-font-size-xs);
       color: var(--gov-color-text-secondary);
+    }
+
+    .cockpit__id-link {
+      color: inherit;
+      text-decoration: none;
+      font-family: var(--gov-font-family-mono);
+
+      &:hover { color: var(--gov-color-brand); text-decoration: underline; }
     }
 
     .cockpit__td--num {
