@@ -13,8 +13,9 @@
 //   8. Acessibilidade WCAG 2.1 AA (jest-axe)
 // ============================================================
 
-import { TestBed }          from '@angular/core/testing';
-import { ActivatedRoute }   from '@angular/router';
+import { TestBed }              from '@angular/core/testing';
+import { ActivatedRoute, Router } from '@angular/router';
+import { RouterTestingModule }   from '@angular/router/testing';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
 import { axe, toHaveNoViolations }  from 'jest-axe';
 import { AgenteDetailComponent }    from './agente-detail.component';
@@ -44,6 +45,7 @@ const makeAgente = (overrides: Partial<Agente> = {}): Agente => ({
 const AGENT_URL   = `${environment.coreBaseUrl}/agents/ag-42`;
 const PAUSE_URL   = `${environment.coreBaseUrl}/agents/ag-42/pause`;
 const ACTIVATE_URL = `${environment.coreBaseUrl}/agents/ag-42/activate`;
+const DELETE_URL   = `${environment.coreBaseUrl}/agents/ag-42`;
 
 function makeRoute(id = 'ag-42') {
   return {
@@ -54,13 +56,14 @@ function makeRoute(id = 'ag-42') {
 
 async function setup(id = 'ag-42') {
   await TestBed.configureTestingModule({
-    imports:   [AgenteDetailComponent, HttpClientTestingModule],
+    imports:   [AgenteDetailComponent, HttpClientTestingModule, RouterTestingModule],
     providers: [makeRoute(id)],
   }).compileComponents();
 
   const fixture = TestBed.createComponent(AgenteDetailComponent);
   const ctrl    = TestBed.inject(HttpTestingController);
-  return { fixture, ctrl };
+  const router  = TestBed.inject(Router);
+  return { fixture, ctrl, router };
 }
 
 // ── Suite 1: Loading ──────────────────────────────────────────
@@ -375,5 +378,176 @@ describe('AgenteDetailComponent — acessibilidade', () => {
 
     ctrl.expectOne(AGENT_URL).flush({ data: makeAgente() });
     ctrl.verify();
+  });
+});
+
+// ── Suite 9: Modal de exclusão ────────────────────────────────
+
+describe('AgenteDetailComponent — modal de exclusão', () => {
+  async function setupActive() {
+    const { fixture, ctrl, router } = await setup();
+    fixture.detectChanges();
+    ctrl.expectOne(AGENT_URL).flush({ data: makeAgente({ status: 'ACTIVE' }) });
+    fixture.detectChanges();
+    return { fixture, el: fixture.nativeElement as HTMLElement, ctrl, router };
+  }
+
+  it('exibe botão "Excluir" para agente não-DEPRECATED', async () => {
+    const { el } = await setupActive();
+    expect(el.querySelector('.agente-detail__btn--excluir')).toBeTruthy();
+  });
+
+  it('não exibe botão "Excluir" para DEPRECATED', async () => {
+    const { fixture, ctrl } = await setup();
+    fixture.detectChanges();
+    ctrl.expectOne(AGENT_URL).flush({ data: makeAgente({ status: 'DEPRECATED' }) });
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.agente-detail__btn--excluir')).toBeNull();
+  });
+
+  it('modal não aparece antes de clicar em Excluir', async () => {
+    const { el } = await setupActive();
+    expect(el.querySelector('.agente-detail__modal-overlay')).toBeNull();
+  });
+
+  it('abre modal ao clicar no botão Excluir', async () => {
+    const { fixture, el } = await setupActive();
+    el.querySelector<HTMLButtonElement>('.agente-detail__btn--excluir')!.click();
+    fixture.detectChanges();
+    expect(el.querySelector('.agente-detail__modal-overlay')).toBeTruthy();
+    expect(el.querySelector('#modal-excluir-titulo')?.textContent).toContain('Excluir agente');
+  });
+
+  it('exibe nome do agente no corpo do modal', async () => {
+    const { fixture, el } = await setupActive();
+    el.querySelector<HTMLButtonElement>('.agente-detail__btn--excluir')!.click();
+    fixture.detectChanges();
+    expect(el.querySelector('.agente-detail__modal-body')?.textContent).toContain('Agente Detalhado');
+  });
+
+  it('fecha modal ao clicar em Cancelar', async () => {
+    const { fixture, el } = await setupActive();
+    el.querySelector<HTMLButtonElement>('.agente-detail__btn--excluir')!.click();
+    fixture.detectChanges();
+    el.querySelector<HTMLButtonElement>('.agente-detail__btn--cancelar')!.click();
+    fixture.detectChanges();
+    expect(el.querySelector('.agente-detail__modal-overlay')).toBeNull();
+  });
+
+  it('fecha modal ao clicar no overlay', async () => {
+    const { fixture, el } = await setupActive();
+    el.querySelector<HTMLButtonElement>('.agente-detail__btn--excluir')!.click();
+    fixture.detectChanges();
+    el.querySelector<HTMLElement>('.agente-detail__modal-overlay')!.click();
+    fixture.detectChanges();
+    expect(el.querySelector('.agente-detail__modal-overlay')).toBeNull();
+  });
+
+  it('fecha modal ao pressionar Escape', async () => {
+    const { fixture, el } = await setupActive();
+    el.querySelector<HTMLButtonElement>('.agente-detail__btn--excluir')!.click();
+    fixture.detectChanges();
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    fixture.detectChanges();
+    expect(el.querySelector('.agente-detail__modal-overlay')).toBeNull();
+  });
+});
+
+// ── Suite 10: Ação — excluir ──────────────────────────────────
+
+describe('AgenteDetailComponent — excluir', () => {
+  async function setupWithModal() {
+    const { fixture, ctrl, router } = await setup();
+    fixture.detectChanges();
+    ctrl.expectOne(AGENT_URL).flush({ data: makeAgente({ status: 'ACTIVE' }) });
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    el.querySelector<HTMLButtonElement>('.agente-detail__btn--excluir')!.click();
+    fixture.detectChanges();
+    return { fixture, el, ctrl, router };
+  }
+
+  it('chama DELETE /agents/:id e navega para /agentes ao confirmar', async () => {
+    const { fixture, el, ctrl, router } = await setupWithModal();
+    const navSpy = jest.spyOn(router, 'navigate').mockResolvedValue(true);
+
+    el.querySelector<HTMLButtonElement>('.agente-detail__btn--confirmar-excluir')!.click();
+    fixture.detectChanges();
+
+    ctrl.expectOne({ method: 'DELETE', url: DELETE_URL }).flush(null, { status: 204, statusText: 'No Content' });
+    fixture.detectChanges();
+
+    expect(navSpy).toHaveBeenCalledWith(['/agentes']);
+    ctrl.verify();
+  });
+
+  it('exibe spinner e desabilita botões durante exclusão', async () => {
+    const { fixture, el, ctrl, router } = await setupWithModal();
+    jest.spyOn(router, 'navigate').mockResolvedValue(true);
+
+    el.querySelector<HTMLButtonElement>('.agente-detail__btn--confirmar-excluir')!.click();
+    fixture.detectChanges();
+
+    expect(el.querySelector('.agente-detail__spinner')).toBeTruthy();
+    expect(el.querySelector<HTMLButtonElement>('.agente-detail__btn--cancelar')!.disabled).toBe(true);
+    expect(el.querySelector<HTMLButtonElement>('.agente-detail__btn--confirmar-excluir')!.disabled).toBe(true);
+
+    ctrl.expectOne({ method: 'DELETE', url: DELETE_URL }).flush(null, { status: 204, statusText: 'No Content' });
+    ctrl.verify();
+  });
+
+  it('exibe erro no modal quando DELETE falha', async () => {
+    const { fixture, el, ctrl, router } = await setupWithModal();
+    const navSpy = jest.spyOn(router, 'navigate').mockResolvedValue(true);
+
+    el.querySelector<HTMLButtonElement>('.agente-detail__btn--confirmar-excluir')!.click();
+    fixture.detectChanges();
+
+    ctrl.expectOne({ method: 'DELETE', url: DELETE_URL }).flush(
+      { message: 'Agente em uso por uma política ativa' },
+      { status: 409, statusText: 'Conflict' },
+    );
+    fixture.detectChanges();
+
+    expect(el.querySelector('.agente-detail__modal-erro')?.textContent).toContain('Agente em uso');
+    expect(navSpy).not.toHaveBeenCalled();
+    ctrl.verify();
+  });
+
+  it('reabilita botões após erro e mantém modal aberto', async () => {
+    const { fixture, el, ctrl, router } = await setupWithModal();
+    jest.spyOn(router, 'navigate').mockResolvedValue(true);
+
+    el.querySelector<HTMLButtonElement>('.agente-detail__btn--confirmar-excluir')!.click();
+    fixture.detectChanges();
+
+    ctrl.expectOne({ method: 'DELETE', url: DELETE_URL }).flush(
+      { message: 'Erro interno' },
+      { status: 500, statusText: 'Server Error' },
+    );
+    fixture.detectChanges();
+
+    expect(el.querySelector('.agente-detail__modal-overlay')).toBeTruthy();
+    expect(el.querySelector<HTMLButtonElement>('.agente-detail__btn--cancelar')!.disabled).toBe(false);
+    expect(el.querySelector<HTMLButtonElement>('.agente-detail__btn--confirmar-excluir')!.disabled).toBe(false);
+    ctrl.verify();
+  });
+});
+
+// ── Suite 11: Acessibilidade — modal aberto ───────────────────
+
+describe('AgenteDetailComponent — acessibilidade com modal', () => {
+  it('não apresenta violações axe com modal de exclusão aberto', async () => {
+    const { fixture, ctrl } = await setup();
+    fixture.detectChanges();
+    ctrl.expectOne(AGENT_URL).flush({ data: makeAgente() });
+    fixture.detectChanges();
+
+    const el = fixture.nativeElement as HTMLElement;
+    el.querySelector<HTMLButtonElement>('.agente-detail__btn--excluir')!.click();
+    fixture.detectChanges();
+
+    const results = await axe(fixture.nativeElement);
+    expect(results).toHaveNoViolations();
   });
 });

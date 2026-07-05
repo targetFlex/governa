@@ -1,5 +1,6 @@
 import {
   Component,
+  HostListener,
   OnInit,
   inject,
   signal,
@@ -7,7 +8,7 @@ import {
   ChangeDetectionStrategy,
 } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
-import { RouterLink, ActivatedRoute } from '@angular/router';
+import { RouterLink, ActivatedRoute, Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { catchError, finalize, tap, throwError } from 'rxjs';
 import { environment } from '@env/environment';
@@ -98,6 +99,16 @@ const STATUS_META: Record<AgentStatus, StatusMeta> = {
                 >
                   Editar
                 </a>
+
+                <button
+                  class="agente-detail__btn agente-detail__btn--excluir"
+                  type="button"
+                  [disabled]="acaoEmAndamento() || deleting()"
+                  aria-label="Excluir agente"
+                  (click)="onAbrirModalExclusao()"
+                >
+                  Excluir
+                </button>
 
                 @if (agente()!.status === 'ACTIVE') {
                   <button
@@ -213,6 +224,54 @@ const STATUS_META: Record<AgentStatus, StatusMeta> = {
       }
 
     </div>
+
+    <!-- ── Modal de confirmação de exclusão ─────────────────── -->
+    @if (mostrarModalExclusao() && agente()) {
+      <div
+        class="agente-detail__modal-overlay"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="modal-excluir-titulo"
+        (click)="onFecharModalExclusao()"
+      >
+        <div class="agente-detail__modal" (click)="$event.stopPropagation()">
+          <h2 id="modal-excluir-titulo" class="agente-detail__modal-titulo">Excluir agente</h2>
+          <p class="agente-detail__modal-body">
+            Tem certeza que deseja excluir o agente
+            <strong>{{ agente()!.name }}</strong>?
+            Essa ação não pode ser desfeita.
+          </p>
+          @if (deleteError()) {
+            <p class="agente-detail__modal-erro" role="alert">{{ deleteError() }}</p>
+          }
+          <div class="agente-detail__modal-acoes">
+            <button
+              type="button"
+              class="agente-detail__btn agente-detail__btn--cancelar"
+              [disabled]="deleting()"
+              (click)="onFecharModalExclusao()"
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              class="agente-detail__btn agente-detail__btn--confirmar-excluir"
+              [disabled]="deleting()"
+              [attr.aria-busy]="deleting()"
+              [attr.aria-label]="deleting() ? 'Excluindo agente' : 'Confirmar exclusão'"
+              (click)="onConfirmarExclusao()"
+            >
+              @if (deleting()) {
+                <span class="agente-detail__spinner" aria-hidden="true"></span>
+                Excluindo…
+              } @else {
+                Excluir
+              }
+            </button>
+          </div>
+        </div>
+      </div>
+    }
   `,
   styles: [`
     .agente-detail {
@@ -324,15 +383,17 @@ const STATUS_META: Record<AgentStatus, StatusMeta> = {
       }
     }
 
-    .agente-detail__btn--editar {
+    .agente-detail__btn--editar,
+    .agente-detail__btn--cancelar {
       background: var(--gov-color-neutral-100);
       color: var(--gov-color-text-primary);
-      text-decoration: none;
 
       &:not(:disabled):hover {
         background: var(--gov-color-neutral-300);
       }
     }
+
+    .agente-detail__btn--editar { text-decoration: none; }
 
     .agente-detail__btn--pausar {
       background: var(--gov-color-warning-100);
@@ -352,6 +413,72 @@ const STATUS_META: Record<AgentStatus, StatusMeta> = {
         background: var(--gov-color-success-500);
         color: var(--gov-color-white);
       }
+    }
+
+    .agente-detail__btn--excluir {
+      background: var(--gov-color-error-100);
+      color: var(--gov-color-error-700);
+
+      &:not(:disabled):hover {
+        background: var(--gov-color-error-500);
+        color: var(--gov-color-white);
+      }
+    }
+
+    .agente-detail__btn--confirmar-excluir {
+      background: var(--gov-color-error-500);
+      color: var(--gov-color-white);
+
+      &:not(:disabled):hover {
+        background: var(--gov-color-error-700);
+      }
+    }
+
+    .agente-detail__modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .agente-detail__modal {
+      background: var(--gov-color-surface);
+      border-radius: var(--gov-radius-xl);
+      padding: var(--gov-space-6);
+      max-width: 480px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: var(--gov-space-4);
+    }
+
+    .agente-detail__modal-titulo {
+      font-size: var(--gov-font-size-lg);
+      font-weight: var(--gov-font-weight-semibold);
+      color: var(--gov-color-text-primary);
+      margin: 0;
+    }
+
+    .agente-detail__modal-body {
+      font-size: var(--gov-font-size-sm);
+      color: var(--gov-color-text-secondary);
+      margin: 0;
+      line-height: var(--gov-line-height-relaxed);
+    }
+
+    .agente-detail__modal-erro {
+      font-size: var(--gov-font-size-sm);
+      color: var(--gov-color-error-700);
+      margin: 0;
+    }
+
+    .agente-detail__modal-acoes {
+      display: flex;
+      justify-content: flex-end;
+      gap: var(--gov-space-2);
     }
 
     /* ── Grid ── */
@@ -582,14 +709,18 @@ const STATUS_META: Record<AgentStatus, StatusMeta> = {
   `],
 })
 export class AgenteDetailComponent implements OnInit {
-  private readonly route = inject(ActivatedRoute);
-  private readonly http  = inject(HttpClient);
+  private readonly route  = inject(ActivatedRoute);
+  private readonly http   = inject(HttpClient);
+  private readonly router = inject(Router);
 
-  protected readonly loading         = signal(true);
-  protected readonly error           = signal<string | null>(null);
-  protected readonly notFound        = signal(false);
-  protected readonly agente          = signal<Agente | null>(null);
-  protected readonly acaoEmAndamento = signal(false);
+  protected readonly loading              = signal(true);
+  protected readonly error                = signal<string | null>(null);
+  protected readonly notFound             = signal(false);
+  protected readonly agente               = signal<Agente | null>(null);
+  protected readonly acaoEmAndamento      = signal(false);
+  protected readonly mostrarModalExclusao = signal(false);
+  protected readonly deleting             = signal(false);
+  protected readonly deleteError          = signal<string | null>(null);
 
   protected readonly statusMeta = computed<StatusMeta>(() => {
     const ag = this.agente();
@@ -650,6 +781,40 @@ export class AgenteDetailComponent implements OnInit {
           return throwError(() => err);
         }),
         finalize(() => this.acaoEmAndamento.set(false)),
+      )
+      .subscribe();
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscapeKey(): void {
+    if (this.mostrarModalExclusao()) {
+      this.onFecharModalExclusao();
+    }
+  }
+
+  onAbrirModalExclusao(): void {
+    this.deleteError.set(null);
+    this.mostrarModalExclusao.set(true);
+  }
+
+  onFecharModalExclusao(): void {
+    if (this.deleting()) return;
+    this.mostrarModalExclusao.set(false);
+  }
+
+  onConfirmarExclusao(): void {
+    this.deleting.set(true);
+    this.deleteError.set(null);
+
+    this.http
+      .delete<void>(`${environment.coreBaseUrl}/agents/${this.id}`)
+      .pipe(
+        tap(() => this.router.navigate(['/agentes'])),
+        catchError((err) => {
+          this.deleteError.set(err?.error?.message ?? /* istanbul ignore next */ 'Erro ao excluir agente.');
+          return throwError(() => err);
+        }),
+        finalize(() => this.deleting.set(false)),
       )
       .subscribe();
   }
