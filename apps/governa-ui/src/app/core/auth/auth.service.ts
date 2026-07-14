@@ -59,7 +59,7 @@ export class AuthService {
   login(credentials: LoginCredentials) {
     return this.http
       .post<AuthTokenPayload>(
-        `${environment.gatewayBaseUrl}/auth/login`,
+        `${environment.coreBaseUrl}/auth/login`,
         credentials,
       )
       .pipe(

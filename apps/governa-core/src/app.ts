@@ -29,6 +29,8 @@ import { createNotificationConfigRouter }               from './modules/alerts/p
 import { createAnchorAgentRouter }                      from './modules/anchor-agent/presentation/anchor-agent.router'
 import { createFluigWebhookRouter }                     from './modules/anchor-agent/presentation/fluig-webhook.router'
 import { createPendingActionRouter }                    from './modules/pending-actions/presentation/pending-action.router'
+import { createAuthRouter }                             from './modules/auth/presentation/auth.router'
+import { AuthService }                                  from './modules/auth/application/auth.service'
 
 import type { AgentService }                            from './modules/agents/application/agent.service'
 import type { ConsultarPedidoUseCase }                  from './modules/pedidos/application/consultar-pedido.use-case'
@@ -63,6 +65,7 @@ export interface AppDependencies {
   fluigApiKey?:                 string
   /** E3.4 — Checkpoint humano (PendingAction) */
   pendingActionService?:        PendingActionService
+  authService:                  AuthService
 }
 
 // ─── Factory ──────────────────────────────────────────────────────────────────
@@ -93,6 +96,9 @@ export function createApp(deps: AppDependencies): Application {
   app.get('/health', (_req: Request, res: Response) => {
     res.json({ status: 'ok', ts: new Date().toISOString() })
   })
+
+  // ── Auth local (pública — ANTES do tenantMiddleware) ────────────────────────
+  app.use('/auth', createAuthRouter(deps.authService))
 
   // ── E3.3: Webhook Fluig — ANTES do tenantMiddleware (auth via X-Fluig-Api-Key) ──
   if (deps.fluigWebhookService && deps.fluigApiKey) {

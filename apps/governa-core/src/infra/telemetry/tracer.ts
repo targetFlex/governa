@@ -85,12 +85,11 @@ if (!sdkDisabled) {
   sdk = new NodeSDK({
     serviceName,
     traceExporter,
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore — sdk-metrics@1.30.1 vs sdk-node@0.53.0: private _shutdown incompatível
     metricReader: new PeriodicExportingMetricReader({
       exporter:             metricExporter,
       exportIntervalMillis: 30_000,
-    }),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    }) as any,
     instrumentations: [
       getNodeAutoInstrumentations({
         // Reduz ruído: fs é muito verboso

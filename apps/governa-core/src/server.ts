@@ -69,6 +69,7 @@ import { FluigWebhookService }                          from './modules/anchor-a
 import { SubjectTokenHasher }                           from './shared/crypto/subject-token'
 import { PrismaPendingActionRepository, type PendingActionPrismaClient } from './modules/pending-actions/infrastructure/prisma-pending-action.repository'
 import { PendingActionService }                         from './modules/pending-actions/application/pending-action.service'
+import { AuthService }                                  from './modules/auth/application/auth.service'
 
 // ─── Validação de variáveis obrigatórias ─────────────────────────────────────
 
@@ -178,6 +179,9 @@ async function bootstrap(): Promise<void> {
     console.log('[governa-core] FluigWebhookService ativo (POST /webhooks/fluig)')
   }
 
+  // ── Auth local ──────────────────────────────────────────────────────────────
+  const authService = new AuthService(prisma)
+
   // ── App Express ─────────────────────────────────────────────────────────────
   const app = createApp({
     agentService,
@@ -193,6 +197,7 @@ async function bootstrap(): Promise<void> {
     fluigWebhookService,
     fluigApiKey,
     pendingActionService,
+    authService,
   })
 
   // ── HTTP Server ─────────────────────────────────────────────────────────────

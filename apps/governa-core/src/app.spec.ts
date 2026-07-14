@@ -19,6 +19,7 @@ import type { PolicyService }               from './modules/policies/application
 import type { AuditQueryService }           from './modules/audit/application/audit.query.service'
 import type { AlertService }               from './modules/alerts/application/alert.service'
 import type { PolicyViolationAlertService } from './modules/alerts/application/policy-violation-alert.service'
+import { AuthService }                     from './modules/auth/application/auth.service'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -86,6 +87,10 @@ const mockPolicyViolationAlertService = {
   evaluate: jest.fn().mockResolvedValue([]),
 } as unknown as PolicyViolationAlertService
 
+const mockAuthService = {
+  login: jest.fn().mockResolvedValue({ token: 'tok', expiresIn: 28800 }),
+} as unknown as AuthService
+
 // ─── Testes ───────────────────────────────────────────────────────────────────
 
 describe('App — wiring', () => {
@@ -97,6 +102,7 @@ describe('App — wiring', () => {
     auditQueryService:           mockAuditQueryService,
     alertService:                mockAlertService,
     policyViolationAlertService: mockPolicyViolationAlertService,
+    authService:                 mockAuthService,
   })
 
   beforeEach(() => {

@@ -1,13 +1,18 @@
-import { PrismaClient, AutonomyLevel, AgentStatus, Plan } from '@prisma/client'
+import { PrismaClient, AutonomyLevel, AgentStatus, Plan, UserRole } from '@prisma/client'
+import { hashPassword } from '../src/modules/auth/application/auth.service'
+
 const prisma = new PrismaClient()
+
 async function main() {
   console.log('Seeding...')
+
   const tenant = await prisma.tenant.upsert({
     where:  { slug: 'target-flex-dev' },
     update: {},
     create: { name: 'Target Flex Patrimonial (Dev)', slug: 'target-flex-dev', plan: Plan.STARTER },
   })
   console.log(`✓ Tenant: ${tenant.name}`)
+
   const policy = await prisma.policy.upsert({
     where:  { id: 'policy-atendimento-consultivo' },
     update: {},
@@ -19,6 +24,7 @@ async function main() {
     },
   })
   console.log(`✓ Política: ${policy.name}`)
+
   const agent = await prisma.agent.upsert({
     where:  { id: 'agent-atendimento-v1' },
     update: {},
@@ -32,6 +38,25 @@ async function main() {
     },
   })
   console.log(`✓ Agente: ${agent.name}`)
+
+  // Usuário admin inicial — senha deve ser trocada no primeiro acesso
+  const adminEmail = 'fabio@targetflex.com.br'
+  const adminPasswordRaw = process.env.SEED_ADMIN_PASSWORD ?? 'Governa@2026!'
+  const passwordHash = await hashPassword(adminPasswordRaw)
+
+  const user = await prisma.user.upsert({
+    where:  { email: adminEmail },
+    update: { passwordHash },
+    create: {
+      tenantId: tenant.id,
+      email:    adminEmail,
+      passwordHash,
+      role:     UserRole.ADMIN,
+    },
+  })
+  console.log(`✓ Usuário admin: ${user.email}`)
+
   console.log('\nSeed concluído.')
 }
+
 main().catch(console.error).finally(() => prisma.$disconnect())
