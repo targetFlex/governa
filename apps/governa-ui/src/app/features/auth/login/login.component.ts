@@ -192,7 +192,7 @@ export class LoginComponent {
 
     const { email, password } = this.form.getRawValue();
 
-    this.auth.login({ email: email!, password: password! }).subscribe({
+    this.auth.login({ email: email!.trim(), password: password!.trim() }).subscribe({
       next: () => {
         this.loading.set(false);
         this.router.navigate(['/dashboard']);
