@@ -1,5 +1,5 @@
 export const environment = {
   production: true,
-  gatewayBaseUrl: 'https://api.governa.targetflex.com.br',
-  coreBaseUrl:    'https://core.governa.targetflex.com.br',
+  gatewayBaseUrl: 'https://governa-core-production.up.railway.app',
+  coreBaseUrl:    'https://governa-core-production.up.railway.app',
 };
