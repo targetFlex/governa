@@ -72,7 +72,13 @@ export class HttpGatewayClient implements IGatewayClient {
   }
 
   async consultarClientes(params: ConsultarClientesParams): Promise<ClienteInterno[]> {
-    const url = this.buildUrl('/clientes', params as Record<string, string | undefined>)
+    // O gateway expõe o filtro de identidade como `codigoCliente` (contrato Pact CC3/CC4) —
+    // remapeado aqui porque o nome do parâmetro na porta (`clienteId`) é o vocabulário do core.
+    const gatewayParams: Record<string, string | undefined> = {
+      codigoCliente:  params.clienteId,
+      documentoToken: params.documentoToken,
+    }
+    const url = this.buildUrl('/clientes', gatewayParams)
     const { data } = await this.get<{ data: ClienteInterno[] }>(url)
     return data
   }
