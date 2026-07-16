@@ -391,6 +391,11 @@ const TOOLS: ToolOption[] = [
       white-space: nowrap;
       border: 0;
     }
+
+    @media (max-width: 640px) {
+      .ae { padding: var(--gov-space-5) var(--gov-space-4); }
+      .ae__footer { flex-wrap: wrap; gap: var(--gov-space-3); }
+    }
   `],
 })
 export class AgenteEditComponent implements OnInit, OnDestroy {

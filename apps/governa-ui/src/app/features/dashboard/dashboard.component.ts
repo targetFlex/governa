@@ -238,6 +238,9 @@ const ICON_BLOQUEADO = 'M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.5
     @media (max-width: 520px) {
       .cockpit__kpi-grid { grid-template-columns: 1fr; }
     }
+    @media (max-width: 640px) {
+      .cockpit { padding: var(--gov-space-4); gap: var(--gov-space-5); }
+    }
 
     .cockpit__kpi-skeleton {
       height: 110px;

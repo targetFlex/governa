@@ -1,4 +1,4 @@
-import { Component, inject, computed } from '@angular/core';
+import { Component, inject, computed, signal } from '@angular/core';
 import { RouterOutlet, RouterLink, RouterLinkActive, Router, NavigationEnd } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { filter, map, startWith } from 'rxjs';
@@ -52,12 +52,23 @@ const NAV_ITEMS: NavItem[] = [
   template: `
     <div class="shell">
 
+      <!-- ── Backdrop (mobile) ────────────────────────────── -->
+      @if (sidebarOpen()) {
+        <div class="backdrop" (click)="closeSidebar()"></div>
+      }
+
       <!-- ── Sidebar ──────────────────────────────────────── -->
-      <aside class="sidebar" aria-label="Navegação principal">
+      <aside class="sidebar" [class.sidebar--open]="sidebarOpen()" aria-label="Navegação principal">
 
         <div class="sidebar__brand" aria-label="AICOCKPIT">
           <span class="sidebar__brand-icon" aria-hidden="true">◈</span>
           <span class="sidebar__brand-name">AICOCKPIT</span>
+          <button type="button" class="sidebar__close" aria-label="Fechar menu"
+            (click)="closeSidebar()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
         </div>
 
         <nav class="sidebar__nav">
@@ -70,6 +81,7 @@ const NAV_ITEMS: NavItem[] = [
                   [routerLinkActiveOptions]="{ exact: !!item.exact }"
                   class="sidebar__link"
                   [attr.aria-label]="item.label"
+                  (click)="closeSidebar()"
                 >
                   <svg class="sidebar__icon" viewBox="0 0 24 24" fill="none"
                     stroke="currentColor" stroke-width="1.5" aria-hidden="true">
@@ -101,6 +113,12 @@ const NAV_ITEMS: NavItem[] = [
 
         <!-- Topbar -->
         <header class="shell__topbar" aria-label="Cabeçalho da página">
+          <button type="button" class="shell__menu-btn" aria-label="Abrir menu"
+            (click)="openSidebar()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+            </svg>
+          </button>
           <h1 class="shell__page-title">{{ pageTitle() }}</h1>
         </header>
 
@@ -134,6 +152,53 @@ const NAV_ITEMS: NavItem[] = [
       flex-direction: column;
       height: 100%;
       overflow-y: auto;
+    }
+
+    .sidebar__close { display: none; }
+
+    @media (max-width: 768px) {
+      .sidebar {
+        position: fixed;
+        inset: 0 auto 0 0;
+        z-index: 40;
+        transform: translateX(-100%);
+        transition: transform var(--gov-transition-fast, 150ms) ease;
+        box-shadow: var(--gov-shadow-lg);
+      }
+
+      .sidebar--open {
+        transform: translateX(0);
+      }
+
+      .sidebar__close {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin-left: auto;
+        width: 32px;
+        height: 32px;
+        background: transparent;
+        border: none;
+        color: var(--gov-color-white);
+        cursor: pointer;
+
+        svg { width: 20px; height: 20px; }
+        &:focus-visible { outline: 2px solid var(--gov-color-primary-300); outline-offset: 1px; }
+      }
+    }
+
+    .backdrop {
+      display: none;
+    }
+
+    @media (max-width: 768px) {
+      .backdrop {
+        display: block;
+        position: fixed;
+        inset: 0;
+        z-index: 30;
+        background: rgb(0 0 0 / 0.4);
+      }
     }
 
     .sidebar__brand {
@@ -241,9 +306,37 @@ const NAV_ITEMS: NavItem[] = [
       flex-shrink: 0;
       display: flex;
       align-items: center;
+      gap: var(--gov-space-3);
       padding: 0 var(--gov-space-8);
       background: var(--gov-color-surface);
       border-bottom: 1px solid var(--gov-color-border);
+    }
+
+    .shell__menu-btn {
+      display: none;
+    }
+
+    @media (max-width: 768px) {
+      .shell__topbar {
+        padding: 0 var(--gov-space-4);
+      }
+
+      .shell__menu-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        height: 36px;
+        flex-shrink: 0;
+        background: transparent;
+        border: none;
+        color: var(--gov-color-text-primary);
+        cursor: pointer;
+        margin-left: calc(var(--gov-space-4) * -1);
+
+        svg { width: 22px; height: 22px; }
+        &:focus-visible { outline: 2px solid var(--gov-color-primary-300); outline-offset: 1px; }
+      }
     }
 
     .shell__page-title {
@@ -251,12 +344,16 @@ const NAV_ITEMS: NavItem[] = [
       font-weight: var(--gov-font-weight-semibold);
       color: var(--gov-color-text-primary);
       margin: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     /* Conteúdo */
     .shell__content {
       flex: 1;
       overflow-y: auto;
+      overflow-x: hidden;
       background: var(--gov-color-bg);
     }
   `],
@@ -280,6 +377,16 @@ export class AppShellComponent {
   );
 
   protected readonly pageTitle = computed(() => this.routeTitle() ?? '');
+
+  protected readonly sidebarOpen = signal(false);
+
+  openSidebar(): void {
+    this.sidebarOpen.set(true);
+  }
+
+  closeSidebar(): void {
+    this.sidebarOpen.set(false);
+  }
 
   logout(): void {
     this.auth.logout();

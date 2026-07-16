@@ -308,6 +308,11 @@ const TOOLS: ToolOption[] = [
       text-decoration: none;
     }
     .af__cancel-link:hover { text-decoration: underline; }
+
+    @media (max-width: 640px) {
+      .af { padding: var(--gov-space-5) var(--gov-space-4); }
+      .af__footer { flex-wrap: wrap; gap: var(--gov-space-3); }
+    }
   `],
 })
 export class AgenteFormComponent implements OnInit, OnDestroy {

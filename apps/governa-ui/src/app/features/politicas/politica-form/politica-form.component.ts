@@ -588,6 +588,13 @@ const NIVEIS: NivelMeta[] = [
       white-space: nowrap;
       border-width: 0;
     }
+
+    /* ── Responsivo ──────────────────────────────────────────── */
+    @media (max-width: 640px) {
+      .pf { padding: var(--gov-space-5) var(--gov-space-4); }
+      .pf__fields-row { grid-template-columns: 1fr; gap: var(--gov-space-4); }
+      .pf__nivel-grid { grid-template-columns: 1fr; }
+    }
   `],
 })
 export class PoliticaFormComponent implements OnInit, OnDestroy {
