@@ -45,15 +45,17 @@ const RAW_PEDIDO = {
   ],
 }
 
-const RAW_CLIENTE: ClienteInterno = {
-  clienteId:      'CLI-001',
-  loja:           '01',
-  nomeToken:      'hmac-nome-abc',
-  documentoToken: 'hmac-doc-xyz',
-  enderecoToken:  'hmac-end-def',
-  emailToken:     null,
-  telefoneToken:  null,
-  bloqueado:      false,
+// Shape real da wire do governa-gateway (contrato Pact CC3/CC4) —
+// nomenclatura diferente do domínio do core (ver mapCliente em http-gateway-client.ts).
+const RAW_CLIENTE = {
+  codigoCliente:   'CLI-001',
+  loja:            '01',
+  nomePseudo:      'hmac-nome-abc',
+  documentoPseudo: 'hmac-doc-xyz',
+  enderecoPseudo:  'hmac-end-def',
+  emailPseudo:     null,
+  telefonePseudo:  null,
+  ativo:           true,
 }
 
 // ─── Setup do servidor mock ───────────────────────────────────────────────────
@@ -179,7 +181,7 @@ describe('HttpGatewayClient — consultarPedidos', () => {
 // ─── consultarClientes ────────────────────────────────────────────────────────
 
 describe('HttpGatewayClient — consultarClientes', () => {
-  it('HG-9: happy path — retorna ClienteInterno[]', async () => {
+  it('HG-9: happy path — retorna ClienteInterno[] traduzido do shape do gateway', async () => {
     const client   = new HttpGatewayClient(baseUrl)
     const clientes = await client.consultarClientes({})
 
@@ -187,6 +189,10 @@ describe('HttpGatewayClient — consultarClientes', () => {
     const c = clientes[0] as ClienteInterno
     expect(c.clienteId).toBe('CLI-001')
     expect(c.nomeToken).toBe('hmac-nome-abc')
+    expect(c.documentoToken).toBe('hmac-doc-xyz')
+    expect(c.enderecoToken).toBe('hmac-end-def')
+    expect(c.emailToken).toBeNull()
+    expect(c.telefoneToken).toBeNull()
     expect(c.bloqueado).toBe(false)
   })
 

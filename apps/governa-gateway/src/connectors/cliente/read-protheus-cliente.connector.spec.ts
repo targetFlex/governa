@@ -54,7 +54,7 @@ describe('ReadProtheusCilenteConnector', () => {
     expect(result).toHaveLength(1)
     expect(result[0].codigoCliente).toBe('CLI001')
     expect(result[0].loja).toBe('01')
-    expect(result[0].nome).toBe('Empresa Teste LTDA')
+    expect(result[0].nomePseudo).toMatch(/^[0-9a-f]{64}$/)
     expect(result[0].tipo).toBe('JURIDICA')
     expect(result[0].ativo).toBe(true)
   })
@@ -225,16 +225,11 @@ describe('ReadProtheusCilenteConnector', () => {
     expect(http.get).toHaveBeenCalledWith('/CLIENTE/', { params: {} })
   })
 
-  // ── Critério 6: endereco mapeado corretamente ────────────
+  // ── Critério 6: endereco pseudonimizado no ClienteInterno ────
 
-  it('mapeia endereço completo no ClienteInterno', async () => {
+  it('pseudonimiza endereço completo no ClienteInterno', async () => {
     const http = makeHttp([makeRawCliente()])
     const [result] = await makeConnector(http).execute({})
-    expect(result.endereco).toEqual({
-      logradouro: 'Av. Paulista, 1000',
-      municipio:  'São Paulo',
-      estado:     'SP',
-      cep:        '01310100',
-    })
+    expect(result.enderecoPseudo).toMatch(/^[0-9a-f]{64}$/)
   })
 })

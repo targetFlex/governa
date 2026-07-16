@@ -10,7 +10,6 @@
 // ============================================================
 
 import {
-  ClienteEndereco,
   ClienteInterno,
   ProtheusCilenteRaw,
   TIPO_MAP,
@@ -32,24 +31,23 @@ export class ClienteMapper {
     return {
       codigoCliente:   raw.A1_COD,
       loja:            raw.A1_LOJA,
-      nome:            raw.A1_NOME,
+      nomePseudo:      this.pseudonymizer.pseudonymize(raw.A1_NOME),
       tipo:            TIPO_MAP[raw.A1_TIPO],
       ativo:           raw.A1_ATIVO === 'S',
       documentoPseudo: this.pseudonymizer.pseudonymize(raw.A1_CGC),
       emailPseudo:     this.pseudonymizer.pseudonymizeIfPresent(raw.A1_EMAIL),
       telefonePseudo:  this.pseudonymizer.pseudonymizeIfPresent(raw.A1_TEL),
-      endereco:        this.mapEndereco(raw),
+      enderecoPseudo:  this.pseudonymizer.pseudonymize(this.canonicalEndereco(raw)),
     }
   }
 
   // ── Helper privado ──────────────────────────────────────
 
-  private mapEndereco(raw: ProtheusCilenteRaw): ClienteEndereco {
-    return {
-      logradouro: raw.A1_END,
-      municipio:  raw.A1_MUN,
-      estado:     raw.A1_EST,
-      cep:        raw.A1_CEP,
-    }
+  /**
+   * Representação canônica do endereço para hash único.
+   * Ordem fixa dos campos garante determinismo do HMAC.
+   */
+  private canonicalEndereco(raw: ProtheusCilenteRaw): string {
+    return `${raw.A1_END}|${raw.A1_MUN}|${raw.A1_EST}|${raw.A1_CEP}`
   }
 }

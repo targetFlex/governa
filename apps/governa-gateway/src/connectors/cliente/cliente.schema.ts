@@ -7,9 +7,14 @@
 //   - Contrato interno de saída do conector (ClienteInterno)
 //
 // Campos PII (pseudonimizados no mapper):
+//   A1_NOME  — nome/razão social
+//   A1_END, A1_MUN, A1_EST, A1_CEP — endereço (hash único do conjunto)
 //   A1_CGC   — CNPJ ou CPF
 //   A1_EMAIL  — e-mail
 //   A1_TEL   — telefone principal
+//
+// Invariante: ClienteInterno nunca contém PII em texto claro (LGPD) —
+// mesmo padrão do governa-core (cliente.entity.ts).
 //
 // SRP: este módulo NÃO contém lógica de mapeamento nem de I/O.
 // ============================================================
@@ -43,17 +48,11 @@ export type ProtheusCilenteRaw = z.infer<typeof ProtheusCilenteSchema>
 
 export type TipoCliente = 'FISICA' | 'JURIDICA'
 
-export interface ClienteEndereco {
-  logradouro: string
-  municipio:  string
-  estado:     string
-  cep:        string
-}
-
 export interface ClienteInterno {
   codigoCliente:   string
   loja:            string
-  nome:            string
+  /** HMAC SHA-256 do nome/razão social — nunca o valor real */
+  nomePseudo:      string
   tipo:            TipoCliente
   ativo:           boolean
   /** HMAC SHA-256 do CNPJ/CPF original — nunca o valor real */
@@ -62,7 +61,8 @@ export interface ClienteInterno {
   emailPseudo:     string | null
   /** HMAC SHA-256 do telefone — null se ausente/vazio no Protheus */
   telefonePseudo:  string | null
-  endereco:        ClienteEndereco
+  /** HMAC SHA-256 do endereço completo (logradouro|municipio|estado|cep) */
+  enderecoPseudo:  string
 }
 
 // ── Mapas de conversão Protheus → domínio ────────────────────

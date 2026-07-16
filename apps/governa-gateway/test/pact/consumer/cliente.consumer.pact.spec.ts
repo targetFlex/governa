@@ -106,16 +106,16 @@ describe('Pact Consumer: governa-gateway → protheus-rest (cliente)', () => {
     const c = result[0]
     expect(c.codigoCliente).toBe('CLI001')
     expect(c.loja).toBe('01')
-    expect(c.nome).toBe('Empresa Teste LTDA')
     expect(c.tipo).toBe('JURIDICA')
     expect(c.ativo).toBe(true)
     // PII nunca em texto claro — somente hashes determinísticos
+    expect(c.nomePseudo).toBe(pseudonymizer.pseudonymize('Empresa Teste LTDA'))
     expect(c.documentoPseudo).toBe(pseudonymizer.pseudonymize('12345678000195'))
     expect(c.emailPseudo).toBe(pseudonymizer.pseudonymize('contato@empresa.com'))
     expect(c.telefonePseudo).toBe(pseudonymizer.pseudonymize('11999999999'))
-    expect(c.endereco.municipio).toBe('São Paulo')
-    expect(c.endereco.estado).toBe('SP')
-    expect(c.endereco.cep).toBe('01310100')
+    expect(c.enderecoPseudo).toBe(
+      pseudonymizer.pseudonymize('Rua das Flores, 123|São Paulo|SP|01310100'),
+    )
 
     await provider.verify()
     await provider.finalize()

@@ -19,14 +19,9 @@
               "codigoCliente": "CLI001",
               "documentoPseudo": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
               "emailPseudo": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-              "endereco": {
-                "cep": "01310100",
-                "estado": "SP",
-                "logradouro": "Rua das Flores, 123",
-                "municipio": "São Paulo"
-              },
+              "enderecoPseudo": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
               "loja": "01",
-              "nome": "Empresa Teste LTDA",
+              "nomePseudo": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
               "telefonePseudo": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
               "tipo": "JURIDICA"
             }
@@ -52,23 +47,13 @@
           "$.body.data[*].emailPseudo": {
             "match": "type"
           },
-          "$.body.data[*].endereco.cep": {
-            "match": "regex",
-            "regex": "^\\d{8}$"
-          },
-          "$.body.data[*].endereco.estado": {
-            "match": "type"
-          },
-          "$.body.data[*].endereco.logradouro": {
-            "match": "type"
-          },
-          "$.body.data[*].endereco.municipio": {
+          "$.body.data[*].enderecoPseudo": {
             "match": "type"
           },
           "$.body.data[*].loja": {
             "match": "type"
           },
-          "$.body.data[*].nome": {
+          "$.body.data[*].nomePseudo": {
             "match": "type"
           },
           "$.body.data[*].telefonePseudo": {

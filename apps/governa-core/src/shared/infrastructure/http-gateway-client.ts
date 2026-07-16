@@ -38,6 +38,17 @@ interface RawPedido {
   itens:         RawItemPedido[]
 }
 
+interface RawCliente {
+  codigoCliente:   string
+  loja:            string
+  nomePseudo:      string
+  documentoPseudo: string
+  enderecoPseudo:  string
+  emailPseudo:     string | null
+  telefonePseudo:  string | null
+  ativo:           boolean
+}
+
 // ─── Mapper ───────────────────────────────────────────────────────────────────
 
 function mapItem(raw: RawItemPedido): ItemPedido {
@@ -60,6 +71,19 @@ function mapPedido(raw: RawPedido): PedidoInterno {
   }
 }
 
+function mapCliente(raw: RawCliente): ClienteInterno {
+  return {
+    clienteId:      raw.codigoCliente,
+    loja:           raw.loja,
+    nomeToken:      raw.nomePseudo,
+    documentoToken: raw.documentoPseudo,
+    enderecoToken:  raw.enderecoPseudo,
+    emailToken:     raw.emailPseudo,
+    telefoneToken:  raw.telefonePseudo,
+    bloqueado:      !raw.ativo,
+  }
+}
+
 // ─── Adaptador ────────────────────────────────────────────────────────────────
 
 export class HttpGatewayClient implements IGatewayClient {
@@ -79,8 +103,8 @@ export class HttpGatewayClient implements IGatewayClient {
       documentoToken: params.documentoToken,
     }
     const url = this.buildUrl('/clientes', gatewayParams)
-    const { data } = await this.get<{ data: ClienteInterno[] }>(url)
-    return data
+    const { data } = await this.get<{ data: RawCliente[] }>(url)
+    return data.map(mapCliente)
   }
 
   // ─── Helpers privados ──────────────────────────────────────────────────────

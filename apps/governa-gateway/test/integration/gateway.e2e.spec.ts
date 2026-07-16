@@ -287,7 +287,6 @@ describe('E2E: governa-gateway connectors → mock Protheus in-process', () => {
       const cliente = result[0]
       expect(cliente.codigoCliente).toBe('CLI001')
       expect(cliente.loja).toBe('01')
-      expect(cliente.nome).toBe('Empresa Teste LTDA')
       expect(cliente.tipo).toBe('JURIDICA')
       expect(cliente.ativo).toBe(true)
     })
@@ -297,20 +296,20 @@ describe('E2E: governa-gateway connectors → mock Protheus in-process', () => {
       const [cliente] = await connector.execute({ codigoCliente: 'CLI001' })
 
       // HMAC SHA-256 = 64 hex chars
+      expect(cliente.nomePseudo).toHaveLength(64)
+      expect(cliente.nomePseudo).not.toContain('Empresa Teste LTDA')
       expect(cliente.documentoPseudo).toHaveLength(64)
       expect(cliente.documentoPseudo).not.toContain('12345678000199') // não é o CNPJ real
       expect(cliente.emailPseudo).toHaveLength(64)
       expect(cliente.telefonePseudo).toHaveLength(64)
     })
 
-    it('endereço é mapeado corretamente', async () => {
+    it('endereço é pseudonimizado — nunca o valor real', async () => {
       const connector = makeClienteConnector(baseUrl)
       const [cliente] = await connector.execute({ codigoCliente: 'CLI001' })
 
-      expect(cliente.endereco.logradouro).toBe('Rua das Flores, 123')
-      expect(cliente.endereco.municipio).toBe('São Paulo')
-      expect(cliente.endereco.estado).toBe('SP')
-      expect(cliente.endereco.cep).toBe('01310100')
+      expect(cliente.enderecoPseudo).toHaveLength(64)
+      expect(cliente.enderecoPseudo).not.toContain('Rua das Flores')
     })
   })
 

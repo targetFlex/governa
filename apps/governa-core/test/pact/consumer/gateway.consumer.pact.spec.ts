@@ -42,18 +42,13 @@ const pedidoInterno = {
 const clienteInterno = {
   codigoCliente:   like('CLI001'),
   loja:            like('01'),
-  nome:            like('Empresa Teste LTDA'),
+  nomePseudo:      like('d'.repeat(64)),
   tipo:            term({ generate: 'JURIDICA', matcher: '^(FISICA|JURIDICA)$' }),
   ativo:           like(true),
   documentoPseudo: like('a'.repeat(64)),
   emailPseudo:     like('b'.repeat(64)),
   telefonePseudo:  like('c'.repeat(64)),
-  endereco: {
-    logradouro: like('Rua das Flores, 123'),
-    municipio:  like('São Paulo'),
-    estado:     like('SP'),
-    cep:        term({ generate: '01310100', matcher: '^\\d{8}$' }),
-  },
+  enderecoPseudo:  like('e'.repeat(64)),
 }
 
 const erroNaoEncontrado = {

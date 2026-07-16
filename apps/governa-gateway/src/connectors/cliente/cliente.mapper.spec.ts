@@ -44,7 +44,19 @@ describe('ClienteMapper', () => {
     const result = mapper.toInterno(makeRaw())
     expect(result.codigoCliente).toBe('CLI001')
     expect(result.loja).toBe('01')
-    expect(result.nome).toBe('Empresa Teste LTDA')
+  })
+
+  // ── PII — nomePseudo ─────────────────────────────────────
+
+  it('pseudonimiza A1_NOME com HMAC SHA-256', () => {
+    const result = mapper.toInterno(makeRaw({ A1_NOME: 'Empresa Teste LTDA' }))
+    expect(result.nomePseudo).toBe(hmac('Empresa Teste LTDA'))
+  })
+
+  it('nomes diferentes → nomePseudo diferentes', () => {
+    const r1 = mapper.toInterno(makeRaw({ A1_NOME: 'Empresa A' }))
+    const r2 = mapper.toInterno(makeRaw({ A1_NOME: 'Empresa B' }))
+    expect(r1.nomePseudo).not.toBe(r2.nomePseudo)
   })
 
   // ── tipo ─────────────────────────────────────────────────
@@ -124,20 +136,23 @@ describe('ClienteMapper', () => {
     expect(result.telefonePseudo).toBeNull()
   })
 
-  // ── endereco ─────────────────────────────────────────────
+  // ── PII — enderecoPseudo ──────────────────────────────────
 
-  it('mapeia endereço completo corretamente', () => {
+  it('pseudonimiza endereço completo (logradouro|municipio|estado|cep) com HMAC SHA-256', () => {
     const result = mapper.toInterno(makeRaw())
-    expect(result.endereco).toEqual({
-      logradouro: 'Av. Paulista, 1000',
-      municipio:  'São Paulo',
-      estado:     'SP',
-      cep:        '01310100',
-    })
+    expect(result.enderecoPseudo).toBe(hmac('Av. Paulista, 1000|São Paulo|SP|01310100'))
   })
 
-  it('mapeia CEP com zeros à esquerda sem truncar', () => {
-    const result = mapper.toInterno(makeRaw({ A1_CEP: '01001001' }))
-    expect(result.endereco.cep).toBe('01001001')
+  it('enderecoPseudo muda se qualquer componente do endereço mudar (CEP com zeros à esquerda)', () => {
+    const r1 = mapper.toInterno(makeRaw({ A1_CEP: '01001001' }))
+    const r2 = mapper.toInterno(makeRaw({ A1_CEP: '01001002' }))
+    expect(r1.enderecoPseudo).toBe(hmac('Av. Paulista, 1000|São Paulo|SP|01001001'))
+    expect(r1.enderecoPseudo).not.toBe(r2.enderecoPseudo)
+  })
+
+  it('enderecoPseudo é determinístico', () => {
+    const r1 = mapper.toInterno(makeRaw())
+    const r2 = mapper.toInterno(makeRaw())
+    expect(r1.enderecoPseudo).toBe(r2.enderecoPseudo)
   })
 })

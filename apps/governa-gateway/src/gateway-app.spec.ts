@@ -84,18 +84,13 @@ const pedidoFixture: PedidoInterno = {
 const clienteFixture: ClienteInterno = {
   codigoCliente:   'CLI001',
   loja:            '01',
-  nome:            'Empresa Teste LTDA',
+  nomePseudo:      'd'.repeat(64),
   tipo:            'JURIDICA',
   ativo:           true,
   documentoPseudo: 'a'.repeat(64),
   emailPseudo:     'b'.repeat(64),
   telefonePseudo:  'c'.repeat(64),
-  endereco: {
-    logradouro: 'Rua das Flores, 123',
-    municipio:  'São Paulo',
-    estado:     'SP',
-    cep:        '01310100',
-  },
+  enderecoPseudo:  'e'.repeat(64),
 }
 
 // ── Suite ─────────────────────────────────────────────────────
