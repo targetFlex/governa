@@ -49,6 +49,10 @@ function makeAgent(overrides: Partial<AgentInventoryEntity> = {}): AgentInventor
     status:       'SANDBOX',
     modelId:      'claude-haiku-4-5',
     tools:        [],
+    systemPrompt: null,
+    mcpServers:   [],
+    skills:       [],
+    templateId:   null,
     createdAt:    now,
     updatedAt:    now,
     lastActiveAt: null,
@@ -189,6 +193,91 @@ describe('POST /agents', () => {
       method: 'POST',
       token:  makeToken(TENANT_A),
       body:   { name: 'X', ownerId: 'not-uuid', modelId: 'model' },
+    })
+    expect(status).toBe(400)
+  })
+
+  // ── Campos estendidos (E8 — templates + preview) ──────────────────────────
+
+  it('201 — persiste systemPrompt, mcpServers, skills e templateId', async () => {
+    const { status, body } = await req('/agents', {
+      method: 'POST',
+      token:  makeToken(TENANT_A),
+      body:   {
+        name:         'Agente de Pedidos',
+        ownerId:      randomUUID(),
+        modelId:      'claude-sonnet-5',
+        tools:        ['read_protheus_pedido'],
+        systemPrompt: 'Você consulta pedidos no Protheus.',
+        mcpServers:   [{ id: 'protheus-rest', name: 'Protheus REST' }],
+        skills:       ['resumo-executivo'],
+        templateId:   'consulta-pedidos',
+      },
+    })
+
+    expect(status).toBe(201)
+    const data = body.data as {
+      systemPrompt: string
+      mcpServers: Array<{ id: string; name: string }>
+      skills: string[]
+      templateId: string
+    }
+    expect(data.systemPrompt).toBe('Você consulta pedidos no Protheus.')
+    expect(data.mcpServers).toEqual([{ id: 'protheus-rest', name: 'Protheus REST' }])
+    expect(data.skills).toEqual(['resumo-executivo'])
+    expect(data.templateId).toBe('consulta-pedidos')
+  })
+
+  it('201 — campos estendidos ausentes recebem defaults (retrocompatível)', async () => {
+    const { status, body } = await req('/agents', {
+      method: 'POST',
+      token:  makeToken(TENANT_A),
+      body:   { name: 'Agente Legado', ownerId: randomUUID(), modelId: 'claude-haiku-4-5' },
+    })
+
+    expect(status).toBe(201)
+    const data = body.data as {
+      systemPrompt: string | null
+      mcpServers: unknown[]
+      skills: unknown[]
+      templateId: string | null
+    }
+    expect(data.systemPrompt).toBeNull()
+    expect(data.mcpServers).toEqual([])
+    expect(data.skills).toEqual([])
+    expect(data.templateId).toBeNull()
+  })
+
+  it('400 — systemPrompt excede 4000 caracteres', async () => {
+    const { status, body } = await req('/agents', {
+      method: 'POST',
+      token:  makeToken(TENANT_A),
+      body:   {
+        name:         'Agente X',
+        ownerId:      randomUUID(),
+        modelId:      'model',
+        systemPrompt: 'a'.repeat(4001),
+      },
+    })
+    expect(status).toBe(400)
+    expect(body.issues).toBeDefined()
+  })
+
+  it('400 — mcpServers acima de 20 itens', async () => {
+    const many = Array.from({ length: 21 }, (_, i) => ({ id: `mcp-${i}`, name: `MCP ${i}` }))
+    const { status } = await req('/agents', {
+      method: 'POST',
+      token:  makeToken(TENANT_A),
+      body:   { name: 'Agente X', ownerId: randomUUID(), modelId: 'model', mcpServers: many },
+    })
+    expect(status).toBe(400)
+  })
+
+  it('400 — mcpServers com item sem id (schema inválido)', async () => {
+    const { status } = await req('/agents', {
+      method: 'POST',
+      token:  makeToken(TENANT_A),
+      body:   { name: 'Agente X', ownerId: randomUUID(), modelId: 'model', mcpServers: [{ name: 'Sem id' }] },
     })
     expect(status).toBe(400)
   })

@@ -109,6 +109,57 @@
           }
         }
       }
+    },
+    {
+      "description": "POST /agents — cria agente via template com campos estendidos (E8) retorna 201",
+      "providerState": "tenant-pact-001 pode criar agentes",
+      "request": {
+        "method": "POST",
+        "path":   "/agents",
+        "headers": {
+          "Authorization": "Bearer PACT_TEST_TOKEN",
+          "Content-Type":  "application/json"
+        },
+        "body": {
+          "name":         "Agente de Consulta de Pedidos",
+          "description":  "Responde status de pedido consultando o Protheus",
+          "ownerId":      "00000000-0000-0000-0000-000000000001",
+          "policyId":     null,
+          "modelId":      "claude-sonnet-5",
+          "tools":        ["read_protheus_pedido"],
+          "systemPrompt": "Você é um agente que consulta pedidos no Protheus e responde de forma objetiva.",
+          "mcpServers":   [{ "id": "protheus-rest", "name": "Protheus REST" }],
+          "skills":       [],
+          "templateId":   "consulta-pedidos"
+        }
+      },
+      "response": {
+        "status": 201,
+        "matchingRules": {
+          "$.body.data.id":        { "match": "type" },
+          "$.body.data.createdAt": { "match": "type" },
+          "$.body.data.updatedAt": { "match": "type" }
+        },
+        "body": {
+          "data": {
+            "id":           "any-uuid",
+            "name":         "Agente de Consulta de Pedidos",
+            "description":  "Responde status de pedido consultando o Protheus",
+            "status":       "SANDBOX",
+            "ownerId":      "00000000-0000-0000-0000-000000000001",
+            "policyId":     null,
+            "modelId":      "claude-sonnet-5",
+            "tools":        ["read_protheus_pedido"],
+            "systemPrompt": "Você é um agente que consulta pedidos no Protheus e responde de forma objetiva.",
+            "mcpServers":   [{ "id": "protheus-rest", "name": "Protheus REST" }],
+            "skills":       [],
+            "templateId":   "consulta-pedidos",
+            "createdAt":    "2026-01-01T00:00:00.000Z",
+            "updatedAt":    "2026-01-01T00:00:00.000Z",
+            "lastActiveAt": null
+          }
+        }
+      }
     }
   ],
   "metadata": {

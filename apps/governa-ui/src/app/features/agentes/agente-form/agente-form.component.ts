@@ -1,24 +1,28 @@
 // ============================================================
 // agente-form.component.ts
 //
-// Tela de criação de agente (/agentes/novo) — E8.
+// Tela de criação de agente (/agentes/novo) — E8 (jornada com templates).
 //
-// Formulário orientado ao gestor não-técnico:
-//   1. Nome do agente (obrigatório, max 120)
-//   2. Descrição (opcional, max 500)
-//   3. Modelo de IA (select de lista pré-definida)
-//   4. Ferramentas habilitadas (checkboxes)
-//   5. Política de autonomia (UUID opcional)
+// Fluxo em 2 passos:
+//   Passo 1 — Ponto de partida: galeria de templates do domínio TOTVS
+//             (tab "Descrever" desabilitada — fase 2).
+//   Passo 2 — Formulário estendido + painel de preview (Pretty/Code):
+//               1. Nome do agente (obrigatório, max 120)
+//               2. Descrição (opcional, max 500)
+//               3. Modelo de IA (select)
+//               4. Ferramentas habilitadas (checkboxes)
+//               5. System Prompt (textarea, opcional, max 4000)  [NOVO]
+//               6. Skills (multi-select, pode ficar vazio)        [NOVO]
+//               7. Política de autonomia (UUID opcional)
 //
-// Novo agente é criado com status SANDBOX (imutável na criação).
-// Após sucesso navega automaticamente para /agentes.
+// Novo agente é criado com status SANDBOX. Após sucesso navega para /agentes.
 //
-// Acessibilidade (WCAG 2.1 AA):
-//   - role="alert" no banner de erro
-//   - aria-busy no botão durante criação
-//   - Labels explícitas em todos os inputs
-//   - aria-describedby nos hints contextuais
-//   - role="group" + aria-label no bloco de ferramentas
+// Estado em propriedades simples + signals locais (sem NGRX neste componente,
+// consistente com o padrão original). Serialização do preview e merge de
+// template ficam em funções puras (agente-form.utils.ts).
+//
+// Acessibilidade (WCAG 2.1 AA): ver agente-starting-point / agente-config-preview
+// e os aria-describedby/labels dos campos abaixo.
 // ============================================================
 
 import {
@@ -27,6 +31,7 @@ import {
   OnDestroy,
   inject,
   effect,
+  signal,
   ChangeDetectionStrategy,
 } from '@angular/core';
 import { CommonModule }       from '@angular/common';
@@ -37,14 +42,25 @@ import { AuthService }        from '../../../core/auth/auth.service';
 import { GovInputComponent }  from '../../../shared/ui/input/gov-input.component';
 import { GovSelectComponent, SelectOption } from '../../../shared/ui/select/gov-select.component';
 import { GovButtonComponent } from '../../../shared/ui/button/gov-button.component';
-import { CreateAgenteDto }    from '../../../shared/models/agente.model';
+import { CreateAgenteDto, McpServerRef } from '../../../shared/models/agente.model';
+import { AgenteStartingPointComponent } from './agente-starting-point/agente-starting-point.component';
+import { AgenteConfigPreviewComponent } from './agente-config-preview/agente-config-preview.component';
+import { AgentTemplate, BLANK_TEMPLATE_ID, TEMPLATES } from './agente-templates.data';
+import {
+  AgentFormState,
+  AgentConfig,
+  buildAgentConfig,
+  buildAgentYamlPreview,
+  mergeTemplateFields,
+  TemplateFields,
+} from './agente-form.utils';
 
 // ── Modelos disponíveis ──────────────────────────────────────
 
 const MODELOS: SelectOption[] = [
-  { value: 'claude-sonnet-4-6',        label: 'Claude Sonnet 4.6 (recomendado)' },
+  { value: 'claude-sonnet-5',           label: 'Claude Sonnet 5 (recomendado)' },
   { value: 'claude-haiku-4-5-20251001', label: 'Claude Haiku 4.5 (leve e rápido)' },
-  { value: 'claude-opus-4-7',           label: 'Claude Opus 4.7 (máxima capacidade)' },
+  { value: 'claude-opus-4-8',           label: 'Claude Opus 4.8 (máxima capacidade)' },
   { value: 'gpt-4o',                    label: 'GPT-4o (OpenAI)' },
 ];
 
@@ -63,11 +79,29 @@ const TOOLS: ToolOption[] = [
   { value: 'read_politica_atendimento', label: 'Consultar política interna', hint: 'Acessa base de conhecimento interna' },
 ];
 
+// ── Skills disponíveis (multi-select, catálogo inicial) ──────
+
+interface SkillOption {
+  value: string;
+  label: string;
+  hint:  string;
+}
+
+const SKILLS: SkillOption[] = [
+  { value: 'resumo-executivo', label: 'Resumo executivo', hint: 'Condensa respostas longas em pontos objetivos' },
+  { value: 'traducao',         label: 'Tradução',          hint: 'Traduz respostas entre PT/EN/ES' },
+  { value: 'extracao-dados',   label: 'Extração de dados',  hint: 'Estrutura dados de texto livre em tabela' },
+];
+
 @Component({
   selector:        'app-agente-form',
   standalone:      true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports:         [CommonModule, FormsModule, RouterLink, GovInputComponent, GovSelectComponent, GovButtonComponent],
+  imports: [
+    CommonModule, FormsModule, RouterLink,
+    GovInputComponent, GovSelectComponent, GovButtonComponent,
+    AgenteStartingPointComponent, AgenteConfigPreviewComponent,
+  ],
   template: `
     <section class="af" aria-label="Criar novo agente">
 
@@ -96,97 +130,164 @@ const TOOLS: ToolOption[] = [
         </div>
       }
 
-      <!-- ── Formulário ──────────────────────────────────────── -->
-      <form class="af__form" (ngSubmit)="onSubmit()" #form="ngForm" novalidate>
-
-        <!-- Nome -->
-        <gov-input
-          label="Nome do agente"
-          type="text"
-          name="nome"
-          [maxlength]="120"
-          [required]="true"
-          [(ngModel)]="formName"
-          hint="Identifica o agente no painel e nos logs de auditoria."
-          [error]="nameError"
+      <!-- ══ PASSO 1 — Ponto de partida ══════════════════════════ -->
+      @if (step() === 1) {
+        <app-agente-starting-point
+          [selectedTemplateId]="selectedTemplateId"
+          (templateSelect)="selectTemplate($event)"
         />
+      }
 
-        <!-- Descrição -->
-        <gov-input
-          label="Descrição"
-          type="text"
-          name="descricao"
-          [maxlength]="500"
-          [(ngModel)]="formDescription"
-          hint="Explique o propósito do agente (opcional, max 500 caracteres)."
-        />
+      <!-- ══ PASSO 2 — Formulário + Preview ══════════════════════ -->
+      @if (step() === 2) {
+        <div class="af__step2">
 
-        <!-- Modelo de IA -->
-        <gov-select
-          label="Modelo de IA"
-          name="modelId"
-          [options]="modelos"
-          [required]="true"
-          [(ngModel)]="formModelId"
-          hint="Define o LLM que o agente irá usar para raciocínio."
-        />
+          <!-- Coluna do formulário -->
+          <form class="af__form" (ngSubmit)="onSubmit()" #form="ngForm" novalidate>
 
-        <!-- Ferramentas -->
-        <fieldset class="af__fieldset">
-          <legend class="af__legend">Ferramentas habilitadas</legend>
-          <p class="af__legend-hint">
-            Define quais operações o agente pode executar.
-            Mais ferramentas = mais capacidade, mas mais superfície de risco.
-          </p>
+            <button type="button" class="af__change-template" (click)="backToStartingPoint()">
+              ← Trocar modelo
+              @if (selectedTemplateName()) {
+                <span class="af__current-template">({{ selectedTemplateName() }})</span>
+              }
+            </button>
 
-          <div class="af__tools-grid" role="group" aria-label="Selecionar ferramentas">
-            @for (tool of tools; track tool.value) {
-              <label class="af__tool-item" [attr.aria-label]="tool.label + ': ' + tool.hint">
-                <input
-                  type="checkbox"
-                  class="af__tool-checkbox"
-                  [name]="'tool_' + tool.value"
-                  [checked]="isToolSelected(tool.value)"
-                  (change)="toggleTool(tool.value)"
-                />
-                <span class="af__tool-label">{{ tool.label }}</span>
-                <span class="af__tool-hint">{{ tool.hint }}</span>
-              </label>
-            }
-          </div>
-        </fieldset>
+            <!-- Nome -->
+            <gov-input
+              label="Nome do agente"
+              type="text"
+              name="nome"
+              [maxlength]="120"
+              [required]="true"
+              [(ngModel)]="formName"
+              hint="Identifica o agente no painel e nos logs de auditoria."
+              [error]="nameError"
+            />
 
-        <!-- Política de Autonomia -->
-        <gov-input
-          label="Política de Autonomia (opcional)"
-          type="text"
-          name="policyId"
-          [(ngModel)]="formPolicyId"
-          placeholder="ex.: 550e8400-e29b-41d4-a716-446655440000"
-          hint="UUID da política a vincular. Pode ser configurada depois na tela de detalhes."
-          [error]="policyIdError"
-        />
+            <!-- Descrição -->
+            <gov-input
+              label="Descrição"
+              type="text"
+              name="descricao"
+              [maxlength]="500"
+              [(ngModel)]="formDescription"
+              hint="Explique o propósito do agente (opcional, max 500 caracteres)."
+            />
 
-        <!-- Rodapé -->
-        <footer class="af__footer">
-          <gov-button
-            type="submit"
-            [disabled]="!isFormValid() || store.creating()"
-            [loading]="store.creating()"
-            [attr.aria-busy]="store.creating()"
-          >
-            Criar Agente
-          </gov-button>
-          <a routerLink="/agentes" class="af__cancel-link">Cancelar</a>
-        </footer>
+            <!-- Modelo de IA -->
+            <gov-select
+              label="Modelo de IA"
+              name="modelId"
+              [options]="modelos"
+              [required]="true"
+              [(ngModel)]="formModelId"
+              hint="Define o LLM que o agente irá usar para raciocínio."
+            />
 
-      </form>
+            <!-- Ferramentas -->
+            <fieldset class="af__fieldset">
+              <legend class="af__legend">Ferramentas habilitadas</legend>
+              <p class="af__legend-hint">
+                Define quais operações o agente pode executar.
+                Mais ferramentas = mais capacidade, mas mais superfície de risco.
+              </p>
+
+              <div class="af__tools-grid" role="group" aria-label="Selecionar ferramentas">
+                @for (tool of tools; track tool.value) {
+                  <label class="af__tool-item" [attr.aria-label]="tool.label + ': ' + tool.hint">
+                    <input
+                      type="checkbox"
+                      class="af__tool-checkbox"
+                      [name]="'tool_' + tool.value"
+                      [checked]="isToolSelected(tool.value)"
+                      (change)="toggleTool(tool.value)"
+                    />
+                    <span class="af__tool-label">{{ tool.label }}</span>
+                    <span class="af__tool-hint">{{ tool.hint }}</span>
+                  </label>
+                }
+              </div>
+            </fieldset>
+
+            <!-- System Prompt (NOVO) -->
+            <div class="af__field">
+              <label for="af-system-prompt" class="af__label">System Prompt</label>
+              <textarea
+                id="af-system-prompt"
+                class="af__textarea"
+                name="systemPrompt"
+                rows="6"
+                [maxlength]="4000"
+                [(ngModel)]="formSystemPrompt"
+                aria-describedby="af-system-prompt-hint"
+              ></textarea>
+              <span id="af-system-prompt-hint" class="af__hint">
+                Instruções base do agente. Pré-preenchido pelo modelo escolhido; edite livremente (máx. 4000 caracteres).
+              </span>
+            </div>
+
+            <!-- Skills (NOVO) -->
+            <fieldset class="af__fieldset">
+              <legend class="af__legend">Skills</legend>
+              <p class="af__legend-hint">
+                Módulos de capacidade opcionais. Pode ficar vazio nesta fase.
+              </p>
+              <div class="af__tools-grid" role="group" aria-label="Selecionar skills">
+                @for (skill of skillsCatalog; track skill.value) {
+                  <label class="af__tool-item" [attr.aria-label]="skill.label + ': ' + skill.hint">
+                    <input
+                      type="checkbox"
+                      class="af__tool-checkbox"
+                      [name]="'skill_' + skill.value"
+                      [checked]="isSkillSelected(skill.value)"
+                      (change)="toggleSkill(skill.value)"
+                    />
+                    <span class="af__tool-label">{{ skill.label }}</span>
+                    <span class="af__tool-hint">{{ skill.hint }}</span>
+                  </label>
+                }
+              </div>
+            </fieldset>
+
+            <!-- Política de Autonomia -->
+            <gov-input
+              label="Política de Autonomia (opcional)"
+              type="text"
+              name="policyId"
+              [(ngModel)]="formPolicyId"
+              placeholder="ex.: 550e8400-e29b-41d4-a716-446655440000"
+              hint="UUID da política a vincular. Pode ser configurada depois na tela de detalhes."
+              [error]="policyIdError"
+            />
+
+            <!-- Rodapé -->
+            <footer class="af__footer">
+              <gov-button
+                type="submit"
+                [disabled]="!isFormValid() || store.creating()"
+                [loading]="store.creating()"
+                [attr.aria-busy]="store.creating()"
+              >
+                Criar Agente
+              </gov-button>
+              <a routerLink="/agentes" class="af__cancel-link">Cancelar</a>
+            </footer>
+          </form>
+
+          <!-- Coluna do preview -->
+          <app-agente-config-preview
+            class="af__preview"
+            [config]="previewConfig()"
+            [yaml]="previewYaml()"
+          />
+        </div>
+      }
 
     </section>
   `,
   styles: [`
     .af {
-      max-width: 720px;
+      max-width: 1080px;
       margin: 0 auto;
       padding: var(--gov-space-8) var(--gov-space-6);
       font-family: var(--gov-font-family-sans);
@@ -238,10 +339,59 @@ const TOOLS: ToolOption[] = [
       font-size: var(--gov-font-size-base);
     }
 
+    /* ── Passo 2: layout duas colunas ── */
+    .af__step2 {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 380px);
+      gap: var(--gov-space-8);
+      align-items: start;
+    }
+
     /* ── Formulário ── */
     .af__form { display: flex; flex-direction: column; gap: var(--gov-space-6); }
 
-    /* ── Ferramentas ── */
+    .af__change-template {
+      align-self: flex-start;
+      background: none;
+      border: none;
+      padding: 0;
+      font-family: inherit;
+      font-size: var(--gov-font-size-sm);
+      color: var(--gov-color-brand);
+      cursor: pointer;
+    }
+    .af__change-template:hover { text-decoration: underline; }
+    .af__change-template:focus-visible { outline: 2px solid var(--gov-color-brand); outline-offset: 2px; }
+    .af__current-template { color: var(--gov-color-text-secondary); }
+
+    /* ── Campo genérico (textarea) ── */
+    .af__field { display: flex; flex-direction: column; gap: var(--gov-space-1); }
+    .af__label {
+      font-size: var(--gov-font-size-sm);
+      font-weight: var(--gov-font-weight-medium);
+      color: var(--gov-color-text-primary);
+    }
+    .af__textarea {
+      width: 100%;
+      padding: var(--gov-space-2) var(--gov-space-3);
+      border: 1px solid var(--gov-color-border);
+      border-radius: var(--gov-radius-md);
+      font-size: var(--gov-font-size-sm);
+      font-family: inherit;
+      color: var(--gov-color-text-primary);
+      background: var(--gov-color-surface);
+      outline: none;
+      resize: vertical;
+      min-height: 96px;
+      transition: border-color var(--gov-transition-fast), box-shadow var(--gov-transition-fast);
+    }
+    .af__textarea:focus {
+      border-color: var(--gov-color-brand);
+      box-shadow: 0 0 0 3px var(--gov-color-primary-100);
+    }
+    .af__hint { font-size: var(--gov-font-size-xs); color: var(--gov-color-text-secondary); }
+
+    /* ── Ferramentas / Skills ── */
     .af__fieldset {
       border: 1px solid var(--gov-color-border);
       border-radius: var(--gov-radius-lg);
@@ -309,6 +459,13 @@ const TOOLS: ToolOption[] = [
     }
     .af__cancel-link:hover { text-decoration: underline; }
 
+    .af__preview { position: sticky; top: var(--gov-space-6); }
+
+    @media (max-width: 900px) {
+      .af__step2 { grid-template-columns: 1fr; }
+      .af__preview { position: static; }
+    }
+
     @media (max-width: 640px) {
       .af { padding: var(--gov-space-5) var(--gov-space-4); }
       .af__footer { flex-wrap: wrap; gap: var(--gov-space-3); }
@@ -320,14 +477,30 @@ export class AgenteFormComponent implements OnInit, OnDestroy {
   readonly auth   = inject(AuthService);
   readonly router = inject(Router);
 
-  readonly modelos = MODELOS;
-  readonly tools   = TOOLS;
+  readonly modelos       = MODELOS;
+  readonly tools         = TOOLS;
+  readonly skillsCatalog = SKILLS;
 
-  formName        = '';
-  formDescription = '';
-  formModelId     = 'claude-sonnet-4-6';
-  formTools:      string[] = [];
-  formPolicyId    = '';
+  /** Passo atual do fluxo (1 = ponto de partida, 2 = formulário). */
+  readonly step = signal<1 | 2>(1);
+
+  // ── Estado do formulário ──
+  formName         = '';
+  formDescription  = '';
+  formModelId      = 'claude-sonnet-5';
+  formTools:       string[] = [];
+  formSystemPrompt = '';
+  formSkills:      string[] = [];
+  formPolicyId     = '';
+
+  /** Conectores MCP — metadado descritivo nesta fase (sem editor de UI). */
+  formMcpServers: McpServerRef[] = [];
+
+  /** id do template selecionado (null = nenhum ainda). */
+  selectedTemplateId: string | null = null;
+
+  /** Valores-placeholder do último template aplicado — base do merge. */
+  private prevTemplateFields: TemplateFields | null = null;
 
   get nameError(): string | undefined {
     return this.formName.length > 120 ? 'Máximo 120 caracteres.' : undefined;
@@ -357,6 +530,53 @@ export class AgenteFormComponent implements OnInit, OnDestroy {
     this.store.clearCreateError();
   }
 
+  // ── Passo 1 → 2: seleção de template ──────────────────────────
+
+  /**
+   * Aplica um template ao formulário preservando edições manuais
+   * (merge: sobrescreve apenas campos ainda no valor-placeholder anterior)
+   * e avança para o passo 2.
+   */
+  selectTemplate(template: AgentTemplate): void {
+    const next: TemplateFields = {
+      formName:        template.formName,
+      formDescription: template.formDescription,
+      tools:           template.tools,
+      systemPrompt:    template.systemPrompt,
+    };
+
+    const current: TemplateFields = {
+      formName:        this.formName,
+      formDescription: this.formDescription,
+      tools:           this.formTools,
+      systemPrompt:    this.formSystemPrompt,
+    };
+
+    const merged = mergeTemplateFields(current, this.prevTemplateFields, next);
+
+    this.formName         = merged.formName;
+    this.formDescription  = merged.formDescription;
+    this.formTools        = [...merged.tools];
+    this.formSystemPrompt = merged.systemPrompt;
+    // mcpServers é metadado do template (sem editor de UI) — sobrescreve direto.
+    this.formMcpServers   = template.mcpServers.map((m) => ({ ...m }));
+
+    this.prevTemplateFields = next;
+    this.selectedTemplateId = template.id;
+    this.step.set(2);
+  }
+
+  backToStartingPoint(): void {
+    this.step.set(1);
+  }
+
+  selectedTemplateName(): string | null {
+    if (!this.selectedTemplateId) return null;
+    return TEMPLATES.find((t) => t.id === this.selectedTemplateId)?.name ?? this.selectedTemplateId;
+  }
+
+  // ── Ferramentas ───────────────────────────────────────────────
+
   isToolSelected(value: string): boolean {
     return this.formTools.includes(value);
   }
@@ -369,6 +589,46 @@ export class AgenteFormComponent implements OnInit, OnDestroy {
     }
   }
 
+  // ── Skills ────────────────────────────────────────────────────
+
+  isSkillSelected(value: string): boolean {
+    return this.formSkills.includes(value);
+  }
+
+  toggleSkill(value: string): void {
+    if (this.formSkills.includes(value)) {
+      this.formSkills = this.formSkills.filter((s) => s !== value);
+    } else {
+      this.formSkills = [...this.formSkills, value];
+    }
+  }
+
+  // ── Preview (funções puras) ───────────────────────────────────
+
+  private buildState(): AgentFormState {
+    return {
+      name:         this.formName,
+      description:  this.formDescription,
+      modelId:      this.formModelId,
+      tools:        this.formTools,
+      systemPrompt: this.formSystemPrompt,
+      skills:       this.formSkills,
+      mcpServers:   this.formMcpServers,
+      policyId:     this.formPolicyId,
+      templateId:   this.effectiveTemplateId(),
+    };
+  }
+
+  previewConfig(): AgentConfig {
+    return buildAgentConfig(this.buildState());
+  }
+
+  previewYaml(): string {
+    return buildAgentYamlPreview(this.buildState());
+  }
+
+  // ── Submit ────────────────────────────────────────────────────
+
   isFormValid(): boolean {
     return (
       this.formName.trim().length > 0 &&
@@ -376,6 +636,12 @@ export class AgenteFormComponent implements OnInit, OnDestroy {
       !!this.formModelId &&
       !this.policyIdError
     );
+  }
+
+  /** templateId efetivo enviado ao backend — null quando "Agente em branco". */
+  private effectiveTemplateId(): string | null {
+    if (!this.selectedTemplateId || this.selectedTemplateId === BLANK_TEMPLATE_ID) return null;
+    return this.selectedTemplateId;
   }
 
   onSubmit(): void {
@@ -392,6 +658,24 @@ export class AgenteFormComponent implements OnInit, OnDestroy {
 
     if (this.formDescription.trim()) {
       dto.description = this.formDescription.trim();
+    }
+
+    const systemPrompt = this.formSystemPrompt.trim();
+    if (systemPrompt) {
+      dto.systemPrompt = systemPrompt;
+    }
+
+    if (this.formSkills.length > 0) {
+      dto.skills = [...this.formSkills];
+    }
+
+    if (this.formMcpServers.length > 0) {
+      dto.mcpServers = [...this.formMcpServers];
+    }
+
+    const templateId = this.effectiveTemplateId();
+    if (templateId) {
+      dto.templateId = templateId;
     }
 
     const policyId = this.formPolicyId.trim();
