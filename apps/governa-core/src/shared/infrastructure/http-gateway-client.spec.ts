@@ -13,7 +13,7 @@
  *   HG-1  consultarPedidos happy path — retorna PedidoInterno[]
  *   HG-2  dataEmissao string → Date convertida
  *   HG-3  itens mapeados corretamente
- *   HG-4  consultarPedidos array vazio → []
+ *   HG-4  consultarPedidos — gateway 404 (nenhum resultado) → []
  *   HG-5  filtro numeroPedido propagado na querystring
  *   HG-6  filtro clienteId + dataInicio + dataFim propagados
  *   HG-7  gateway 500 → GatewayUnavailableError
@@ -61,17 +61,19 @@ const RAW_CLIENTE: ClienteInterno = {
 let server:  http.Server
 let baseUrl: string
 
-/** Controles do mock — modificados por cada teste que precisar */
-let mockPedidosResponse: { status: number; body: unknown } = { status: 200, body: [RAW_PEDIDO] }
-let mockClientesResponse: { status: number; body: unknown } = { status: 200, body: [RAW_CLIENTE] }
+/** Controles do mock — modificados por cada teste que precisar.
+ *  Contrato real do governa-gateway: envelope { data: [...] } em 200,
+ *  { code: 'NOT_FOUND', message } em 404 quando a lista é vazia. */
+let mockPedidosResponse: { status: number; body: unknown } = { status: 200, body: { data: [RAW_PEDIDO] } }
+let mockClientesResponse: { status: number; body: unknown } = { status: 200, body: { data: [RAW_CLIENTE] } }
 
 /** Query params capturados pela última chamada */
 let lastPedidosQuery:  Record<string, string> = {}
 let lastClientesQuery: Record<string, string> = {}
 
 beforeEach(() => new Promise<void>(resolve => {
-  mockPedidosResponse  = { status: 200, body: [RAW_PEDIDO] }
-  mockClientesResponse = { status: 200, body: [RAW_CLIENTE] }
+  mockPedidosResponse  = { status: 200, body: { data: [RAW_PEDIDO] } }
+  mockClientesResponse = { status: 200, body: { data: [RAW_CLIENTE] } }
   lastPedidosQuery     = {}
   lastClientesQuery    = {}
 
@@ -131,8 +133,8 @@ describe('HttpGatewayClient — consultarPedidos', () => {
     expect(item).toEqual({ codigoProduto: 'PROD-A', quantidade: 2, precoUnitario: 750.00 })
   })
 
-  it('HG-4: array vazio → []', async () => {
-    mockPedidosResponse = { status: 200, body: [] }
+  it('HG-4: gateway 404 (nenhum resultado) → []', async () => {
+    mockPedidosResponse = { status: 404, body: { code: 'NOT_FOUND', message: 'Recurso não encontrado' } }
 
     const client  = new HttpGatewayClient(baseUrl)
     const pedidos = await client.consultarPedidos({})

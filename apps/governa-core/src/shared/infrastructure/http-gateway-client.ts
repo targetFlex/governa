@@ -67,13 +67,14 @@ export class HttpGatewayClient implements IGatewayClient {
 
   async consultarPedidos(params: ConsultarPedidosParams): Promise<PedidoInterno[]> {
     const url  = this.buildUrl('/pedidos', params as Record<string, string | undefined>)
-    const raw  = await this.get<RawPedido[]>(url)
-    return raw.map(mapPedido)
+    const { data } = await this.get<{ data: RawPedido[] }>(url)
+    return data.map(mapPedido)
   }
 
   async consultarClientes(params: ConsultarClientesParams): Promise<ClienteInterno[]> {
     const url = this.buildUrl('/clientes', params as Record<string, string | undefined>)
-    return this.get<ClienteInterno[]>(url)
+    const { data } = await this.get<{ data: ClienteInterno[] }>(url)
+    return data
   }
 
   // ─── Helpers privados ──────────────────────────────────────────────────────
@@ -93,6 +94,12 @@ export class HttpGatewayClient implements IGatewayClient {
       res = await fetch(url, { headers: { Accept: 'application/json' } })
     } catch {
       throw new GatewayUnavailableError(this.baseUrl)
+    }
+
+    // 404 do gateway é "nenhum resultado" (contrato NOT_FOUND), não indisponibilidade.
+    // A regra de "busca específica sem resultado → erro" é decidida no use case.
+    if (res.status === 404) {
+      return { data: [] } as T
     }
 
     if (!res.ok) {
