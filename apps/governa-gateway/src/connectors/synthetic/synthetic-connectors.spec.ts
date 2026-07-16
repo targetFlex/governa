@@ -47,6 +47,18 @@ describe('Conectores sintéticos (piloto sandbox Target Flex)', () => {
       const result = await connector.execute({ codigoCliente: 'CLI-999' })
       expect(result).toHaveLength(0)
     })
+
+    it('filtra por documentoToken', async () => {
+      const [alvo] = await connector.execute({ codigoCliente: 'CLI-002' })
+      const result = await connector.execute({ documentoToken: alvo!.documentoPseudo })
+      expect(result).toHaveLength(1)
+      expect(result[0]!.codigoCliente).toBe('CLI-002')
+    })
+
+    it('retorna lista vazia para documentoToken inexistente', async () => {
+      const result = await connector.execute({ documentoToken: 'hash-que-nao-existe' })
+      expect(result).toHaveLength(0)
+    })
   })
 
   describe('SyntheticAuthConnector', () => {

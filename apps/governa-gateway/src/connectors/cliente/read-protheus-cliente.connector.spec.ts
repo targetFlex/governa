@@ -225,6 +225,39 @@ describe('ReadProtheusCilenteConnector', () => {
     expect(http.get).toHaveBeenCalledWith('/CLIENTE/', { params: {} })
   })
 
+  it('não envia documentoToken ao Protheus — filtro é client-side', async () => {
+    const http = makeHttp([])
+    await makeConnector(http).execute({ documentoToken: 'abc123' })
+    expect(http.get).toHaveBeenCalledWith('/CLIENTE/', { params: {} })
+  })
+
+  // ── Critério 7: filtro por documentoToken (client-side, pós-pseudonimização)
+
+  it('filtra resultado por documentoToken comparando com documentoPseudo calculado', async () => {
+    const secret = TEST_SECRET
+    const mapper = new ClienteMapper(new PiiPseudonymizer(secret))
+    const alvo = mapper.toInterno({
+      A1_COD: 'CLI001', A1_LOJA: '01', A1_NOME: 'A', A1_END: 'x', A1_MUN: 'x',
+      A1_EST: 'SP', A1_CEP: '01310100', A1_CGC: '11111111000191',
+      A1_EMAIL: '', A1_TEL: '', A1_TIPO: 'J', A1_ATIVO: 'S',
+    })
+
+    const http = makeHttp([
+      makeRawCliente({ A1_COD: 'CLI001', A1_CGC: '11111111000191' }),
+      makeRawCliente({ A1_COD: 'CLI002', A1_CGC: '22222222000192' }),
+    ])
+    const result = await makeConnector(http).execute({ documentoToken: alvo.documentoPseudo })
+
+    expect(result).toHaveLength(1)
+    expect(result[0].codigoCliente).toBe('CLI001')
+  })
+
+  it('retorna array vazio quando documentoToken não bate com nenhum registro', async () => {
+    const http = makeHttp([makeRawCliente()])
+    const result = await makeConnector(http).execute({ documentoToken: 'hash-inexistente' })
+    expect(result).toEqual([])
+  })
+
   // ── Critério 6: endereco pseudonimizado no ClienteInterno ────
 
   it('pseudonimiza endereço completo no ClienteInterno', async () => {

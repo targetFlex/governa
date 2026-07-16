@@ -17,6 +17,7 @@ export class SyntheticClienteConnector {
       if (params.codigoCliente && c.codigoCliente !== params.codigoCliente) return false
       if (params.loja && c.loja !== params.loja) return false
       if (params.ativo && c.ativo !== (params.ativo === 'S')) return false
+      if (params.documentoToken && c.documentoPseudo !== params.documentoToken) return false
       return true
     })
   }

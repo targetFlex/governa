@@ -22,10 +22,16 @@ import { handleUpstreamError } from '../shared/upstream-error.handler'
 // ── Parâmetros de busca ──────────────────────────────────────
 
 export interface ReadClienteParams {
-  codigoCliente?: string   // A1_COD
-  loja?:          string   // A1_LOJA
-  cgc?:           string   // A1_CGC — CNPJ ou CPF (busca por documento)
-  ativo?:         'S' | 'N'
+  codigoCliente?:   string   // A1_COD
+  loja?:            string   // A1_LOJA
+  cgc?:             string   // A1_CGC — CNPJ ou CPF (busca por documento)
+  ativo?:           'S' | 'N'
+  /**
+   * HMAC SHA-256 do documento fiscal, já pseudonimizado.
+   * Protheus não indexa o hash (só A1_CGC em claro) — o filtro é
+   * aplicado client-side após pseudonimizar cada registro retornado.
+   */
+  documentoToken?:  string
 }
 
 // ── Conector ─────────────────────────────────────────────────
@@ -60,7 +66,12 @@ export class ReadProtheusCilenteConnector {
     // Validar e mapear — ZodError propaga se schema inválido
     const rawList = this.extractList(rawData)
     const validated = rawList.map((item) => ProtheusCilenteSchema.parse(item))
-    return validated.map((raw) => this.mapper.toInterno(raw))
+    const mapped = validated.map((raw) => this.mapper.toInterno(raw))
+
+    if (params.documentoToken) {
+      return mapped.filter((c) => c.documentoPseudo === params.documentoToken)
+    }
+    return mapped
   }
 
   // ── Helpers privados ────────────────────────────────────────

@@ -125,13 +125,13 @@ export class GatewayHttpServer {
   /**
    * GET /clientes
    *
-   * Query params: codigoCliente?, loja?, cgc?, ativo?
+   * Query params: codigoCliente?, loja?, cgc?, ativo?, documentoToken?
    *
    * CC3: codigoCliente existe       → 200 { data: ClienteInterno[] }
    * CC4: codigoCliente não encontrado → 404 { code, message }
    */
   private async handleClientes(req: Request, res: Response): Promise<void> {
-    const { codigoCliente, loja, cgc, ativo } = req.query as Record<string, string | undefined>
+    const { codigoCliente, loja, cgc, ativo, documentoToken } = req.query as Record<string, string | undefined>
 
     try {
       const clientes = await this.clienteConnector.execute({
@@ -139,6 +139,7 @@ export class GatewayHttpServer {
         loja,
         cgc,
         ativo: ativo as 'S' | 'N' | undefined,
+        documentoToken,
       })
 
       if (clientes.length === 0) {

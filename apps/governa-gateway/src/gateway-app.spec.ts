@@ -302,6 +302,15 @@ describe('GatewayHttpServer', () => {
         expect.objectContaining({ codigoCliente: 'CLI001', loja: '01' }),
       )
     })
+
+    it('repassa documentoToken do query string para o conector', async () => {
+      mockCliente.mockResolvedValueOnce([clienteFixture])
+      await get(port, '/clientes?documentoToken=abc123hash')
+
+      expect(mockCliente).toHaveBeenCalledWith(
+        expect.objectContaining({ documentoToken: 'abc123hash' }),
+      )
+    })
   })
 
   // ── Ciclo de vida ────────────────────────────────────────────
