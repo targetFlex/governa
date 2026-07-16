@@ -13,6 +13,17 @@
 
 export type AgentStatus = 'SANDBOX' | 'ACTIVE' | 'PAUSED' | 'DEPRECATED';
 
+/**
+ * Referência a um conector MCP habilitado no agente.
+ * Nesta fase (E8) é apenas metadado descritivo — sem integração funcional.
+ * `icon` é opcional (slug/chave de ícone para o frontend).
+ */
+export interface McpServerRef {
+  id:    string;
+  name:  string;
+  icon?: string;
+}
+
 export interface Agente {
   id:           string;
   tenantId:     string;
@@ -23,6 +34,10 @@ export interface Agente {
   status:       AgentStatus;
   modelId:      string;
   tools:        string[];
+  systemPrompt: string | null;
+  mcpServers:   McpServerRef[];
+  skills:       string[];
+  templateId:   string | null;
   createdAt:    string;   // ISO 8601
   updatedAt:    string;   // ISO 8601
   lastActiveAt: string | null; // ISO 8601
@@ -34,12 +49,16 @@ export interface AgentesResponse {
 }
 
 export interface CreateAgenteDto {
-  name:         string;
-  description?: string;
-  ownerId:      string;
-  policyId?:    string | null;
-  modelId:      string;
-  tools?:       string[];
+  name:          string;
+  description?:  string;
+  ownerId:       string;
+  policyId?:     string | null;
+  modelId:       string;
+  tools?:        string[];
+  systemPrompt?: string;
+  mcpServers?:   McpServerRef[];
+  skills?:       string[];
+  templateId?:   string;
 }
 
 export interface UpdateAgenteDto {

@@ -22,6 +22,10 @@ import { AgenteFormComponent } from './agente-form.component';
 import { AgentesStore } from '../agentes.service';
 import { AuthService } from '../../../core/auth/auth.service';
 import { Agente } from '../../../shared/models/agente.model';
+import { TEMPLATES, BLANK_TEMPLATE_ID, AgentTemplate } from './agente-templates.data';
+
+const tplById = (id: string): AgentTemplate =>
+  TEMPLATES.find((t) => t.id === id)!;
 
 // ── Fixture ───────────────────────────────────────────────────
 
@@ -86,37 +90,81 @@ function setup(
 
 describe('AgenteFormComponent — renderização', () => {
 
-  it('exibe campo de nome', () => {
+  it('inicia no passo 1 (ponto de partida) exibindo a galeria de templates', () => {
     const store = createStoreMock();
     const auth  = createAuthMock();
     const { fixture } = setup(store, auth);
+    const el: HTMLElement = fixture.nativeElement;
+
+    expect(fixture.componentInstance.step()).toBe(1);
+    expect(el.querySelector('app-agente-starting-point')).not.toBeNull();
+    expect(el.querySelector('[role="radiogroup"]')).not.toBeNull();
+    // Formulário só aparece no passo 2
+    expect(el.innerHTML).not.toContain('Nome do agente');
+  });
+
+  it('exibe campo de nome no passo 2', () => {
+    const store = createStoreMock();
+    const auth  = createAuthMock();
+    const { fixture } = setup(store, auth);
+    fixture.componentInstance.step.set(2);
+    fixture.detectChanges();
     const el: HTMLElement = fixture.nativeElement;
 
     expect(el.innerHTML).toContain('Nome do agente');
   });
 
-  it('exibe campo de descrição', () => {
+  it('exibe campo de descrição no passo 2', () => {
     const store = createStoreMock();
     const auth  = createAuthMock();
     const { fixture } = setup(store, auth);
+    fixture.componentInstance.step.set(2);
+    fixture.detectChanges();
     const el: HTMLElement = fixture.nativeElement;
 
     expect(el.innerHTML).toContain('Descrição');
   });
 
-  it('exibe select de modelo de IA', () => {
+  it('exibe select de modelo de IA no passo 2', () => {
     const store = createStoreMock();
     const auth  = createAuthMock();
     const { fixture } = setup(store, auth);
+    fixture.componentInstance.step.set(2);
+    fixture.detectChanges();
     const el: HTMLElement = fixture.nativeElement;
 
     expect(el.innerHTML).toContain('Modelo de IA');
   });
 
-  it('exibe checkboxes de ferramentas', () => {
+  it('exibe textarea de System Prompt e fieldset de Skills no passo 2', () => {
     const store = createStoreMock();
     const auth  = createAuthMock();
     const { fixture } = setup(store, auth);
+    fixture.componentInstance.step.set(2);
+    fixture.detectChanges();
+    const el: HTMLElement = fixture.nativeElement;
+
+    expect(el.querySelector('#af-system-prompt')).not.toBeNull();
+    expect(el.innerHTML).toContain('Skills');
+  });
+
+  it('exibe painel de preview no passo 2', () => {
+    const store = createStoreMock();
+    const auth  = createAuthMock();
+    const { fixture } = setup(store, auth);
+    fixture.componentInstance.step.set(2);
+    fixture.detectChanges();
+    const el: HTMLElement = fixture.nativeElement;
+
+    expect(el.querySelector('app-agente-config-preview')).not.toBeNull();
+  });
+
+  it('exibe checkboxes de ferramentas no passo 2', () => {
+    const store = createStoreMock();
+    const auth  = createAuthMock();
+    const { fixture } = setup(store, auth);
+    fixture.componentInstance.step.set(2);
+    fixture.detectChanges();
     const el: HTMLElement = fixture.nativeElement;
 
     const checkboxes = el.querySelectorAll('input[type="checkbox"]');
@@ -368,6 +416,130 @@ describe('AgenteFormComponent — ferramentas', () => {
     comp.formTools = ['read_protheus_cliente'];
     expect(comp.isToolSelected('read_protheus_cliente')).toBe(true);
     expect(comp.isToolSelected('read_protheus_pedido')).toBe(false);
+  });
+
+});
+
+// ── Suite 7: Skills ──────────────────────────────────────────
+
+describe('AgenteFormComponent — skills', () => {
+
+  it('toggleSkill adiciona e remove skill', () => {
+    const store = createStoreMock();
+    const auth  = createAuthMock();
+    const { fixture } = setup(store, auth);
+    const comp = fixture.componentInstance;
+
+    comp.formSkills = [];
+    comp.toggleSkill('resumo-executivo');
+    expect(comp.isSkillSelected('resumo-executivo')).toBe(true);
+
+    comp.toggleSkill('resumo-executivo');
+    expect(comp.isSkillSelected('resumo-executivo')).toBe(false);
+  });
+
+});
+
+// ── Suite 8: Seleção de template (Gherkin cenário 1) ─────────
+
+describe('AgenteFormComponent — seleção de template', () => {
+
+  it('selecionar um template preenche o formulário e avança para o passo 2', () => {
+    const store = createStoreMock();
+    const auth  = createAuthMock();
+    const { fixture } = setup(store, auth);
+    const comp = fixture.componentInstance;
+
+    comp.selectTemplate(tplById('consulta-pedidos'));
+
+    expect(comp.step()).toBe(2);
+    expect(comp.selectedTemplateId).toBe('consulta-pedidos');
+    expect(comp.isToolSelected('read_protheus_pedido')).toBe(true);
+    expect(comp.formSystemPrompt).toContain('consulta pedidos no Protheus');
+    // preview reflete o template
+    expect(comp.previewYaml()).toContain('read_protheus_pedido');
+    expect(comp.previewConfig().mcpServers.length).toBeGreaterThan(0);
+  });
+
+  it('selecionar "Agente em branco" mantém templateId null no submit', () => {
+    const store = createStoreMock();
+    const auth  = createAuthMock('user-uuid-1');
+    const { fixture } = setup(store, auth);
+    const comp = fixture.componentInstance;
+
+    comp.selectTemplate(tplById(BLANK_TEMPLATE_ID));
+    comp.formName = 'Meu Agente';
+    comp.onSubmit();
+
+    const dto = store.createAgente.mock.calls[0][0];
+    expect(dto.templateId).toBeUndefined();
+  });
+
+});
+
+// ── Suite 9: Merge de template (Gherkin cenário 2) ───────────
+
+describe('AgenteFormComponent — troca de template preserva edição manual', () => {
+
+  it('mantém o nome editado manualmente e aplica ferramentas do novo template', () => {
+    const store = createStoreMock();
+    const auth  = createAuthMock();
+    const { fixture } = setup(store, auth);
+    const comp = fixture.componentInstance;
+
+    // 1. Seleciona "Consulta de Pedidos"
+    comp.selectTemplate(tplById('consulta-pedidos'));
+    // 2. Edita manualmente o nome
+    comp.formName = 'Meu Agente Custom';
+    // 3. Volta e seleciona "Atendimento ao Cliente"
+    comp.backToStartingPoint();
+    comp.selectTemplate(tplById('atendimento-cliente'));
+
+    // Nome preservado (edição manual)
+    expect(comp.formName).toBe('Meu Agente Custom');
+    // Ferramentas refletem o novo template
+    expect(comp.isToolSelected('read_protheus_cliente')).toBe(true);
+    expect(comp.isToolSelected('read_politica_atendimento')).toBe(true);
+    expect(comp.isToolSelected('read_protheus_pedido')).toBe(false);
+  });
+
+});
+
+// ── Suite 10: Submit com novos campos (Gherkin cenário 4) ────
+
+describe('AgenteFormComponent — submit com campos estendidos', () => {
+
+  it('POST inclui systemPrompt, mcpServers e templateId ao usar template', () => {
+    const store = createStoreMock();
+    const auth  = createAuthMock('user-uuid-1');
+    const { fixture } = setup(store, auth);
+    const comp = fixture.componentInstance;
+
+    comp.selectTemplate(tplById('triagem-nf'));
+    comp.onSubmit();
+
+    const dto = store.createAgente.mock.calls[0][0];
+    expect(dto.systemPrompt).toContain('notas fiscais');
+    expect(dto.templateId).toBe('triagem-nf');
+    expect(dto.mcpServers).toEqual([
+      expect.objectContaining({ id: 'protheus-rest', name: 'Protheus REST' }),
+    ]);
+    expect(dto.tools).toContain('read_protheus_nf');
+  });
+
+  it('inclui skills quando selecionadas', () => {
+    const store = createStoreMock();
+    const auth  = createAuthMock('user-uuid-1');
+    const { fixture } = setup(store, auth);
+    const comp = fixture.componentInstance;
+
+    comp.formName = 'Agente X';
+    comp.formModelId = 'claude-sonnet-5';
+    comp.toggleSkill('resumo-executivo');
+    comp.onSubmit();
+
+    const dto = store.createAgente.mock.calls[0][0];
+    expect(dto.skills).toEqual(['resumo-executivo']);
   });
 
 });
