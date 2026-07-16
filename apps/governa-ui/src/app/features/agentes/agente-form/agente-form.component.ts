@@ -42,9 +42,9 @@ import { CreateAgenteDto }    from '../../../shared/models/agente.model';
 // ── Modelos disponíveis ──────────────────────────────────────
 
 const MODELOS: SelectOption[] = [
-  { value: 'claude-sonnet-4-6',        label: 'Claude Sonnet 4.6 (recomendado)' },
+  { value: 'claude-sonnet-5',           label: 'Claude Sonnet 5 (recomendado)' },
   { value: 'claude-haiku-4-5-20251001', label: 'Claude Haiku 4.5 (leve e rápido)' },
-  { value: 'claude-opus-4-7',           label: 'Claude Opus 4.7 (máxima capacidade)' },
+  { value: 'claude-opus-4-8',           label: 'Claude Opus 4.8 (máxima capacidade)' },
   { value: 'gpt-4o',                    label: 'GPT-4o (OpenAI)' },
 ];
 
@@ -325,7 +325,7 @@ export class AgenteFormComponent implements OnInit, OnDestroy {
 
   formName        = '';
   formDescription = '';
-  formModelId     = 'claude-sonnet-4-6';
+  formModelId     = 'claude-sonnet-5';
   formTools:      string[] = [];
   formPolicyId    = '';
 
