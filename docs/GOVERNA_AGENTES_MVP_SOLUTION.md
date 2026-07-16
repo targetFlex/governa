@@ -1,5 +1,5 @@
 # GOVERNA_AGENTES_MVP — Solution Doc
-**Target Flex Patrimonial** | Discovery: 17 Mai 2026 | v2 (MVP2 iniciado em 16 Jul 2026, sessão 2.72)
+**Target Flex Patrimonial** | Discovery: 17 Mai 2026 | v2 (MVP2 iniciado em 16 Jul 2026, sessão 2.73)
 
 ---
 
@@ -16,7 +16,7 @@
 
 ## Status do MVP
 
-### MVP1 — ✅ FECHADO (sessão 2.72)
+### MVP1 — ✅ FECHADO (sessão 2.73)
 
 Escopo: **E1–E5** (núcleo de governança, gateway Protheus, runtime do agente âncora,
 painel de controle, alertas/observabilidade). Código pronto, testado, sem gate pendente.
@@ -26,7 +26,7 @@ painel de controle, alertas/observabilidade). Código pronto, testado, sem gate 
 > Não fazem parte do escopo funcional fechado do MVP1, mas são pré-requisito operacional
 > já satisfeito para o que vem a seguir.
 
-### MVP2 — 🔵 EM ANDAMENTO (iniciado sessão 2.72)
+### MVP2 — 🔵 EM ANDAMENTO (iniciado sessão 2.73)
 
 Absorve tudo que ficou fora do fechamento do MVP1:
 
@@ -328,7 +328,7 @@ clientes da Target Flex Patrimonial pelo sistema, conforme LGPD.
 | E3 | 3.1–3.5 | ✅ Concluído | 28 Jun 2026 (sessão 2.46) |
 | E4 | 4.1–4.5 | ✅ Concluído | ≤ 28 Jun 2026 |
 | E5 | 5.1–5.4 | ✅ Concluído | 28 Jun 2026 (sessão 2.46) |
-| **MVP1** | — | **✅ FECHADO** | **16 Jul 2026 (sessão 2.72)** |
+| **MVP1** | — | **✅ FECHADO** | **16 Jul 2026 (sessão 2.73)** |
 | E6 | — | ✅ Concluído | 03 Jul 2026 (sessão 2.53) |
 | E7 | — | ✅ Concluído | 15 Jul 2026 (sessão 2.64) |
 | E8 | — | 🔵 Em andamento | última entrega: 16 Jul 2026 (sessão 2.71) |
@@ -336,7 +336,7 @@ clientes da Target Flex Patrimonial pelo sistema, conforme LGPD.
 | Fase 3 (conectores MCP) | — | Não iniciada | — |
 | Ativação AnchorAgentService/API Claude | — | Código pronto, inativo em produção | adiado desde sessão 2.67 (D11) |
 | DPA | — | Pendente | — |
-| **MVP2** | — | **🔵 EM ANDAMENTO** | **iniciado 16 Jul 2026 (sessão 2.72)** |
+| **MVP2** | — | **🔵 EM ANDAMENTO** | **iniciado 16 Jul 2026 (sessão 2.73)** |
 
 ---
 
