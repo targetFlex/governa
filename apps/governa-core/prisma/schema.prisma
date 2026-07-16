@@ -61,6 +61,10 @@ model Agent {
   status       AgentStatus @default(SANDBOX)
   modelId      String      @map("model_id")
   tools        String[]
+  systemPrompt String?     @map("system_prompt")
+  mcpServers   Json        @default("[]") @map("mcp_servers")
+  skills       Json        @default("[]")
+  templateId   String?     @map("template_id")
   createdAt    DateTime    @default(now()) @map("created_at")
   updatedAt    DateTime    @updatedAt      @map("updated_at")
   lastActiveAt DateTime?   @map("last_active_at")

@@ -1,10 +1,11 @@
-import type { PrismaClient } from '@prisma/client'
+import { Prisma, type PrismaClient } from '@prisma/client'
 
 import type { AgentInventoryRepository } from '../domain/agent-inventory-repository.port'
 import type {
   AgentInventoryEntity,
   CreateAgentInput,
   UpdateAgentInput,
+  McpServerRef,
 } from '../domain/agent-inventory.entity'
 import type { AgentStatus } from '../../policies/domain/agent.entity'
 
@@ -39,14 +40,19 @@ export class PrismaAgentInventoryRepository implements AgentInventoryRepository 
   async create(input: CreateAgentInput): Promise<AgentInventoryEntity> {
     const agent = await this.prisma.agent.create({
       data: {
-        tenantId:    input.tenantId,
-        name:        input.name,
-        description: input.description,
-        ownerId:     input.ownerId,
-        policyId:    input.policyId ?? null,
-        modelId:     input.modelId,
-        tools:       [...input.tools],
-        status:      'SANDBOX',
+        tenantId:     input.tenantId,
+        name:         input.name,
+        description:  input.description,
+        ownerId:      input.ownerId,
+        policyId:     input.policyId ?? null,
+        modelId:      input.modelId,
+        tools:        [...input.tools],
+        status:       'SANDBOX',
+        systemPrompt: input.systemPrompt ?? null,
+        // Colunas JSONB — convertidas para InputJsonValue do Prisma.
+        mcpServers:   (input.mcpServers ? [...input.mcpServers] : []) as unknown as Prisma.InputJsonValue,
+        skills:       (input.skills ? [...input.skills] : []) as unknown as Prisma.InputJsonValue,
+        templateId:   input.templateId ?? null,
       },
     })
     return this.toEntity(agent)
@@ -103,6 +109,10 @@ export class PrismaAgentInventoryRepository implements AgentInventoryRepository 
       status: string
       modelId: string
       tools: string[]
+      systemPrompt: string | null
+      mcpServers: unknown
+      skills: unknown
+      templateId: string | null
       createdAt: Date
       updatedAt: Date
       lastActiveAt: Date | null
@@ -118,6 +128,12 @@ export class PrismaAgentInventoryRepository implements AgentInventoryRepository 
       status:       agent.status as AgentStatus,
       modelId:      agent.modelId,
       tools:        agent.tools,
+      systemPrompt: agent.systemPrompt,
+      // mcp_servers / skills são colunas JSONB — Prisma devolve JsonValue.
+      // Normalizamos para os tipos de domínio (default array vazio se null).
+      mcpServers:   Array.isArray(agent.mcpServers) ? (agent.mcpServers as McpServerRef[]) : [],
+      skills:       Array.isArray(agent.skills) ? (agent.skills as string[]) : [],
+      templateId:   agent.templateId,
       createdAt:    agent.createdAt,
       updatedAt:    agent.updatedAt,
       lastActiveAt: agent.lastActiveAt,
