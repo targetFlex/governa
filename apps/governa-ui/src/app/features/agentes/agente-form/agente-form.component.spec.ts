@@ -475,6 +475,38 @@ describe('AgenteFormComponent — seleção de template', () => {
     expect(dto.templateId).toBeUndefined();
   });
 
+  it('selectedTemplateName retorna o nome amigável do template, não o id', () => {
+    const store = createStoreMock();
+    const auth  = createAuthMock();
+    const { fixture } = setup(store, auth);
+    const comp = fixture.componentInstance;
+
+    comp.selectTemplate(tplById('consulta-pedidos'));
+
+    expect(comp.selectedTemplateName()).toBe('Consulta de Pedidos');
+    expect(comp.selectedTemplateName()).not.toBe('consulta-pedidos');
+  });
+
+  it('selectedTemplateName retorna "Agente em branco" para o template em branco', () => {
+    const store = createStoreMock();
+    const auth  = createAuthMock();
+    const { fixture } = setup(store, auth);
+    const comp = fixture.componentInstance;
+
+    comp.selectTemplate(tplById(BLANK_TEMPLATE_ID));
+
+    expect(comp.selectedTemplateName()).toBe('Agente em branco');
+  });
+
+  it('selectedTemplateName retorna null antes de qualquer seleção', () => {
+    const store = createStoreMock();
+    const auth  = createAuthMock();
+    const { fixture } = setup(store, auth);
+    const comp = fixture.componentInstance;
+
+    expect(comp.selectedTemplateName()).toBeNull();
+  });
+
 });
 
 // ── Suite 9: Merge de template (Gherkin cenário 2) ───────────

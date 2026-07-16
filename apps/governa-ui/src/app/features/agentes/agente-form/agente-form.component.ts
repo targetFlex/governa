@@ -45,7 +45,7 @@ import { GovButtonComponent } from '../../../shared/ui/button/gov-button.compone
 import { CreateAgenteDto, McpServerRef } from '../../../shared/models/agente.model';
 import { AgenteStartingPointComponent } from './agente-starting-point/agente-starting-point.component';
 import { AgenteConfigPreviewComponent } from './agente-config-preview/agente-config-preview.component';
-import { AgentTemplate, BLANK_TEMPLATE_ID } from './agente-templates.data';
+import { AgentTemplate, BLANK_TEMPLATE_ID, TEMPLATES } from './agente-templates.data';
 import {
   AgentFormState,
   AgentConfig,
@@ -572,7 +572,7 @@ export class AgenteFormComponent implements OnInit, OnDestroy {
 
   selectedTemplateName(): string | null {
     if (!this.selectedTemplateId) return null;
-    return this.selectedTemplateId === BLANK_TEMPLATE_ID ? 'Agente em branco' : this.selectedTemplateId;
+    return TEMPLATES.find((t) => t.id === this.selectedTemplateId)?.name ?? this.selectedTemplateId;
   }
 
   // ── Ferramentas ───────────────────────────────────────────────
