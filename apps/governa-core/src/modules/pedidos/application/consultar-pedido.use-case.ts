@@ -4,16 +4,26 @@ import type { PedidoInterno } from '../domain/pedido.entity'
 import type { Outcome } from '../../audit/domain/outcome'
 import { PedidoNotFoundError, GatewayUnavailableError } from '../domain/pedido.errors'
 
+export interface ConsultarPedidoPaginacao {
+  readonly page:     number
+  readonly pageSize: number
+}
+
 export interface ConsultarPedidoInput {
   readonly tenantId:      string
   readonly agentId:       string
   readonly subjectToken:  string   // HMAC do sujeito (LGPD)
   readonly filtros:       ConsultarPedidosParams
   readonly spanId?:       string
+  /** Busca livre do painel (uso humano) — aplicada em memória. */
+  readonly q?:            string
+  /** Paginação do painel — omitido preserva o comportamento antigo (lista completa). */
+  readonly paginacao?:    ConsultarPedidoPaginacao
 }
 
 export interface ConsultarPedidoOutput {
   readonly pedidos:   PedidoInterno[]
+  readonly total:     number
   readonly traceId:   string
   readonly latencyMs: number
 }
@@ -84,11 +94,37 @@ export class ConsultarPedidoUseCase {
       throw new PedidoNotFoundError(input.filtros.numeroPedido)
     }
 
+    const filtrados = this.applySearch(pedidos, input.q)
+    const total      = filtrados.length
+    const paginados  = this.applyPagination(filtrados, input.paginacao)
+
     return {
-      pedidos,
+      pedidos:   paginados,
+      total,
       traceId:   auditEvent.traceId,
       latencyMs,
     }
+  }
+
+  /** Busca livre do painel — em memória, sobre numeroPedido/clienteId/status. */
+  private applySearch(pedidos: PedidoInterno[], q: string | undefined): PedidoInterno[] {
+    if (!q?.trim()) return pedidos
+    const needle = q.trim().toLowerCase()
+    return pedidos.filter(
+      (p) =>
+        p.numeroPedido.toLowerCase().includes(needle) ||
+        p.clienteId.toLowerCase().includes(needle) ||
+        p.status.toLowerCase().includes(needle),
+    )
+  }
+
+  private applyPagination(
+    pedidos: PedidoInterno[],
+    paginacao: ConsultarPedidoPaginacao | undefined,
+  ): PedidoInterno[] {
+    if (!paginacao) return pedidos
+    const start = (paginacao.page - 1) * paginacao.pageSize
+    return pedidos.slice(start, start + paginacao.pageSize)
   }
 
   private buildSummary(filtros: ConsultarPedidosParams): string {

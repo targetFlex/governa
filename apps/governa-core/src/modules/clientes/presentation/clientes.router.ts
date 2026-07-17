@@ -6,6 +6,7 @@ import { GatewayUnavailableError } from '../../pedidos/domain/pedido.errors'
 import type { AuthenticatedRequest } from '../../../shared/middleware/tenant.middleware'
 import type { AgentService } from '../../agents/application/agent.service'
 import { resolvePanelAccess } from '../../agents/application/panel-access.resolver'
+import { parsePagination } from '../../../shared/http/pagination'
 
 /**
  * ClientesRouter — camada de apresentação REST para consulta de clientes.
@@ -24,6 +25,10 @@ import { resolvePanelAccess } from '../../agents/application/panel-access.resolv
  *
  * Filtros opcionais:
  *  - clienteId, documentoToken
+ *
+ * Painel (uso humano):
+ *  - q: busca livre em memória (clienteId/loja — nunca PII, ver use-case)
+ *  - page, pageSize: paginação em memória (default 1/20, pageSize máx. 100)
  */
 export function createClientesRouter(useCase: ConsultarClienteUseCase, agentService: AgentService): Router {
   const router = Router()
@@ -32,13 +37,15 @@ export function createClientesRouter(useCase: ConsultarClienteUseCase, agentServ
   router.get('/', async (req: Request, res: Response): Promise<void> => {
     const { tenantId } = req as AuthenticatedRequest
 
-    const { clienteId, documentoToken, spanId } =
+    const { clienteId, documentoToken, spanId, q } =
       req.query as Record<string, string | undefined>
     let { agentId, subjectToken } = req.query as Record<string, string | undefined>
 
     if (!agentId && !subjectToken) {
       ;({ agentId, subjectToken } = await resolvePanelAccess(agentService, tenantId))
     }
+
+    const { page, pageSize } = parsePagination(req.query as Record<string, string | undefined>)
 
     if (!agentId) {
       res.status(400).json({ error: 'agentId obrigatório', code: 'MISSING_AGENT_ID' })
@@ -57,11 +64,15 @@ export function createClientesRouter(useCase: ConsultarClienteUseCase, agentServ
         subjectToken,
         filtros: { clienteId, documentoToken },
         spanId,
+        q,
+        paginacao: { page, pageSize },
       })
 
       res.json({
         data:      output.clientes,
-        total:     output.clientes.length,
+        total:     output.total,
+        page,
+        pageSize,
         traceId:   output.traceId,
         latencyMs: output.latencyMs,
       })

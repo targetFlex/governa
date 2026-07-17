@@ -4,16 +4,26 @@ import type { ClienteInterno } from '../domain/cliente.entity'
 import type { Outcome } from '../../audit/domain/outcome'
 import { ClienteNotFoundError, GatewayUnavailableError } from '../domain/cliente.errors'
 
+export interface ConsultarClientePaginacao {
+  readonly page:     number
+  readonly pageSize: number
+}
+
 export interface ConsultarClienteInput {
   readonly tenantId:      string
   readonly agentId:       string
   readonly subjectToken:  string   // HMAC do sujeito (LGPD)
   readonly filtros:       ConsultarClientesParams
   readonly spanId?:       string
+  /** Busca livre do painel (uso humano) — aplicada em memória, só sobre campos não-PII (clienteId/loja). */
+  readonly q?:            string
+  /** Paginação do painel — omitido preserva o comportamento antigo (lista completa). */
+  readonly paginacao?:    ConsultarClientePaginacao
 }
 
 export interface ConsultarClienteOutput {
   readonly clientes:  ClienteInterno[]
+  readonly total:     number
   readonly traceId:   string
   readonly latencyMs: number
 }
@@ -90,11 +100,38 @@ export class ConsultarClienteUseCase {
       throw new ClienteNotFoundError(identifier)
     }
 
+    const filtrados = this.applySearch(clientes, input.q)
+    const total      = filtrados.length
+    const paginados  = this.applyPagination(filtrados, input.paginacao)
+
     return {
-      clientes,
+      clientes:  paginados,
+      total,
       traceId:   auditEvent.traceId,
       latencyMs,
     }
+  }
+
+  /**
+   * Busca livre do painel — em memória, só sobre campos não-PII
+   * (clienteId/loja). Nome/documento/endereço são HMAC (LGPD, D16) e não
+   * podem ser buscados por substring.
+   */
+  private applySearch(clientes: ClienteInterno[], q: string | undefined): ClienteInterno[] {
+    if (!q?.trim()) return clientes
+    const needle = q.trim().toLowerCase()
+    return clientes.filter(
+      (c) => c.clienteId.toLowerCase().includes(needle) || c.loja.toLowerCase().includes(needle),
+    )
+  }
+
+  private applyPagination(
+    clientes: ClienteInterno[],
+    paginacao: ConsultarClientePaginacao | undefined,
+  ): ClienteInterno[] {
+    if (!paginacao) return clientes
+    const start = (paginacao.page - 1) * paginacao.pageSize
+    return clientes.slice(start, start + paginacao.pageSize)
   }
 
   private buildSummary(filtros: ConsultarClientesParams): string {

@@ -25,6 +25,7 @@ interface PedidosState {
   total: number;
   page: number;
   pageSize: number;
+  filtro: string;
   loading: boolean;
   error: string | null;
 }
@@ -34,6 +35,7 @@ const initialState: PedidosState = {
   total: 0,
   page: 1,
   pageSize: 20,
+  filtro: '',
   loading: false,
   error: null,
 };
@@ -49,12 +51,16 @@ export const PedidosStore = signalStore(
     totalPages: computed(() => Math.ceil(store.total() / store.pageSize())),
   })),
   withMethods((store, http = inject(HttpClient)) => ({
-    loadPedidos(page = 1, pageSize = 20): void {
-      patchState(store, { loading: true, error: null, page, pageSize });
+    loadPedidos(page = 1, pageSize = 20, filtro = ''): void {
+      patchState(store, { loading: true, error: null, page, pageSize, filtro });
 
-      const params = new HttpParams()
+      let params = new HttpParams()
         .set('page', page)
         .set('pageSize', pageSize);
+
+      if (filtro.trim()) {
+        params = params.set('q', filtro.trim());
+      }
 
       http
         .get<PedidosResponse>(`${environment.gatewayBaseUrl}/pedidos`, { params })
@@ -96,8 +102,8 @@ export class PedidosService {
   readonly hasError = this.store.hasError;
   readonly totalPages = this.store.totalPages;
 
-  loadPedidos(page = 1, pageSize = 20): void {
-    this.store.loadPedidos(page, pageSize);
+  loadPedidos(page = 1, pageSize = 20, filtro = ''): void {
+    this.store.loadPedidos(page, pageSize, filtro);
   }
 
   clearError(): void {

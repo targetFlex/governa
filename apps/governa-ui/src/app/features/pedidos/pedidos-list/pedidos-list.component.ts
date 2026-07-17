@@ -22,6 +22,7 @@ import {
   ChangeDetectionStrategy,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { PedidosStore } from '../pedidos.service';
 import { PedidoCardComponent } from '../../../shared/components/pedido-card/pedido-card.component';
 
@@ -29,9 +30,28 @@ import { PedidoCardComponent } from '../../../shared/components/pedido-card/pedi
   selector: 'app-pedidos-list',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, PedidoCardComponent],
+  imports: [CommonModule, FormsModule, PedidoCardComponent],
   template: `
     <section class="pedidos-list" aria-label="Lista de pedidos">
+
+      <!-- ── Busca ────────────────────────────────────────── -->
+      <form class="pedidos-list__search" role="search" (ngSubmit)="search()">
+        <label class="sr-only" for="pedidos-search-input">Buscar pedidos por número, cliente ou status</label>
+        <input
+          id="pedidos-search-input"
+          class="pedidos-list__search-input"
+          type="search"
+          placeholder="Buscar por número, cliente ou status…"
+          [(ngModel)]="searchTerm"
+          name="pedidosSearch"
+        />
+        <button class="pedidos-list__search-btn" type="submit">Buscar</button>
+        @if (store.filtro()) {
+          <button class="pedidos-list__search-clear" type="button" (click)="clearSearch()">
+            Limpar
+          </button>
+        }
+      </form>
 
       <!-- ── Loading ──────────────────────────────────────── -->
       @if (store.loading()) {
@@ -75,6 +95,27 @@ import { PedidoCardComponent } from '../../../shared/components/pedido-card/pedi
             <p class="pedidos-list__count" aria-live="polite">
               Exibindo {{ store.pedidos().length }} de {{ store.total() }} pedido(s)
             </p>
+
+            <!-- ── Paginação ──────────────────────────────── -->
+            <nav class="pedidos-list__pagination" aria-label="Paginação de pedidos">
+              <button
+                type="button"
+                class="pedidos-list__page-btn"
+                [disabled]="store.page() <= 1"
+                (click)="previousPage()"
+              >
+                Anterior
+              </button>
+              <span aria-live="polite">Página {{ store.page() }} de {{ store.totalPages() || 1 }}</span>
+              <button
+                type="button"
+                class="pedidos-list__page-btn"
+                [disabled]="store.page() >= store.totalPages()"
+                (click)="nextPage()"
+              >
+                Próxima
+              </button>
+            </nav>
           }
 
         </div>
@@ -85,6 +126,69 @@ import { PedidoCardComponent } from '../../../shared/components/pedido-card/pedi
   styles: [`
     .pedidos-list {
       padding: 1rem;
+    }
+
+    /* ── Busca ── */
+    .pedidos-list__search {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .pedidos-list__search-input {
+      flex: 1;
+      min-width: 0;
+      padding: 0.45rem 0.75rem;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      font-size: 0.9rem;
+    }
+
+    .pedidos-list__search-btn,
+    .pedidos-list__search-clear {
+      padding: 0.45rem 0.9rem;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .pedidos-list__search-btn {
+      background: #1d4ed8;
+      color: #ffffff;
+      border: none;
+    }
+
+    .pedidos-list__search-clear {
+      background: #ffffff;
+      color: #374151;
+      border: 1px solid #d1d5db;
+    }
+
+    /* ── Paginação ── */
+    .pedidos-list__pagination {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+      margin-top: 1rem;
+      font-size: 0.85rem;
+      color: #374151;
+    }
+
+    .pedidos-list__page-btn {
+      padding: 0.4rem 0.9rem;
+      border-radius: 6px;
+      border: 1px solid #d1d5db;
+      background: #ffffff;
+      font-size: 0.85rem;
+      cursor: pointer;
+    }
+
+    .pedidos-list__page-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
     }
 
     /* ── Skeletons ── */
@@ -188,6 +292,8 @@ export class PedidosListComponent implements OnInit {
   /** Número de skeleton cards exibidos durante o loading */
   readonly skeletons = Array(6).fill(null);
 
+  searchTerm = '';
+
   ngOnInit(): void {
     this.store.loadPedidos();
   }
@@ -195,5 +301,22 @@ export class PedidosListComponent implements OnInit {
   retry(): void {
     this.store.clearError();
     this.store.loadPedidos();
+  }
+
+  search(): void {
+    this.store.loadPedidos(1, this.store.pageSize(), this.searchTerm);
+  }
+
+  clearSearch(): void {
+    this.searchTerm = '';
+    this.store.loadPedidos(1, this.store.pageSize(), '');
+  }
+
+  previousPage(): void {
+    this.store.loadPedidos(this.store.page() - 1, this.store.pageSize(), this.store.filtro());
+  }
+
+  nextPage(): void {
+    this.store.loadPedidos(this.store.page() + 1, this.store.pageSize(), this.store.filtro());
   }
 }

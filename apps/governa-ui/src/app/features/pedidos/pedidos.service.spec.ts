@@ -186,4 +186,38 @@ describe('PedidosService', () => {
     req.flush({ data: [], total: 0, page: 2, pageSize: 10 });
   });
 
+  it('deve enviar filtro como query param q quando informado', () => {
+    service.loadPedidos(1, 20, 'PED-001');
+
+    const req = httpMock.expectOne(
+      (r) =>
+        r.url === `${environment.gatewayBaseUrl}/pedidos` &&
+        r.params.get('q') === 'PED-001',
+    );
+    expect(req).toBeTruthy();
+    req.flush(mockResponse);
+  });
+
+  it('não deve enviar param q quando filtro é string vazia', () => {
+    service.loadPedidos(1, 20, '');
+
+    const req = httpMock.expectOne(
+      (r) =>
+        r.url === `${environment.gatewayBaseUrl}/pedidos` &&
+        !r.params.has('q'),
+    );
+    expect(req).toBeTruthy();
+    req.flush(mockResponse);
+  });
+
+  it('não deve enviar param q quando filtro contém apenas espaços', () => {
+    service.loadPedidos(1, 20, '   ');
+
+    const req = httpMock.expectOne(
+      (r) => !r.params.has('q'),
+    );
+    expect(req).toBeTruthy();
+    req.flush(mockResponse);
+  });
+
 });

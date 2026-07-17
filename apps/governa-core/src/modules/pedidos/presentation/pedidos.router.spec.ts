@@ -242,3 +242,47 @@ describe('GET /pedidos — tenant propagado corretamente', () => {
     expect(status).toBe(200)
   })
 })
+
+// ---------------------------------------------------------------------------
+// PR-R-12 .. PR-R-14: busca livre (q) e paginação do painel
+// ---------------------------------------------------------------------------
+
+describe('GET /pedidos?q=&page=&pageSize=', () => {
+  it('PR-R-12 — q filtra por status e total reflete o total filtrado', async () => {
+    gateway.seedPedidos([
+      makePedido({ status: 'ABERTO' }),
+      makePedido({ status: 'ABERTO' }),
+      makePedido({ status: 'ENCERRADO' }),
+    ])
+
+    const url = `/pedidos?agentId=${AGENT_ID}&subjectToken=${SUBJECT_TOKEN}&q=aberto`
+    const { status, body } = await req(url, { token: makeToken(TENANT_A) })
+
+    expect(status).toBe(200)
+    expect(body.total).toBe(2)
+    expect((body.data as unknown[]).length).toBe(2)
+  })
+
+  it('PR-R-13 — page/pageSize fatiam a resposta e ecoam no body', async () => {
+    gateway.seedPedidos([makePedido(), makePedido(), makePedido()])
+
+    const url = `/pedidos?agentId=${AGENT_ID}&subjectToken=${SUBJECT_TOKEN}&page=2&pageSize=2`
+    const { status, body } = await req(url, { token: makeToken(TENANT_A) })
+
+    expect(status).toBe(200)
+    expect((body.data as unknown[]).length).toBe(1)
+    expect(body.total).toBe(3)
+    expect(body.page).toBe(2)
+    expect(body.pageSize).toBe(2)
+  })
+
+  it('PR-R-14 — page inválido cai no default (1) sem quebrar a request', async () => {
+    gateway.seedPedidos([makePedido()])
+
+    const url = `/pedidos?agentId=${AGENT_ID}&subjectToken=${SUBJECT_TOKEN}&page=-1`
+    const { status, body } = await req(url, { token: makeToken(TENANT_A) })
+
+    expect(status).toBe(200)
+    expect(body.page).toBe(1)
+  })
+})

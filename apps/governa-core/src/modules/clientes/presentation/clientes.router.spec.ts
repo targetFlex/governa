@@ -235,3 +235,47 @@ describe('GET /clientes — tenant propagado corretamente', () => {
     expect(status).toBe(200)
   })
 })
+
+// ---------------------------------------------------------------------------
+// CL-R-12 .. CL-R-14: busca livre (q) e paginação do painel
+// ---------------------------------------------------------------------------
+
+describe('GET /clientes?q=&page=&pageSize=', () => {
+  it('CL-R-12 — q filtra por clienteId e total reflete o total filtrado', async () => {
+    gateway.seedClientes([
+      makeCliente({ clienteId: 'CLI-ALVO-1' }),
+      makeCliente({ clienteId: 'CLI-ALVO-2' }),
+      makeCliente({ clienteId: 'OUTRO' }),
+    ])
+
+    const url = `/clientes?agentId=${AGENT_ID}&subjectToken=${SUBJECT_TOKEN}&q=alvo`
+    const { status, body } = await req(url, { token: makeToken(TENANT_A) })
+
+    expect(status).toBe(200)
+    expect(body.total).toBe(2)
+    expect((body.data as unknown[]).length).toBe(2)
+  })
+
+  it('CL-R-13 — page/pageSize fatiam a resposta e ecoam no body', async () => {
+    gateway.seedClientes([makeCliente(), makeCliente(), makeCliente()])
+
+    const url = `/clientes?agentId=${AGENT_ID}&subjectToken=${SUBJECT_TOKEN}&page=2&pageSize=2`
+    const { status, body } = await req(url, { token: makeToken(TENANT_A) })
+
+    expect(status).toBe(200)
+    expect((body.data as unknown[]).length).toBe(1)
+    expect(body.total).toBe(3)
+    expect(body.page).toBe(2)
+    expect(body.pageSize).toBe(2)
+  })
+
+  it('CL-R-14 — pageSize inválido cai no default (20) sem quebrar a request', async () => {
+    gateway.seedClientes([makeCliente()])
+
+    const url = `/clientes?agentId=${AGENT_ID}&subjectToken=${SUBJECT_TOKEN}&pageSize=abc`
+    const { status, body } = await req(url, { token: makeToken(TENANT_A) })
+
+    expect(status).toBe(200)
+    expect(body.pageSize).toBe(20)
+  })
+})

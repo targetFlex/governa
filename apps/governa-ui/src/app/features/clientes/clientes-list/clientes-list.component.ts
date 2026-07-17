@@ -22,6 +22,7 @@ import {
   ChangeDetectionStrategy,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { ClientesStore } from '../clientes.service';
 import { ClienteCardComponent } from '../../../shared/components/cliente-card/cliente-card.component';
 
@@ -29,9 +30,28 @@ import { ClienteCardComponent } from '../../../shared/components/cliente-card/cl
   selector: 'app-clientes-list',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, ClienteCardComponent],
+  imports: [CommonModule, FormsModule, ClienteCardComponent],
   template: `
     <section class="clientes-list" aria-label="Lista de clientes">
+
+      <!-- ── Busca ────────────────────────────────────────── -->
+      <form class="clientes-list__search" role="search" (ngSubmit)="search()">
+        <label class="sr-only" for="clientes-search-input">Buscar clientes por código ou loja</label>
+        <input
+          id="clientes-search-input"
+          class="clientes-list__search-input"
+          type="search"
+          placeholder="Buscar por código ou loja…"
+          [(ngModel)]="searchTerm"
+          name="clientesSearch"
+        />
+        <button class="clientes-list__search-btn" type="submit">Buscar</button>
+        @if (store.filtro()) {
+          <button class="clientes-list__search-clear" type="button" (click)="clearSearch()">
+            Limpar
+          </button>
+        }
+      </form>
 
       <!-- ── Loading ──────────────────────────────────────── -->
       @if (store.loading()) {
@@ -75,6 +95,27 @@ import { ClienteCardComponent } from '../../../shared/components/cliente-card/cl
             <p class="clientes-list__count" aria-live="polite">
               Exibindo {{ store.clientes().length }} de {{ store.total() }} cliente(s)
             </p>
+
+            <!-- ── Paginação ──────────────────────────────── -->
+            <nav class="clientes-list__pagination" aria-label="Paginação de clientes">
+              <button
+                type="button"
+                class="clientes-list__page-btn"
+                [disabled]="store.page() <= 1"
+                (click)="previousPage()"
+              >
+                Anterior
+              </button>
+              <span aria-live="polite">Página {{ store.page() }} de {{ store.totalPages() || 1 }}</span>
+              <button
+                type="button"
+                class="clientes-list__page-btn"
+                [disabled]="store.page() >= store.totalPages()"
+                (click)="nextPage()"
+              >
+                Próxima
+              </button>
+            </nav>
           }
 
         </div>
@@ -85,6 +126,69 @@ import { ClienteCardComponent } from '../../../shared/components/cliente-card/cl
   styles: [`
     .clientes-list {
       padding: 1rem;
+    }
+
+    /* ── Busca ── */
+    .clientes-list__search {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .clientes-list__search-input {
+      flex: 1;
+      min-width: 0;
+      padding: 0.45rem 0.75rem;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      font-size: 0.9rem;
+    }
+
+    .clientes-list__search-btn,
+    .clientes-list__search-clear {
+      padding: 0.45rem 0.9rem;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .clientes-list__search-btn {
+      background: #1d4ed8;
+      color: #ffffff;
+      border: none;
+    }
+
+    .clientes-list__search-clear {
+      background: #ffffff;
+      color: #374151;
+      border: 1px solid #d1d5db;
+    }
+
+    /* ── Paginação ── */
+    .clientes-list__pagination {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+      margin-top: 1rem;
+      font-size: 0.85rem;
+      color: #374151;
+    }
+
+    .clientes-list__page-btn {
+      padding: 0.4rem 0.9rem;
+      border-radius: 6px;
+      border: 1px solid #d1d5db;
+      background: #ffffff;
+      font-size: 0.85rem;
+      cursor: pointer;
+    }
+
+    .clientes-list__page-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
     }
 
     /* ── Skeletons ── */
@@ -188,6 +292,8 @@ export class ClientesListComponent implements OnInit {
   /** Número de skeleton cards exibidos durante o loading */
   readonly skeletons = Array(6).fill(null);
 
+  searchTerm = '';
+
   ngOnInit(): void {
     this.store.loadClientes();
   }
@@ -195,5 +301,22 @@ export class ClientesListComponent implements OnInit {
   retry(): void {
     this.store.clearError();
     this.store.loadClientes();
+  }
+
+  search(): void {
+    this.store.loadClientes(1, this.store.pageSize(), this.searchTerm);
+  }
+
+  clearSearch(): void {
+    this.searchTerm = '';
+    this.store.loadClientes(1, this.store.pageSize(), '');
+  }
+
+  previousPage(): void {
+    this.store.loadClientes(this.store.page() - 1, this.store.pageSize(), this.store.filtro());
+  }
+
+  nextPage(): void {
+    this.store.loadClientes(this.store.page() + 1, this.store.pageSize(), this.store.filtro());
   }
 }

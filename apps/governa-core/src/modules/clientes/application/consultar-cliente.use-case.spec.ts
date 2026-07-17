@@ -185,4 +185,85 @@ describe('ConsultarClienteUseCase', () => {
     expect(output.clientes).toHaveLength(1)
     expect(output.clientes[0].bloqueado).toBe(true)
   })
+
+  // CC-13: output.total reflete o tamanho da lista quando paginacao é omitida (compat)
+  it('CC-13: output.total é igual a clientes.length quando não há paginação', async () => {
+    const { useCase, gatewayClient } = buildSut()
+    gatewayClient.seedClientes([buildCliente({ clienteId: 'CLI001' }), buildCliente({ clienteId: 'CLI002' })])
+
+    const output = await useCase.execute({ ...BASE_INPUT, filtros: {} })
+
+    expect(output.total).toBe(2)
+    expect(output.clientes).toHaveLength(2)
+  })
+
+  // CC-14: q filtra por clienteId (substring, case-insensitive)
+  it('CC-14: q filtra clientes por clienteId (substring, case-insensitive)', async () => {
+    const { useCase, gatewayClient } = buildSut()
+    gatewayClient.seedClientes([
+      buildCliente({ clienteId: 'CLI001' }),
+      buildCliente({ clienteId: 'CLI002' }),
+      buildCliente({ clienteId: 'OUTRO' }),
+    ])
+
+    const output = await useCase.execute({ ...BASE_INPUT, filtros: {}, q: 'cli00' })
+
+    expect(output.clientes.map((c) => c.clienteId).sort()).toEqual(['CLI001', 'CLI002'])
+    expect(output.total).toBe(2)
+  })
+
+  // CC-15: q filtra por loja
+  it('CC-15: q filtra clientes por loja quando clienteId não confere', async () => {
+    const { useCase, gatewayClient } = buildSut()
+    gatewayClient.seedClientes([
+      buildCliente({ clienteId: 'CLI-ALFA', loja: '02' }),
+      buildCliente({ clienteId: 'CLI-BETA', loja: '01' }),
+    ])
+
+    const output = await useCase.execute({ ...BASE_INPUT, filtros: {}, q: '02' })
+
+    expect(output.clientes).toHaveLength(1)
+    expect(output.clientes[0].clienteId).toBe('CLI-ALFA')
+  })
+
+  // CC-16: paginacao fatia a lista e total reflete o total filtrado, não a página
+  it('CC-16: paginacao fatia a lista e total reflete o total filtrado (não a página atual)', async () => {
+    const { useCase, gatewayClient } = buildSut()
+    gatewayClient.seedClientes([
+      buildCliente({ clienteId: 'CLI001' }),
+      buildCliente({ clienteId: 'CLI002' }),
+      buildCliente({ clienteId: 'CLI003' }),
+    ])
+
+    const output = await useCase.execute({
+      ...BASE_INPUT,
+      filtros: {},
+      paginacao: { page: 2, pageSize: 2 },
+    })
+
+    expect(output.clientes).toHaveLength(1)
+    expect(output.clientes[0].clienteId).toBe('CLI003')
+    expect(output.total).toBe(3)
+  })
+
+  // CC-17: q + paginacao combinados
+  it('CC-17: q e paginacao combinados filtram e depois fatiam', async () => {
+    const { useCase, gatewayClient } = buildSut()
+    gatewayClient.seedClientes([
+      buildCliente({ clienteId: 'CLI001' }),
+      buildCliente({ clienteId: 'CLI002' }),
+      buildCliente({ clienteId: 'CLI003' }),
+      buildCliente({ clienteId: 'OUTRO' }),
+    ])
+
+    const output = await useCase.execute({
+      ...BASE_INPUT,
+      filtros: {},
+      q: 'CLI',
+      paginacao: { page: 1, pageSize: 2 },
+    })
+
+    expect(output.clientes).toHaveLength(2)
+    expect(output.total).toBe(3)
+  })
 })

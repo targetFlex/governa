@@ -39,6 +39,9 @@ describe('ClientesListComponent', () => {
   let loading:  WritableSignal<boolean>;
   let error:    WritableSignal<string | null>;
   let total:    WritableSignal<number>;
+  let page:     WritableSignal<number>;
+  let pageSize: WritableSignal<number>;
+  let filtro:   WritableSignal<string>;
   let loadClientesMock: jest.Mock;
   let clearErrorMock:   jest.Mock;
 
@@ -47,6 +50,9 @@ describe('ClientesListComponent', () => {
     loading          = signal<boolean>(false);
     error            = signal<string | null>(null);
     total            = signal<number>(0);
+    page             = signal<number>(1);
+    pageSize         = signal<number>(20);
+    filtro           = signal<string>('');
     loadClientesMock = jest.fn();
     clearErrorMock   = jest.fn();
 
@@ -55,8 +61,12 @@ describe('ClientesListComponent', () => {
       loading,
       error,
       total,
-      isEmpty:  computed(() => !loading() && clientes().length === 0),
-      hasError: computed(() => error() !== null),
+      page,
+      pageSize,
+      filtro,
+      isEmpty:    computed(() => !loading() && clientes().length === 0),
+      hasError:   computed(() => error() !== null),
+      totalPages: computed(() => Math.ceil(total() / pageSize())),
       loadClientes: loadClientesMock,
       clearError:   clearErrorMock,
     };
@@ -95,7 +105,7 @@ describe('ClientesListComponent', () => {
 
     it('deve ter texto sr-only durante loading', () => {
       fixture.detectChanges();
-      const srOnly = fixture.nativeElement.querySelector('.sr-only');
+      const srOnly = fixture.nativeElement.querySelector('.clientes-list__loading .sr-only');
       expect(srOnly?.textContent?.trim()).toBe('Carregando clientes…');
     });
 
@@ -186,6 +196,92 @@ describe('ClientesListComponent', () => {
       fixture.detectChanges();
       const empty = fixture.nativeElement.querySelector('.clientes-list__empty');
       expect(empty).toBeNull();
+    });
+  });
+
+  // ── Busca ────────────────────────────────────────────────
+
+  describe('busca', () => {
+    it('deve chamar loadClientes(1, pageSize, termo) ao submeter a busca', () => {
+      fixture.detectChanges();
+      loadClientesMock.mockClear();
+
+      const component = fixture.componentInstance;
+      component.searchTerm = 'CLI001';
+      const form = fixture.nativeElement.querySelector('.clientes-list__search');
+      form.dispatchEvent(new Event('submit'));
+
+      expect(loadClientesMock).toHaveBeenCalledWith(1, 20, 'CLI001');
+    });
+
+    it('não deve exibir botão "Limpar" quando não há filtro ativo', () => {
+      fixture.detectChanges();
+      const btn = fixture.nativeElement.querySelector('.clientes-list__search-clear');
+      expect(btn).toBeNull();
+    });
+
+    it('deve exibir botão "Limpar" e recarregar sem filtro ao clicar', () => {
+      filtro.set('CLI001');
+      fixture.detectChanges();
+      loadClientesMock.mockClear();
+
+      const btn = fixture.nativeElement.querySelector<HTMLButtonElement>('.clientes-list__search-clear');
+      expect(btn).not.toBeNull();
+      btn?.click();
+
+      expect(loadClientesMock).toHaveBeenCalledWith(1, 20, '');
+    });
+  });
+
+  // ── Paginação ────────────────────────────────────────────
+
+  describe('paginação', () => {
+    beforeEach(() => {
+      clientes.set([makeCliente({ id: '1' }), makeCliente({ id: '2' })]);
+      total.set(50);
+    });
+
+    it('deve desabilitar "Anterior" na primeira página', () => {
+      page.set(1);
+      fixture.detectChanges();
+      const btn = fixture.nativeElement.querySelectorAll('.clientes-list__page-btn')[0] as HTMLButtonElement;
+      expect(btn.disabled).toBe(true);
+    });
+
+    it('deve habilitar "Próxima" quando há mais páginas', () => {
+      page.set(1);
+      fixture.detectChanges();
+      const btn = fixture.nativeElement.querySelectorAll('.clientes-list__page-btn')[1] as HTMLButtonElement;
+      expect(btn.disabled).toBe(false);
+    });
+
+    it('deve desabilitar "Próxima" na última página', () => {
+      page.set(3); // totalPages = ceil(50/20) = 3
+      fixture.detectChanges();
+      const btn = fixture.nativeElement.querySelectorAll('.clientes-list__page-btn')[1] as HTMLButtonElement;
+      expect(btn.disabled).toBe(true);
+    });
+
+    it('deve chamar loadClientes com page+1 ao clicar em "Próxima"', () => {
+      page.set(1);
+      fixture.detectChanges();
+      loadClientesMock.mockClear();
+
+      const btn = fixture.nativeElement.querySelectorAll('.clientes-list__page-btn')[1] as HTMLButtonElement;
+      btn.click();
+
+      expect(loadClientesMock).toHaveBeenCalledWith(2, 20, '');
+    });
+
+    it('deve chamar loadClientes com page-1 ao clicar em "Anterior"', () => {
+      page.set(2);
+      fixture.detectChanges();
+      loadClientesMock.mockClear();
+
+      const btn = fixture.nativeElement.querySelectorAll('.clientes-list__page-btn')[0] as HTMLButtonElement;
+      btn.click();
+
+      expect(loadClientesMock).toHaveBeenCalledWith(1, 20, '');
     });
   });
 

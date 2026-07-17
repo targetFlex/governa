@@ -161,4 +161,50 @@ describe('ConsultarPedidoUseCase', () => {
     expect(gatewayClient.calls.consultarPedidos).toHaveLength(1)
     expect(gatewayClient.calls.consultarPedidos[0]).toEqual({ clienteId: 'CLI001' })
   })
+
+  // CP-11: output.total é igual a pedidos.length quando não há paginação (compat)
+  it('CP-11: output.total é igual a pedidos.length quando não há paginação', async () => {
+    const { useCase, gatewayClient } = buildSut()
+    gatewayClient.seedPedidos([buildPedido({ numeroPedido: '000001' }), buildPedido({ numeroPedido: '000002' })])
+
+    const output = await useCase.execute({ ...BASE_INPUT, filtros: {} })
+
+    expect(output.total).toBe(2)
+  })
+
+  // CP-12: q filtra por numeroPedido, clienteId e status
+  it('CP-12: q filtra pedidos por numeroPedido, clienteId ou status (substring, case-insensitive)', async () => {
+    const { useCase, gatewayClient } = buildSut()
+    gatewayClient.seedPedidos([
+      buildPedido({ numeroPedido: '000001', clienteId: 'CLI001', status: 'ABERTO' }),
+      buildPedido({ numeroPedido: '000002', clienteId: 'CLI002', status: 'BLOQUEADO' }),
+      buildPedido({ numeroPedido: '000003', clienteId: 'CLI003', status: 'ENCERRADO' }),
+    ])
+
+    const porNumero = await useCase.execute({ ...BASE_INPUT, filtros: {}, q: '000002' })
+    expect(porNumero.pedidos.map((p) => p.numeroPedido)).toEqual(['000002'])
+
+    const porStatus = await useCase.execute({ ...BASE_INPUT, filtros: {}, q: 'aberto' })
+    expect(porStatus.pedidos.map((p) => p.numeroPedido)).toEqual(['000001'])
+  })
+
+  // CP-13: paginacao fatia a lista e total reflete o total filtrado (não a página atual)
+  it('CP-13: paginacao fatia a lista e total reflete o total filtrado (não a página atual)', async () => {
+    const { useCase, gatewayClient } = buildSut()
+    gatewayClient.seedPedidos([
+      buildPedido({ numeroPedido: '000001' }),
+      buildPedido({ numeroPedido: '000002' }),
+      buildPedido({ numeroPedido: '000003' }),
+    ])
+
+    const output = await useCase.execute({
+      ...BASE_INPUT,
+      filtros: {},
+      paginacao: { page: 2, pageSize: 2 },
+    })
+
+    expect(output.pedidos).toHaveLength(1)
+    expect(output.pedidos[0].numeroPedido).toBe('000003')
+    expect(output.total).toBe(3)
+  })
 })
