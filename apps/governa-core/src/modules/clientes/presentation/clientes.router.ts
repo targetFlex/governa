@@ -4,6 +4,8 @@ import type { ConsultarClienteUseCase } from '../application/consultar-cliente.u
 import { ClienteNotFoundError } from '../domain/cliente.errors'
 import { GatewayUnavailableError } from '../../pedidos/domain/pedido.errors'
 import type { AuthenticatedRequest } from '../../../shared/middleware/tenant.middleware'
+import type { AgentService } from '../../agents/application/agent.service'
+import { resolvePanelAccess } from '../../agents/application/panel-access.resolver'
 
 /**
  * ClientesRouter — camada de apresentação REST para consulta de clientes.
@@ -14,22 +16,29 @@ import type { AuthenticatedRequest } from '../../../shared/middleware/tenant.mid
  *  - Delegar ao ConsultarClienteUseCase — nenhuma regra de negócio aqui
  *  - Mapear erros de domínio para HTTP (404, 502)
  *
- * Campos obrigatórios no request:
- *  - agentId (query param) — identifica o agente que executa a consulta (LGPD)
- *  - subjectToken (query param) — HMAC do sujeito da consulta (LGPD)
+ * Origem do agentId/subjectToken:
+ *  - Consulta feita por um agente de IA: vêm no query string (LGPD).
+ *  - Listagem via painel administrativo (uso humano, sem agente nem titular
+ *    específico): resolvidos automaticamente para o agente sintético do
+ *    tenant — ver panel-access.resolver.ts.
  *
  * Filtros opcionais:
  *  - clienteId, documentoToken
  */
-export function createClientesRouter(useCase: ConsultarClienteUseCase): Router {
+export function createClientesRouter(useCase: ConsultarClienteUseCase, agentService: AgentService): Router {
   const router = Router()
 
   /** GET /clientes — consulta clientes do tenant autenticado */
   router.get('/', async (req: Request, res: Response): Promise<void> => {
     const { tenantId } = req as AuthenticatedRequest
 
-    const { agentId, subjectToken, clienteId, documentoToken, spanId } =
+    const { clienteId, documentoToken, spanId } =
       req.query as Record<string, string | undefined>
+    let { agentId, subjectToken } = req.query as Record<string, string | undefined>
+
+    if (!agentId && !subjectToken) {
+      ;({ agentId, subjectToken } = await resolvePanelAccess(agentService, tenantId))
+    }
 
     if (!agentId) {
       res.status(400).json({ error: 'agentId obrigatório', code: 'MISSING_AGENT_ID' })

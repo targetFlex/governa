@@ -9,6 +9,7 @@ import {
   AgentNoPolicyError,
   AgentDeprecatedError,
 } from '../domain/agent.errors'
+import { PANEL_SYSTEM_AGENT_TEMPLATE_ID } from '../domain/system-agent.constants'
 
 /**
  * AgentService — application layer (hexagonal).
@@ -24,12 +25,39 @@ import {
  *  - activateAgent: SANDBOX | PAUSED → ACTIVE, requer policyId
  *  - agente DEPRECATED: estado terminal, não pode ser reativado
  *  - cross-tenant: sempre 404, nunca 403 (não vazar existência)
+ *  - getOrCreateSystemAgent: agente sintético de acesso via painel (ver
+ *    system-agent.constants.ts) — nunca listado em listAgents
  */
 export class AgentService {
   constructor(private readonly repo: AgentInventoryRepository) {}
 
   async listAgents(tenantId: string): Promise<AgentInventoryEntity[]> {
-    return this.repo.findAllForTenant(tenantId)
+    const agents = await this.repo.findAllForTenant(tenantId)
+    return agents.filter((a) => a.templateId !== PANEL_SYSTEM_AGENT_TEMPLATE_ID)
+  }
+
+  /**
+   * Retorna (criando se necessário) o agente sintético de acesso via painel
+   * do tenant — âncora de auditoria LGPD para listagens humanas de
+   * clientes/pedidos que não partem de um agente de IA nem de um titular
+   * específico. Idempotente por tenant.
+   */
+  async getOrCreateSystemAgent(tenantId: string): Promise<AgentInventoryEntity> {
+    const agents = await this.repo.findAllForTenant(tenantId)
+    const existing = agents.find((a) => a.templateId === PANEL_SYSTEM_AGENT_TEMPLATE_ID)
+    if (existing) return existing
+
+    return this.repo.create({
+      tenantId,
+      name: 'Painel — Acesso Direto (Sistema)',
+      description:
+        'Agente sintético interno usado para auditar listagens feitas via painel administrativo (acesso humano, sem IA). Não executa ferramentas nem é ativável.',
+      ownerId: 'system',
+      policyId: null,
+      modelId: 'n/a',
+      tools: [],
+      templateId: PANEL_SYSTEM_AGENT_TEMPLATE_ID,
+    })
   }
 
   async getAgent(id: string, tenantId: string): Promise<AgentInventoryEntity> {

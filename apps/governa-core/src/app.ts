@@ -110,8 +110,8 @@ export function createApp(deps: AppDependencies): Application {
 
   // ── Routers ─────────────────────────────────────────────────────────────────
   app.use('/agents',        createAgentRouter(deps.agentService))
-  app.use('/pedidos',       createPedidosRouter(deps.consultarPedidoUseCase))
-  app.use('/clientes',      createClientesRouter(deps.consultarClienteUseCase))
+  app.use('/pedidos',       createPedidosRouter(deps.consultarPedidoUseCase, deps.agentService))
+  app.use('/clientes',      createClientesRouter(deps.consultarClienteUseCase, deps.agentService))
   app.use('/policies',      createPolicyRouter(deps.policyService))
   app.use('/audit-events',  createAuditRouter(deps.auditQueryService))
   app.use('/alerts',        createAlertRouter(deps.alertService))

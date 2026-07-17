@@ -73,6 +73,46 @@ describe('listAgents', () => {
     const result = await service.listAgents(TENANT_A)
     expect(result).toEqual([])
   })
+
+  it('nunca retorna o agente sintético de acesso via painel', async () => {
+    await service.getOrCreateSystemAgent(TENANT_A)
+    repo.seed([...repo.all(), makeAgent({ tenantId: TENANT_A })])
+
+    const result = await service.listAgents(TENANT_A)
+    expect(result).toHaveLength(1)
+    expect(result.every(a => a.templateId !== '__system_panel_access__')).toBe(true)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// getOrCreateSystemAgent
+// ---------------------------------------------------------------------------
+
+describe('getOrCreateSystemAgent', () => {
+  it('cria o agente sintético na primeira chamada', async () => {
+    const agent = await service.getOrCreateSystemAgent(TENANT_A)
+
+    expect(agent.tenantId).toBe(TENANT_A)
+    expect(agent.templateId).toBe('__system_panel_access__')
+    expect(agent.ownerId).toBe('system')
+  })
+
+  it('reutiliza o mesmo agente em chamadas subsequentes (idempotente)', async () => {
+    const first  = await service.getOrCreateSystemAgent(TENANT_A)
+    const second = await service.getOrCreateSystemAgent(TENANT_A)
+
+    expect(second.id).toBe(first.id)
+    expect(repo.all().filter(a => a.tenantId === TENANT_A)).toHaveLength(1)
+  })
+
+  it('cria agentes sintéticos independentes por tenant', async () => {
+    const agentA = await service.getOrCreateSystemAgent(TENANT_A)
+    const agentB = await service.getOrCreateSystemAgent(TENANT_B)
+
+    expect(agentA.id).not.toBe(agentB.id)
+    expect(agentA.tenantId).toBe(TENANT_A)
+    expect(agentB.tenantId).toBe(TENANT_B)
+  })
 })
 
 // ---------------------------------------------------------------------------

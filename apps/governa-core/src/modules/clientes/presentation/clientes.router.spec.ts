@@ -20,8 +20,10 @@ import { randomUUID } from 'crypto'
 import { createClientesRouter } from './clientes.router'
 import { ConsultarClienteUseCase } from '../application/consultar-cliente.use-case'
 import { AuditService } from '../../audit/application/audit.service'
+import { AgentService } from '../../agents/application/agent.service'
 import { InMemoryGatewayClient } from '../../../../test/fixtures/in-memory-gateway-client'
 import { InMemoryAuditEventRepository } from '../../../../test/fixtures/in-memory-audit-event.repository'
+import { InMemoryAgentInventoryRepository } from '../../../../test/fixtures/in-memory-agent-inventory.repository'
 import { createTenantMiddleware } from '../../../shared/middleware/tenant.middleware'
 import type { ClienteInterno } from '../domain/cliente.entity'
 
@@ -39,6 +41,7 @@ const SUBJECT_TOKEN = 'hmac-subject-xyz'
 let server: http.Server
 let baseUrl: string
 let gateway: InMemoryGatewayClient
+let agentInventoryRepo: InMemoryAgentInventoryRepository
 
 function makeToken(tenantId: string, userId = OWNER_ID): string {
   return jwt.sign({ tenantId, userId }, JWT_SECRET)
@@ -78,8 +81,10 @@ beforeEach(() => new Promise<void>(resolve => {
   gateway = new InMemoryGatewayClient()
   const auditRepo    = new InMemoryAuditEventRepository()
   const auditService = new AuditService(auditRepo)
-  const useCase      = new ConsultarClienteUseCase(gateway, auditService)
-  const router       = createClientesRouter(useCase)
+  const useCase       = new ConsultarClienteUseCase(gateway, auditService)
+  agentInventoryRepo = new InMemoryAgentInventoryRepository()
+  const agentService  = new AgentService(agentInventoryRepo)
+  const router        = createClientesRouter(useCase, agentService)
 
   const app = express()
   app.use(express.json())
@@ -142,6 +147,34 @@ describe('GET /clientes', () => {
     const { status, body } = await req(url, { token: makeToken(TENANT_A) })
     expect(status).toBe(400)
     expect(body.code).toBe('MISSING_SUBJECT_TOKEN')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// CL-R-10: acesso via painel (sem agentId/subjectToken) usa agente sintético
+// ---------------------------------------------------------------------------
+
+describe('GET /clientes — acesso via painel', () => {
+  it('CL-R-10 — 200 sem agentId/subjectToken cria e usa agente sintético do tenant', async () => {
+    gateway.seedClientes([makeCliente(), makeCliente()])
+
+    const { status, body } = await req('/clientes', { token: makeToken(TENANT_A) })
+
+    expect(status).toBe(200)
+    expect(body.total).toBe(2)
+
+    const agents = agentInventoryRepo.all()
+    expect(agents).toHaveLength(1)
+    expect(agents[0].tenantId).toBe(TENANT_A)
+    expect(agents[0].templateId).toBe('__system_panel_access__')
+  })
+
+  it('CL-R-11 — chamadas repetidas via painel reusam o mesmo agente sintético (idempotente)', async () => {
+    await req('/clientes', { token: makeToken(TENANT_A) })
+    await req('/clientes', { token: makeToken(TENANT_A) })
+
+    const agents = agentInventoryRepo.all().filter(a => a.tenantId === TENANT_A)
+    expect(agents).toHaveLength(1)
   })
 })
 
