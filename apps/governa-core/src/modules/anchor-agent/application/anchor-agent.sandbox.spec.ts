@@ -35,8 +35,8 @@ const defaultScope = {
   tenantId:      TENANT,
   autonomyLevel: 'CONSULTIVO' as const,
   tools: [
-    { name: 'read_protheus_pedido',  description: 'd', isWrite: false, execute: jest.fn() },
-    { name: 'read_protheus_cliente', description: 'd', isWrite: false, execute: jest.fn() },
+    { name: 'read_protheus_pedido',  description: 'd', isWrite: false, source: 'native' as const, execute: jest.fn() },
+    { name: 'read_protheus_cliente', description: 'd', isWrite: false, source: 'native' as const, execute: jest.fn() },
   ],
   policyId:      'pol-sandbox',
   policyVersion: '1',
@@ -732,7 +732,7 @@ describe('E3.5 Sandbox — Agente Âncora (50 interações sintéticas)', () => 
     it('K1 — Scope limitado a 1 tool: tool excluída não chega ao LLM (mas escalate_to_human sim)', async () => {
       const scopeLimitado = {
         ...defaultScope,
-        tools: [{ name: 'read_protheus_pedido', description: 'd', isWrite: false, execute: jest.fn() }],
+        tools: [{ name: 'read_protheus_pedido', description: 'd', isWrite: false, source: 'native' as const, execute: jest.fn() }],
       }
       const llm: LlmClient = { chat: jest.fn().mockResolvedValue(text('ok')) }
       const svc = new AnchorAgentService(makePolicyEngine({ scope: scopeLimitado }), new Map(), PROTHEUS_TOOL_DEFS, llm)

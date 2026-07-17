@@ -16,6 +16,7 @@ const tool = (name: string, isWrite: boolean): Tool => ({
   name,
   description: `fixture:${name}`,
   isWrite,
+  source: 'native',
   execute: async () => undefined,
 })
 

@@ -55,8 +55,8 @@ function makeScope(overrides: Partial<ToolScope> = {}): ToolScope {
     policyId:      'pol-1',
     policyVersion: '1',
     tools:         [
-      { name: 'read_db',  description: 'Leitura de banco', isWrite: false, execute: jest.fn() },
-      { name: 'list_csv', description: 'Listar CSV',       isWrite: false, execute: jest.fn() },
+      { name: 'read_db',  description: 'Leitura de banco', isWrite: false, source: 'native' as const, execute: jest.fn() },
+      { name: 'list_csv', description: 'Listar CSV',       isWrite: false, source: 'native' as const, execute: jest.fn() },
     ],
     ...overrides,
   })

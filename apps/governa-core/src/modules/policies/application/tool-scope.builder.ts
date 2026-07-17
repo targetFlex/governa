@@ -9,6 +9,14 @@ export interface BuildScopeParams {
   readonly allowedActions: readonly string[]
   readonly policyId:       string
   readonly policyVersion:  string
+  /**
+   * Tools MCP do agente para esta chamada (D33, sessão 2.77) — catálogo
+   * dinâmico, resolvido por chamada a partir dos conectores MCP configurados
+   * para o agente, ao contrário de `catalog` (nativo, fixo, injetado no
+   * construtor). Mesclado com `catalog` antes da filtragem por autonomia.
+   * Wiring real a partir do `McpClientAdapter` fica para a sessão 2.78.
+   */
+  readonly mcpCatalog?:    readonly Tool[]
 }
 
 /**
@@ -27,12 +35,20 @@ export interface BuildScopeParams {
  * Nota de governança: a permissividade de CONSULTIVO (todos os reads) é
  * conforme o spec. Vale revisitar na sessão 1.5 se quisermos endurecer
  * para "interseção entre reads do catálogo e allowedActions".
+ *
+ * Catálogo MCP (sessão 2.77): `mcpCatalog` em `BuildScopeParams` é mesclado
+ * com o catálogo nativo apenas para a chamada corrente — tools MCP não
+ * ficam gravadas na instância do builder, porque variam por agente/conector
+ * e a instância é compartilhada (injetada uma vez em `server.ts`).
  */
 export class ToolScopeBuilder {
   constructor(private readonly catalog: readonly Tool[]) {}
 
   build(params: BuildScopeParams): ToolScope {
-    const tools = this.filterTools(params.autonomyLevel, params.allowedActions)
+    const fullCatalog = params.mcpCatalog
+      ? [...this.catalog, ...params.mcpCatalog]
+      : this.catalog
+    const tools = this.filterTools(fullCatalog, params.autonomyLevel, params.allowedActions)
 
     return Object.freeze({
       agentId:       params.agentId,
@@ -45,15 +61,16 @@ export class ToolScopeBuilder {
   }
 
   private filterTools(
+    catalog: readonly Tool[],
     level: AutonomyLevel,
     allowedActions: readonly string[],
   ): Tool[] {
     if (level === 'CONSULTIVO') {
-      return this.catalog.filter(t => !t.isWrite)
+      return catalog.filter(t => !t.isWrite)
     }
 
     // ASSISTIDO / AUTONOMO — match por nome exato ou prefixo
-    return this.catalog.filter(t =>
+    return catalog.filter(t =>
       allowedActions.some(action =>
         t.name === action || t.name.startsWith(action),
       ),

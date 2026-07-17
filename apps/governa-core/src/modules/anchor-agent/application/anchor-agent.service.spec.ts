@@ -17,8 +17,8 @@ const mockScope = {
   tenantId:      TENANT,
   autonomyLevel: 'CONSULTIVO' as const,
   tools:         [
-    { name: 'read_protheus_pedido',  description: 'd', isWrite: false, execute: jest.fn() },
-    { name: 'read_protheus_cliente', description: 'd', isWrite: false, execute: jest.fn() },
+    { name: 'read_protheus_pedido',  description: 'd', isWrite: false, source: 'native' as const, execute: jest.fn() },
+    { name: 'read_protheus_cliente', description: 'd', isWrite: false, source: 'native' as const, execute: jest.fn() },
   ],
   policyId:      'pol-1',
   policyVersion: '1',
@@ -274,7 +274,7 @@ describe('AnchorAgentService', () => {
     it('When scope excludes a tool, Then its def is not sent to llm (but escalate_to_human is)', async () => {
       const limitedScope = {
         ...mockScope,
-        tools: [{ name: 'read_protheus_pedido', description: 'd', isWrite: false, execute: jest.fn() }],
+        tools: [{ name: 'read_protheus_pedido', description: 'd', isWrite: false, source: 'native' as const, execute: jest.fn() }],
       }
       const llm: LlmClient = { chat: jest.fn().mockResolvedValue(makeTextResult('ok')) }
       const svc = new AnchorAgentService(makePolicyEngine({ scope: limitedScope }), new Map(), PROTHEUS_TOOL_DEFS, llm)

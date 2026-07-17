@@ -5,10 +5,11 @@ import { ToolScopeBuilder } from './tool-scope.builder'
 /**
  * Helper de fixtures — tools sintéticas, sem efeito colateral.
  */
-const t = (name: string, isWrite: boolean): Tool => ({
+const t = (name: string, isWrite: boolean, source: Tool['source'] = 'native'): Tool => ({
   name,
   description: `fixture:${name}`,
   isWrite,
+  source,
   execute: async () => undefined,
 })
 
@@ -88,6 +89,49 @@ describe('ToolScopeBuilder', () => {
         'read_protheus_pedido',
         'write_protheus_pedido_status',
       ])
+    })
+  })
+
+  describe('Given an mcpCatalog is passed for the call', () => {
+    it('When autonomy is CONSULTIVO Then mcpCatalog reads are merged with native reads', () => {
+      const mcpTool = t('mcp__protheus-plus__read_faturas', false, 'mcp')
+
+      const scope = builder.build({
+        ...baseParams,
+        autonomyLevel: 'CONSULTIVO',
+        allowedActions: [],
+        mcpCatalog: [mcpTool],
+      })
+
+      expect(scope.tools.map(x => x.name).sort()).toEqual([
+        'mcp__protheus-plus__read_faturas',
+        'read_politica_atendimento',
+        'read_protheus_cliente',
+        'read_protheus_pedido',
+      ])
+    })
+
+    it('When autonomy is ASSISTIDO Then mcpCatalog tools are only included if in allowedActions', () => {
+      const mcpTool = t('mcp__protheus-plus__write_fatura_baixa', true, 'mcp')
+
+      const scope = builder.build({
+        ...baseParams,
+        autonomyLevel: 'ASSISTIDO',
+        allowedActions: ['mcp__protheus-plus__write_fatura_baixa'],
+        mcpCatalog: [mcpTool],
+      })
+
+      expect(scope.tools).toEqual([mcpTool])
+    })
+
+    it('When mcpCatalog is omitted Then behavior is unchanged (native catalog only)', () => {
+      const scope = builder.build({
+        ...baseParams,
+        autonomyLevel: 'CONSULTIVO',
+        allowedActions: [],
+      })
+
+      expect(scope.tools.every(x => x.source === 'native')).toBe(true)
     })
   })
 

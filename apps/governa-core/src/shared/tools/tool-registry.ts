@@ -27,6 +27,7 @@ const tool = (
   name,
   description,
   isWrite,
+  source: 'native',
   execute: notImplemented,
 })
 

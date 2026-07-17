@@ -31,7 +31,7 @@ import { createTestPrisma, createTestTenant, deleteTestTenant } from './helpers/
 // ─── Catálogo de tools (mesmo padrão dos testes unitários) ───────────────────
 
 const makeT = (name: string, isWrite: boolean): Tool => ({
-  name, description: name, isWrite, execute: async () => undefined,
+  name, description: name, isWrite, source: 'native', execute: async () => undefined,
 })
 
 const TOOL_CATALOG: readonly Tool[] = [

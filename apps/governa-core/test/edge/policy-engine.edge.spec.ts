@@ -17,7 +17,7 @@ import { InMemoryAgentRepository } from '../fixtures/in-memory-agent.repository'
  */
 
 const t = (name: string, isWrite: boolean): Tool => ({
-  name, description: name, isWrite, execute: async () => undefined,
+  name, description: name, isWrite, source: 'native', execute: async () => undefined,
 })
 
 const CATALOG: readonly Tool[] = [

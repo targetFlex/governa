@@ -38,7 +38,7 @@ const AGENT_A  = 'agent-tenant-a-001'
 const AGENT_B  = 'agent-tenant-b-001'
 
 const makeT = (name: string, isWrite: boolean): Tool => ({
-  name, description: name, isWrite, execute: async () => undefined,
+  name, description: name, isWrite, source: 'native', execute: async () => undefined,
 })
 
 const CATALOG: readonly Tool[] = [
