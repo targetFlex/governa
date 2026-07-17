@@ -162,7 +162,7 @@ async function bootstrap(): Promise<void> {
     : undefined
 
   if (anchorAgentService) {
-    console.log('[governa-core] AnchorAgentService ativo (modelo claude-sonnet-4-6)')
+    console.log('[governa-core] AnchorAgentService ativo (modelo claude-sonnet-5)')
   }
 
   // ── E3.3: FluigWebhookService (opt-in — requer FLUIG_API_KEY + ANTHROPIC_API_KEY + PII_HMAC_KEY) ──

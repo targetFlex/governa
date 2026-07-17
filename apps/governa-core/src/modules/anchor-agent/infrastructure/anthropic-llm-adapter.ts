@@ -1,7 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk'
 import type { LlmClient, LlmChatParams, LlmChatResult, LlmContentBlock } from '../../../shared/ports/llm-client.port'
 
-const MODEL = 'claude-sonnet-4-6'
+const MODEL = 'claude-sonnet-5'
 
 export class AnthropicLlmAdapter implements LlmClient {
   constructor(private readonly client: Anthropic) {}

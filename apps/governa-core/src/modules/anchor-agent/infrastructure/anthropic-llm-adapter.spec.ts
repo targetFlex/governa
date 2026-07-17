@@ -27,7 +27,7 @@ describe('AnthropicLlmAdapter.chat', () => {
     const result  = await adapter.chat(PARAMS)
 
     expect(create).toHaveBeenCalledWith(expect.objectContaining({
-      model:      'claude-sonnet-4-6',
+      model:      'claude-sonnet-5',
       max_tokens: 1024,
       system:     PARAMS.system,
       messages:   PARAMS.messages,
