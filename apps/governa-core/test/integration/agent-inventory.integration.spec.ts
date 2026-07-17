@@ -167,6 +167,51 @@ describe('Given um agente existente', () => {
   })
 })
 
+// ─── Conectores MCP (Fase 3 — sessão 2.75) ────────────────────────────────────
+
+describe('Given mcpServers com url/headers (conectores MCP funcionais)', () => {
+  it('create() persiste e round-trip preserva url e headers', async () => {
+    const created = await repo.create({
+      ...agentInput({ name: 'Agente com Conector MCP' }),
+      mcpServers: [{
+        id: 'mcp-1', name: 'Servidor MCP', url: 'https://mcp.example.com/mcp',
+        headers: { Authorization: 'Bearer token-abc' },
+      }],
+    })
+
+    expect(created.mcpServers).toEqual([{
+      id: 'mcp-1', name: 'Servidor MCP', url: 'https://mcp.example.com/mcp',
+      headers: { Authorization: 'Bearer token-abc' },
+    }])
+
+    const fetched = await repo.findByIdForTenant(created.id, tenantId)
+    expect(fetched!.mcpServers).toEqual(created.mcpServers)
+  })
+
+  it('update() altera mcpServers preservando os demais campos', async () => {
+    const created = await repo.create(agentInput({
+      name: 'Agente para Atualizar Conector',
+    }))
+
+    const updated = await repo.update(created.id, tenantId, {
+      mcpServers: [{ id: 'mcp-2', name: 'Novo Conector', url: 'https://outro.example.com' }],
+    })
+
+    expect(updated!.mcpServers).toEqual([
+      { id: 'mcp-2', name: 'Novo Conector', url: 'https://outro.example.com' },
+    ])
+    expect(updated!.name).toBe('Agente para Atualizar Conector') // inalterado
+  })
+
+  it('mcpServers ausente (agente legado) retorna array vazio, sem lançar', async () => {
+    const created = await repo.create(agentInput({ name: 'Agente Legado Sem Conector' }))
+    expect(created.mcpServers).toEqual([])
+
+    const fetched = await repo.findByIdForTenant(created.id, tenantId)
+    expect(fetched!.mcpServers).toEqual([])
+  })
+})
+
 // ─── Transições de status ─────────────────────────────────────────────────────
 
 describe('Given um agente em SANDBOX', () => {

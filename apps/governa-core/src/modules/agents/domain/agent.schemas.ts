@@ -6,13 +6,27 @@ import { z } from 'zod'
  */
 
 /**
- * Referência a um conector MCP (E8 — metadado descritivo nesta fase).
+ * Referência a um conector MCP.
  * `icon` é opcional (slug/chave de ícone usado pelo frontend).
+ * `url` habilita conexão real via MCP remoto (Streamable HTTP) — sem stdio,
+ * por risco de RCE num backend multi-tenant. Sem `url`, o conector continua
+ * sendo apenas metadado descritivo (comportamento anterior, preservado).
+ * `headers` carrega credenciais (ex.: Bearer token) em texto simples, no
+ * mesmo nível de proteção do restante da tabela — débito de segurança a
+ * resolver (cofre de secrets dedicado) antes de conectar servidores MCP de
+ * terceiros reais em produção.
  */
 export const McpServerRefSchema = z.object({
-  id:   z.string().min(1).max(120),
-  name: z.string().min(1).max(120),
-  icon: z.string().max(120).optional(),
+  id:      z.string().min(1).max(120),
+  name:    z.string().min(1).max(120),
+  icon:    z.string().max(120).optional(),
+  url:     z.string()
+             .max(2048)
+             .refine(v => /^https?:\/\//i.test(v), 'url deve ser http:// ou https:// (transporte MCP remoto — sem stdio)')
+             .optional(),
+  headers: z.record(z.string().min(1).max(200), z.string().max(4000))
+             .refine(h => Object.keys(h).length <= 20, 'máximo de 20 headers')
+             .optional(),
 })
 
 export type McpServerRefBody = z.infer<typeof McpServerRefSchema>
@@ -37,16 +51,17 @@ export const CreateAgentSchema = z.object({
 
 export type CreateAgentBody = z.infer<typeof CreateAgentSchema>
 
-// UpdateAgentSchema NÃO recebe os campos estendidos (E8) nesta fase:
-// a jornada de templates/preview atua apenas na criação (POST /agents).
-// PATCH permanece com o contrato original para não introduzir campos que
-// o repositório de update ainda não persiste (evita no-op silencioso).
+// mcpServers liberado no PATCH a partir da Fase 3 (sessão 2.75) — o
+// repositório de update passa a persistir o campo (ver
+// prisma-agent-inventory.repository.ts). Os demais campos estendidos
+// (systemPrompt, skills, templateId) continuam de criação apenas.
 export const UpdateAgentSchema = z.object({
   name:        z.string().min(1).max(120).optional(),
   description: z.string().max(500).optional(),
   policyId:    z.string().uuid('policyId deve ser UUID').nullable().optional(),
   modelId:     z.string().min(1).max(120).optional(),
   tools:       z.array(z.string().min(1)).optional(),
+  mcpServers:  z.array(McpServerRefSchema).max(MCP_SERVERS_MAX, `máximo de ${MCP_SERVERS_MAX} conectores MCP`).optional(),
 }).strict()
 
 export type UpdateAgentBody = z.infer<typeof UpdateAgentSchema>

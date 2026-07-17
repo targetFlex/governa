@@ -7,6 +7,7 @@ import type {
   UpdateAgentInput,
   McpServerRef,
 } from '../domain/agent-inventory.entity'
+import { McpServerRefSchema } from '../domain/agent.schemas'
 import type { AgentStatus } from '../../policies/domain/agent.entity'
 
 /**
@@ -27,7 +28,7 @@ export class PrismaAgentInventoryRepository implements AgentInventoryRepository 
       where:   { tenantId },
       orderBy: { createdAt: 'desc' },
     })
-    return agents.map(this.toEntity)
+    return agents.map(agent => this.toEntity(agent))
   }
 
   async findByIdForTenant(id: string, tenantId: string): Promise<AgentInventoryEntity | null> {
@@ -75,6 +76,7 @@ export class PrismaAgentInventoryRepository implements AgentInventoryRepository 
         ...(input.policyId    !== undefined && { policyId:    input.policyId }),
         ...(input.modelId     !== undefined && { modelId:     input.modelId }),
         ...(input.tools       !== undefined && { tools:       [...input.tools] }),
+        ...(input.mcpServers  !== undefined && { mcpServers:  [...input.mcpServers] as unknown as Prisma.InputJsonValue }),
       },
     })
     return this.toEntity(agent)
@@ -131,12 +133,30 @@ export class PrismaAgentInventoryRepository implements AgentInventoryRepository 
       systemPrompt: agent.systemPrompt,
       // mcp_servers / skills são colunas JSONB — Prisma devolve JsonValue.
       // Normalizamos para os tipos de domínio (default array vazio se null).
-      mcpServers:   Array.isArray(agent.mcpServers) ? (agent.mcpServers as McpServerRef[]) : [],
+      mcpServers:   this.parseMcpServers(agent.mcpServers),
       skills:       Array.isArray(agent.skills) ? (agent.skills as string[]) : [],
       templateId:   agent.templateId,
       createdAt:    agent.createdAt,
       updatedAt:    agent.updatedAt,
       lastActiveAt: agent.lastActiveAt,
     }
+  }
+
+  /**
+   * Valida o shape de mcpServers vindo do banco contra o schema Zod atual.
+   * Dados legados ou corrompidos (shape inesperado) caem para array vazio
+   * em vez de propagar um cast inseguro para o domínio.
+   */
+  private parseMcpServers(raw: unknown): McpServerRef[] {
+    if (!Array.isArray(raw)) return []
+    const parsed = McpServerRefSchema.array().safeParse(raw)
+    if (!parsed.success) {
+      console.warn(
+        '[PrismaAgentInventoryRepository] mcpServers com shape inválido, retornando vazio',
+        parsed.error.issues,
+      )
+      return []
+    }
+    return parsed.data
   }
 }

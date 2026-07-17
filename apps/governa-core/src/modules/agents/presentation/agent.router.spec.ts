@@ -281,6 +281,57 @@ describe('POST /agents', () => {
     })
     expect(status).toBe(400)
   })
+
+  // ── Conectores MCP funcionais (Fase 3 — sessão 2.75) ──────────────────────
+
+  it('201 — mcpServers com url http(s) válida e headers', async () => {
+    const { status, body } = await req('/agents', {
+      method: 'POST',
+      token:  makeToken(TENANT_A),
+      body:   {
+        name: 'Agente MCP', ownerId: randomUUID(), modelId: 'model',
+        mcpServers: [{
+          id: 'mcp-1', name: 'Servidor MCP', url: 'https://mcp.example.com/mcp',
+          headers: { Authorization: 'Bearer token-123' },
+        }],
+      },
+    })
+
+    expect(status).toBe(201)
+    const data = body.data as { mcpServers: Array<{ url: string; headers: Record<string, string> }> }
+    expect(data.mcpServers[0].url).toBe('https://mcp.example.com/mcp')
+    expect(data.mcpServers[0].headers).toEqual({ Authorization: 'Bearer token-123' })
+  })
+
+  it('201 — mcpServers sem url continua válido (metadado descritivo)', async () => {
+    const { status, body } = await req('/agents', {
+      method: 'POST',
+      token:  makeToken(TENANT_A),
+      body:   { name: 'Agente X', ownerId: randomUUID(), modelId: 'model', mcpServers: [{ id: 'mcp-1', name: 'Sem url' }] },
+    })
+    expect(status).toBe(201)
+    const data = body.data as { mcpServers: Array<{ url?: string }> }
+    expect(data.mcpServers[0].url).toBeUndefined()
+  })
+
+  it('400 — mcpServers com url de protocolo não http(s)', async () => {
+    const { status } = await req('/agents', {
+      method: 'POST',
+      token:  makeToken(TENANT_A),
+      body:   { name: 'Agente X', ownerId: randomUUID(), modelId: 'model', mcpServers: [{ id: 'mcp-1', name: 'X', url: 'ftp://mcp.example.com' }] },
+    })
+    expect(status).toBe(400)
+  })
+
+  it('400 — mcpServers com mais de 20 headers', async () => {
+    const headers = Object.fromEntries(Array.from({ length: 21 }, (_, i) => [`h-${i}`, 'v']))
+    const { status } = await req('/agents', {
+      method: 'POST',
+      token:  makeToken(TENANT_A),
+      body:   { name: 'Agente X', ownerId: randomUUID(), modelId: 'model', mcpServers: [{ id: 'mcp-1', name: 'X', url: 'https://mcp.example.com', headers }] },
+    })
+    expect(status).toBe(400)
+  })
 })
 
 // ---------------------------------------------------------------------------
@@ -324,6 +375,21 @@ describe('PATCH /agents/:id', () => {
       body:   { status: 'ACTIVE' }, // campo não permitido
     })
     expect(status).toBe(400)
+  })
+
+  it('200 — atualiza mcpServers (Fase 3 — sessão 2.75)', async () => {
+    const agent = makeAgent({ mcpServers: [{ id: 'old', name: 'Antigo' }] })
+    repo.seed([agent])
+
+    const { status, body } = await req(`/agents/${agent.id}`, {
+      method: 'PATCH',
+      token:  makeToken(TENANT_A),
+      body:   { mcpServers: [{ id: 'novo', name: 'Novo Conector', url: 'https://mcp.example.com' }] },
+    })
+
+    expect(status).toBe(200)
+    const data = body.data as { mcpServers: Array<{ id: string; url?: string }> }
+    expect(data.mcpServers).toEqual([{ id: 'novo', name: 'Novo Conector', url: 'https://mcp.example.com' }])
   })
 })
 

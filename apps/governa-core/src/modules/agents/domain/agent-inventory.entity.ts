@@ -3,13 +3,17 @@ import type { AgentStatus } from '../../policies/domain/agent.entity'
 /**
  * Referência a um conector MCP habilitado no agente.
  *
- * Nesta fase (E8, fase 1) é apenas metadado descritivo — não há integração
- * MCP funcional. `icon` é opcional (chave/slug de ícone no frontend).
+ * `icon` é opcional (chave/slug de ícone no frontend). `url` habilita conexão
+ * real via MCP remoto (Streamable HTTP); sem `url` o conector continua sendo
+ * apenas metadado descritivo. `headers` carrega credenciais em texto simples
+ * — débito de segurança documentado, ver agent.schemas.ts.
  */
 export interface McpServerRef {
-  readonly id:    string
-  readonly name:  string
-  readonly icon?: string
+  readonly id:      string
+  readonly name:    string
+  readonly icon?:   string
+  readonly url?:    string
+  readonly headers?: Readonly<Record<string, string>>
 }
 
 /**
@@ -76,4 +80,5 @@ export interface UpdateAgentInput {
   readonly policyId?:    string | null
   readonly modelId?:     string
   readonly tools?:       readonly string[]
+  readonly mcpServers?:  readonly McpServerRef[]
 }

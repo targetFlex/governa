@@ -83,6 +83,7 @@ export class InMemoryAgentInventoryRepository implements AgentInventoryRepositor
       ...(input.policyId    !== undefined && { policyId:    input.policyId }),
       ...(input.modelId     !== undefined && { modelId:     input.modelId }),
       ...(input.tools       !== undefined && { tools:       [...input.tools] }),
+      ...(input.mcpServers  !== undefined && { mcpServers:  [...input.mcpServers] }),
       updatedAt: new Date(),
     }
     this.store[idx] = updated
