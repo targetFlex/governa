@@ -519,7 +519,7 @@ export class AgenteFormComponent implements OnInit, OnDestroy {
         this.store.clearCreatedAgent();
         this.router.navigate(['/agentes']);
       }
-    });
+    }, { allowSignalWrites: true });
   }
 
   ngOnInit(): void {
