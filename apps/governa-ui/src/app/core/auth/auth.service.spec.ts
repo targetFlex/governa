@@ -74,7 +74,7 @@ describe('AuthService', () => {
     it('deve fazer POST para /auth/login', () => {
       service.login(CREDENTIALS).subscribe();
 
-      const req = http.expectOne(`${environment.gatewayBaseUrl}/auth/login`);
+      const req = http.expectOne(`${environment.coreBaseUrl}/auth/login`);
       expect(req.request.method).toBe('POST');
       expect(req.request.body).toEqual(CREDENTIALS);
 
@@ -84,7 +84,7 @@ describe('AuthService', () => {
     it('deve setar o token no signal após sucesso', () => {
       service.login(CREDENTIALS).subscribe();
 
-      const req = http.expectOne(`${environment.gatewayBaseUrl}/auth/login`);
+      const req = http.expectOne(`${environment.coreBaseUrl}/auth/login`);
       req.flush(TOKEN_RESPONSE);
 
       expect(service.getToken()).toBe(TOKEN_RESPONSE.token);
@@ -98,7 +98,7 @@ describe('AuthService', () => {
         error: () => { errorEmitted = true; },
       });
 
-      const req = http.expectOne(`${environment.gatewayBaseUrl}/auth/login`);
+      const req = http.expectOne(`${environment.coreBaseUrl}/auth/login`);
       req.flush({ message: 'Unauthorized' }, { status: 401, statusText: 'Unauthorized' });
 
       expect(service.getToken()).toBeNull();
@@ -112,7 +112,7 @@ describe('AuthService', () => {
         done();
       });
 
-      const req = http.expectOne(`${environment.gatewayBaseUrl}/auth/login`);
+      const req = http.expectOne(`${environment.coreBaseUrl}/auth/login`);
       req.flush(TOKEN_RESPONSE);
     });
   });
@@ -123,7 +123,7 @@ describe('AuthService', () => {
     beforeEach(() => {
       // Pré-autentica
       service.login(CREDENTIALS).subscribe();
-      const req = http.expectOne(`${environment.gatewayBaseUrl}/auth/login`);
+      const req = http.expectOne(`${environment.coreBaseUrl}/auth/login`);
       req.flush(TOKEN_RESPONSE);
     });
 
@@ -148,7 +148,7 @@ describe('AuthService', () => {
 
     it('deve retornar o token após login bem-sucedido', () => {
       service.login(CREDENTIALS).subscribe();
-      http.expectOne(`${environment.gatewayBaseUrl}/auth/login`).flush(TOKEN_RESPONSE);
+      http.expectOne(`${environment.coreBaseUrl}/auth/login`).flush(TOKEN_RESPONSE);
 
       expect(service.getToken()).toBe(TOKEN_RESPONSE.token);
     });
@@ -167,7 +167,7 @@ describe('AuthService', () => {
       const jwtWithUserId = `header.${payload}.signature`;
 
       service.login(CREDENTIALS).subscribe();
-      http.expectOne(`${environment.gatewayBaseUrl}/auth/login`).flush({
+      http.expectOne(`${environment.coreBaseUrl}/auth/login`).flush({
         token: jwtWithUserId,
         expiresIn: 3600,
       });
@@ -180,7 +180,7 @@ describe('AuthService', () => {
       const jwtWithoutUserId = `header.${payload}.signature`;
 
       service.login(CREDENTIALS).subscribe();
-      http.expectOne(`${environment.gatewayBaseUrl}/auth/login`).flush({
+      http.expectOne(`${environment.coreBaseUrl}/auth/login`).flush({
         token: jwtWithoutUserId,
         expiresIn: 3600,
       });
@@ -190,7 +190,7 @@ describe('AuthService', () => {
 
     it('deve retornar null quando token é malformado (sem payload base64 válido)', () => {
       service.login(CREDENTIALS).subscribe();
-      http.expectOne(`${environment.gatewayBaseUrl}/auth/login`).flush({
+      http.expectOne(`${environment.coreBaseUrl}/auth/login`).flush({
         token: 'token-invalido-sem-pontos',
         expiresIn: 3600,
       });
