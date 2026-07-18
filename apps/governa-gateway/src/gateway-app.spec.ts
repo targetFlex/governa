@@ -93,6 +93,18 @@ const clienteFixture: ClienteInterno = {
   enderecoPseudo:  'e'.repeat(64),
 }
 
+const clientePiiFixture = {
+  codigoCliente: 'CLI001',
+  loja:          '01',
+  nome:          'Empresa Teste LTDA',
+  tipo:          'JURIDICA' as const,
+  ativo:         true,
+  documento:     '12345678000195',
+  email:         'contato@empresa.com.br',
+  telefone:      '11999887766',
+  endereco:      'Av. Paulista, 1000|São Paulo|SP|01310100',
+}
+
 // ── Suite ─────────────────────────────────────────────────────
 
 describe('GatewayHttpServer', () => {
@@ -100,15 +112,17 @@ describe('GatewayHttpServer', () => {
   let port: number
   let mockPedido: jest.MockedFunction<IPedidoConnector['execute']>
   let mockCliente: jest.MockedFunction<IClienteConnector['execute']>
+  let mockClientePii: jest.MockedFunction<IClienteConnector['executePii']>
   let mockAuth: jest.MockedFunction<IAuthLoginConnector['execute']>
 
   beforeEach(async () => {
-    mockPedido  = jest.fn()
-    mockCliente = jest.fn()
-    mockAuth    = jest.fn()
+    mockPedido     = jest.fn()
+    mockCliente    = jest.fn()
+    mockClientePii = jest.fn()
+    mockAuth       = jest.fn()
     server = new GatewayHttpServer(
       { execute: mockPedido  },
-      { execute: mockCliente },
+      { execute: mockCliente, executePii: mockClientePii },
       { execute: mockAuth    },
     )
     port = await server.listen(0) // porta aleatória
@@ -246,6 +260,59 @@ describe('GatewayHttpServer', () => {
     })
   })
 
+  // ── GET /clientes/pii ────────────────────────────────────────
+
+  describe('GET /clientes/pii', () => {
+    it('CP1: 200 com PII em texto claro quando cliente encontrado', async () => {
+      mockClientePii.mockResolvedValueOnce(clientePiiFixture)
+      const res = await get(port, '/clientes/pii?codigoCliente=CLI001&loja=01')
+
+      expect(res.status).toBe(200)
+      const body = res.body as { data: typeof clientePiiFixture }
+      expect(body.data.nome).toBe('Empresa Teste LTDA')
+      expect(body.data.documento).toBe('12345678000195')
+    })
+
+    it('CP2: 400 quando codigoCliente está ausente', async () => {
+      const res = await get(port, '/clientes/pii?loja=01')
+      expect(res.status).toBe(400)
+      expect((res.body as any).code).toBe('VALIDATION_ERROR')
+      expect(mockClientePii).not.toHaveBeenCalled()
+    })
+
+    it('CP2b: 400 quando loja está ausente', async () => {
+      const res = await get(port, '/clientes/pii?codigoCliente=CLI001')
+      expect(res.status).toBe(400)
+      expect((res.body as any).code).toBe('VALIDATION_ERROR')
+      expect(mockClientePii).not.toHaveBeenCalled()
+    })
+
+    it('CP3: 404 quando conector retorna null', async () => {
+      mockClientePii.mockResolvedValueOnce(null)
+      const res = await get(port, '/clientes/pii?codigoCliente=ZZZ999&loja=01')
+
+      expect(res.status).toBe(404)
+      expect((res.body as any).code).toBe('NOT_FOUND')
+    })
+
+    it('502 quando conector lança UpstreamError PROTHEUS_INTERNAL_ERROR', async () => {
+      mockClientePii.mockRejectedValueOnce(
+        new UpstreamError('PROTHEUS_INTERNAL_ERROR', 'Erro Protheus', 500, 'test'),
+      )
+      const res = await get(port, '/clientes/pii?codigoCliente=CLI001&loja=01')
+
+      expect(res.status).toBe(502)
+      expect((res.body as any).code).toBe('PROTHEUS_INTERNAL_ERROR')
+    })
+
+    it('passa codigoCliente e loja corretos para o conector', async () => {
+      mockClientePii.mockResolvedValueOnce(clientePiiFixture)
+      await get(port, '/clientes/pii?codigoCliente=CLI001&loja=02')
+
+      expect(mockClientePii).toHaveBeenCalledWith({ codigoCliente: 'CLI001', loja: '02' })
+    })
+  })
+
   // ── GET /clientes ───────────────────────────────────────────
 
   describe('GET /clientes', () => {
@@ -325,7 +392,11 @@ describe('GatewayHttpServer', () => {
     })
 
     it('close() sem server iniciado resolve imediatamente', async () => {
-      const s = new GatewayHttpServer({ execute: jest.fn() }, { execute: jest.fn() }, { execute: jest.fn() })
+      const s = new GatewayHttpServer(
+        { execute: jest.fn() },
+        { execute: jest.fn(), executePii: jest.fn() },
+        { execute: jest.fn() },
+      )
       await expect(s.close()).resolves.toBeUndefined()
     })
   })

@@ -87,7 +87,7 @@ import { PedidoCardComponent } from '../../../shared/components/pedido-card/pedi
             </p>
           } @else {
             <div class="pedidos-list__grid">
-              @for (pedido of store.pedidos(); track pedido.id) {
+              @for (pedido of store.pedidos(); track pedido.numeroPedido) {
                 <app-pedido-card [pedido]="pedido" />
               }
             </div>

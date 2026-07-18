@@ -49,6 +49,7 @@ import { AuditService }                     from './modules/audit/application/au
 import { AuditQueryService }                from './modules/audit/application/audit.query.service'
 import { ConsultarPedidoUseCase }           from './modules/pedidos/application/consultar-pedido.use-case'
 import { ConsultarClienteUseCase }          from './modules/clientes/application/consultar-cliente.use-case'
+import { ReidentificarClienteUseCase }      from './modules/clientes/application/reidentificar-cliente.use-case'
 import { PolicyService }                    from './modules/policies/application/policy.service'
 import { PolicyEngine }                     from './modules/policies/application/policy.engine'
 import { ToolScopeBuilder }                 from './modules/policies/application/tool-scope.builder'
@@ -130,6 +131,7 @@ async function bootstrap(): Promise<void> {
   const policyEngine            = new PolicyEngine(policyAgentRepo, new ToolScopeBuilder(ALL_TOOLS), policyViolationAlertService)
   const consultarPedidoUseCase  = new ConsultarPedidoUseCase(gatewayClient, auditService)
   const consultarClienteUseCase = new ConsultarClienteUseCase(gatewayClient, auditService)
+  const reidentificarClienteUseCase = new ReidentificarClienteUseCase(gatewayClient, auditService)
 
   // ── E5.4: NotificationService (opt-in — ativo somente se SMTP_HOST estiver definido) ──
   const notificationService = process.env.SMTP_HOST
@@ -187,6 +189,7 @@ async function bootstrap(): Promise<void> {
     agentService,
     consultarPedidoUseCase,
     consultarClienteUseCase,
+    reidentificarClienteUseCase,
     policyService,
     policyEngine,
     auditQueryService,

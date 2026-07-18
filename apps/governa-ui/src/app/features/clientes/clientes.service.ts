@@ -49,7 +49,7 @@ export const ClientesStore = signalStore(
     isEmpty: computed(() => !store.loading() && store.clientes().length === 0),
     hasError: computed(() => store.error() !== null),
     totalPages: computed(() => Math.ceil(store.total() / store.pageSize())),
-    clientesAtivos: computed(() => store.clientes().filter((c) => c.ativo)),
+    clientesAtivos: computed(() => store.clientes().filter((c) => !c.bloqueado)),
   })),
   withMethods((store, http = inject(HttpClient)) => ({
     loadClientes(page = 1, pageSize = 20, filtro = ''): void {

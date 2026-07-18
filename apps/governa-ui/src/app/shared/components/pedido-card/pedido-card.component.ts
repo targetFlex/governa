@@ -3,24 +3,30 @@
 //
 // Componente standalone que exibe dados resumidos de um Pedido.
 //
+// PedidoInterno nunca carrega nome de cliente em texto claro —
+// só clienteId/loja. O nome é resolvido sob demanda ("Revelar
+// cliente") via ClientePiiService, mesmo mecanismo do cliente-card.
+//
 // Acessibilidade (WCAG 2.1 AA):
 //   - <article> com aria-label descritivo
 //   - <dl> semântico para pares chave/valor
 //   - Badge de status com aria-label explícito
 //   - Contraste mínimo 4.5:1 em todas as variantes de cor
 // ============================================================
-import { Component, Input } from '@angular/core';
+import { Component, Input, inject, signal } from '@angular/core';
 import { CommonModule, CurrencyPipe, DatePipe } from '@angular/common';
 import { Pedido, StatusPedido } from '../../models/pedido.model';
+import { ClientePii } from '../../models/cliente.model';
+import { ClientePiiService } from '../../services/cliente-pii.service';
 
 type StatusMeta = { label: string; bg: string; color: string };
+type RevealState = 'hidden' | 'loading' | 'revealed' | 'error';
 
 const STATUS_META: Record<StatusPedido, StatusMeta> = {
-  ABERTO:       { label: 'Aberto',       bg: '#dbeafe', color: '#1e40af' },
-  EM_APROVACAO: { label: 'Em aprovação', bg: '#fef9c3', color: '#854d0e' },
-  APROVADO:     { label: 'Aprovado',     bg: '#dcfce7', color: '#166534' },
-  CANCELADO:    { label: 'Cancelado',    bg: '#fee2e2', color: '#991b1b' },
-  ENCERRADO:    { label: 'Encerrado',    bg: '#f3f4f6', color: '#374151' },
+  ABERTO:    { label: 'Aberto',    bg: '#dbeafe', color: '#1e40af' },
+  LIBERADO:  { label: 'Liberado',  bg: '#dcfce7', color: '#166534' },
+  BLOQUEADO: { label: 'Bloqueado', bg: '#fee2e2', color: '#991b1b' },
+  ENCERRADO: { label: 'Encerrado', bg: '#f3f4f6', color: '#374151' },
 };
 
 @Component({
@@ -30,12 +36,12 @@ const STATUS_META: Record<StatusPedido, StatusMeta> = {
   template: `
     <article
       class="pedido-card"
-      [class.pedido-card--cancelado]="pedido.status === 'CANCELADO'"
-      [attr.aria-label]="'Pedido: ' + pedido.numero + ', cliente: ' + pedido.clienteNome"
+      [class.pedido-card--bloqueado]="pedido.status === 'BLOQUEADO'"
+      [attr.aria-label]="'Pedido: ' + pedido.numeroPedido + ', cliente: ' + pedido.clienteId"
     >
       <!-- Cabeçalho ─────────────────────────────────────────── -->
       <header class="pedido-card__header">
-        <h2 class="pedido-card__numero">{{ pedido.numero }}</h2>
+        <h2 class="pedido-card__numero">{{ pedido.numeroPedido }}</h2>
         <span
           class="pedido-card__status"
           [style.background]="statusMeta.bg"
@@ -51,11 +57,24 @@ const STATUS_META: Record<StatusPedido, StatusMeta> = {
       <dl class="pedido-card__dados">
         <div class="pedido-card__row">
           <dt>Cliente</dt>
-          <dd>{{ pedido.clienteNome }}</dd>
+          <dd>
+            @if (revealState() === 'revealed' && pii()) {
+              {{ pii()!.nome }}
+            } @else {
+              <button
+                type="button"
+                class="pedido-card__reveal-btn"
+                [disabled]="revealState() === 'loading'"
+                (click)="revealCliente()"
+              >
+                {{ revealState() === 'loading' ? 'Carregando…' : pedido.clienteId }}
+              </button>
+            }
+          </dd>
         </div>
         <div class="pedido-card__row">
           <dt>Valor Total</dt>
-          <dd>{{ pedido.valor | currency: pedido.moeda : 'symbol-narrow' : '1.2-2' }}</dd>
+          <dd>{{ pedido.valorTotal | currency: 'BRL' : 'symbol-narrow' : '1.2-2' }}</dd>
         </div>
         <div class="pedido-card__row">
           <dt>Itens</dt>
@@ -65,12 +84,6 @@ const STATUS_META: Record<StatusPedido, StatusMeta> = {
           <dt>Emissão</dt>
           <dd>{{ pedido.dataEmissao | date: 'dd/MM/yyyy' }}</dd>
         </div>
-        @if (pedido.dataEntregaPrevista) {
-          <div class="pedido-card__row">
-            <dt>Entrega prevista</dt>
-            <dd>{{ pedido.dataEntregaPrevista | date: 'dd/MM/yyyy' }}</dd>
-          </div>
-        }
       </dl>
     </article>
   `,
@@ -85,7 +98,7 @@ const STATUS_META: Record<StatusPedido, StatusMeta> = {
       font-family: inherit;
     }
 
-    .pedido-card--cancelado {
+    .pedido-card--bloqueado {
       opacity: 0.65;
       background: #f9fafb;
     }
@@ -141,12 +154,46 @@ const STATUS_META: Record<StatusPedido, StatusMeta> = {
       text-align: right;
       word-break: break-word;
     }
+
+    .pedido-card__reveal-btn {
+      background: #ffffff;
+      color: #1d4ed8;
+      border: 1px solid #1d4ed8;
+      border-radius: 6px;
+      padding: 0.15rem 0.6rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .pedido-card__reveal-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
   `],
 })
 export class PedidoCardComponent {
   @Input({ required: true }) pedido!: Pedido;
 
+  private readonly piiService = inject(ClientePiiService);
+
+  readonly revealState = signal<RevealState>('hidden');
+  readonly pii = signal<ClientePii | null>(null);
+
   get statusMeta(): StatusMeta {
     return STATUS_META[this.pedido.status];
+  }
+
+  revealCliente(): void {
+    this.revealState.set('loading');
+    this.piiService.reveal(this.pedido.clienteId, this.pedido.loja).subscribe({
+      next: (pii) => {
+        this.pii.set(pii);
+        this.revealState.set('revealed');
+      },
+      error: () => {
+        this.revealState.set('error');
+      },
+    });
   }
 }

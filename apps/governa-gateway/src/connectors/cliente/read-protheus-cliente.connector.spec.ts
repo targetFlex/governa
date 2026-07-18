@@ -265,4 +265,40 @@ describe('ReadProtheusCilenteConnector', () => {
     const [result] = await makeConnector(http).execute({})
     expect(result.enderecoPseudo).toMatch(/^[0-9a-f]{64}$/)
   })
+
+  // ── executePii — reidentificação (PII em texto claro) ─────
+
+  describe('executePii', () => {
+    it('retorna ClientePiiView com PII em texto claro para registro encontrado', async () => {
+      const http = makeHttp([makeRawCliente()])
+      const result = await makeConnector(http).executePii({ codigoCliente: 'CLI001', loja: '01' })
+
+      expect(result).not.toBeNull()
+      expect(result?.nome).toBe('Empresa Teste LTDA')
+      expect(result?.documento).toBe('12345678000195')
+      expect(http.get).toHaveBeenCalledWith('/CLIENTE/', {
+        params: { A1_COD: 'CLI001', A1_LOJA: '01' },
+      })
+    })
+
+    it('retorna null quando o Protheus não retorna nenhum registro', async () => {
+      const http = makeHttp([])
+      const result = await makeConnector(http).executePii({ codigoCliente: 'CLI999', loja: '01' })
+      expect(result).toBeNull()
+    })
+
+    it('lança ZodError quando o registro retornado é inválido', async () => {
+      const raw = makeRawCliente()
+      delete (raw as any).A1_CGC
+      await expect(
+        makeConnector(makeHttp([raw])).executePii({ codigoCliente: 'CLI001', loja: '01' }),
+      ).rejects.toBeInstanceOf(ZodError)
+    })
+
+    it('lança UpstreamError em falha HTTP', async () => {
+      await expect(
+        makeConnector(makeHttpError(500)).executePii({ codigoCliente: 'CLI001', loja: '01' }),
+      ).rejects.toBeInstanceOf(UpstreamError)
+    })
+  })
 })

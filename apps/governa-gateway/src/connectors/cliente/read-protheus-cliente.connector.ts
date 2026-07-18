@@ -15,7 +15,7 @@
 // ============================================================
 
 import { AxiosInstance } from 'axios'
-import { ProtheusCilenteSchema, ClienteInterno } from './cliente.schema'
+import { ProtheusCilenteSchema, ClienteInterno, ClientePiiView } from './cliente.schema'
 import { ClienteMapper } from './cliente.mapper'
 import { handleUpstreamError } from '../shared/upstream-error.handler'
 
@@ -32,6 +32,13 @@ export interface ReadClienteParams {
    * aplicado client-side após pseudonimizar cada registro retornado.
    */
   documentoToken?:  string
+}
+
+// ── Parâmetros de reidentificação ────────────────────────────
+
+export interface ReadClientePiiParams {
+  codigoCliente: string   // A1_COD — obrigatório, busca de registro único
+  loja:          string   // A1_LOJA — obrigatório, compõe a chave composta
 }
 
 // ── Conector ─────────────────────────────────────────────────
@@ -72,6 +79,32 @@ export class ReadProtheusCilenteConnector {
       return mapped.filter((c) => c.documentoPseudo === params.documentoToken)
     }
     return mapped
+  }
+
+  /**
+   * Busca um único cliente por chave composta (codigoCliente+loja) e
+   * retorna a view de reidentificação — PII em texto claro, sem
+   * pseudonimização. Uso restrito: painel humano (ver ClientePiiView).
+   *
+   * @returns null se o cliente não existir (nunca lança NotFound)
+   */
+  async executePii(params: ReadClientePiiParams): Promise<ClientePiiView | null> {
+    let rawData: unknown
+
+    try {
+      const res = await this.http.get('/CLIENTE/', {
+        params: this.buildQuery({ codigoCliente: params.codigoCliente, loja: params.loja }),
+      })
+      rawData = res.data
+    } catch (error) {
+      throw handleUpstreamError(error, 'read_protheus_cliente_pii')
+    }
+
+    const rawList = this.extractList(rawData)
+    if (rawList.length === 0) return null
+
+    const validated = ProtheusCilenteSchema.parse(rawList[0])
+    return this.mapper.toPlaintextView(validated)
   }
 
   // ── Helpers privados ────────────────────────────────────────

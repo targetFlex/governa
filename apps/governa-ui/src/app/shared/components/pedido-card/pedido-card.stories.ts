@@ -4,26 +4,30 @@
 // Storybook 8 stories para PedidoCardComponent.
 // O addon @storybook/addon-a11y executa axe-core em todas as
 // stories automaticamente — violations exibidas no painel A11y.
+//
+// HttpClientModule é necessário porque o card injeta
+// ClientePiiService (HttpClient) para a revelação sob demanda do
+// cliente — sem backend real no Storybook, o botão de revelação
+// fica em loading indefinido nas stories (comportamento esperado).
 // ============================================================
 import type { Meta, StoryObj } from '@storybook/angular';
+import { HttpClientModule } from '@angular/common/http';
+import { moduleMetadata } from '@storybook/angular';
 import { PedidoCardComponent } from './pedido-card.component';
 import type { Pedido } from '../../models/pedido.model';
 
 // ── Fixture base ──────────────────────────────────────────────
 
 const pedidoBase: Pedido = {
-  id: 'p1',
-  numero: 'PED-0001',
-  clienteId: 'c1',
-  clienteNome: 'Acme Tecnologia Ltda',
+  numeroPedido: 'PED-0001',
+  clienteId: 'CLI001',
+  loja: '01',
   status: 'ABERTO',
-  valor: 15750.50,
-  moeda: 'BRL',
+  valorTotal: 15750.50,
   dataEmissao: '2026-01-15T00:00:00Z',
-  dataEntregaPrevista: '2026-02-01T00:00:00Z',
   itens: [
-    { codigo: 'PROD01', descricao: 'Licença de Software', quantidade: 3, valorUnitario: 3500, valorTotal: 10500 },
-    { codigo: 'PROD02', descricao: 'Suporte Anual',       quantidade: 1, valorUnitario: 5250.50, valorTotal: 5250.50 },
+    { codigoProduto: 'PROD01', quantidade: 3, precoUnitario: 3500 },
+    { codigoProduto: 'PROD02', quantidade: 1, precoUnitario: 5250.50 },
   ],
 };
 
@@ -33,6 +37,7 @@ const meta: Meta<PedidoCardComponent> = {
   title: 'Shared/PedidoCard',
   component: PedidoCardComponent,
   tags: ['autodocs'],
+  decorators: [moduleMetadata({ imports: [HttpClientModule] })],
   parameters: {
     a11y: {
       disable: false,
@@ -52,54 +57,33 @@ type Story = StoryObj<PedidoCardComponent>;
 
 // ── Stories ───────────────────────────────────────────────────
 
-/** Pedido aberto com dois itens e data de entrega */
+/** Pedido aberto com dois itens */
 export const Aberto: Story = {
   name: 'Aberto',
   args: { pedido: pedidoBase },
 };
 
-/** Pedido em processo de aprovação */
-export const EmAprovacao: Story = {
-  name: 'Em Aprovação',
+/** Pedido liberado para faturamento */
+export const Liberado: Story = {
+  name: 'Liberado',
   args: {
     pedido: {
       ...pedidoBase,
-      id: 'p2',
-      numero: 'PED-0002',
-      clienteNome: 'Beta Sistemas ME',
-      status: 'EM_APROVACAO',
-      dataEntregaPrevista: null,
+      numeroPedido: 'PED-0002',
+      status: 'LIBERADO',
     },
   },
 };
 
-/** Pedido aprovado aguardando faturamento */
-export const Aprovado: Story = {
-  name: 'Aprovado',
+/** Pedido bloqueado — status que causava crash antes do fix (STATUS_META incompleto) */
+export const Bloqueado: Story = {
+  name: 'Bloqueado',
   args: {
     pedido: {
       ...pedidoBase,
-      id: 'p3',
-      numero: 'PED-0003',
-      clienteNome: 'Gama Indústria SA',
-      status: 'APROVADO',
-      valor: 87300,
-    },
-  },
-};
-
-/** Pedido cancelado — exibe opacidade reduzida e badge vermelho */
-export const Cancelado: Story = {
-  name: 'Cancelado',
-  args: {
-    pedido: {
-      ...pedidoBase,
-      id: 'p4',
-      numero: 'PED-0004',
-      clienteNome: 'Delta Comércio Ltda',
-      status: 'CANCELADO',
-      dataEntregaPrevista: null,
-      itens: [],
+      numeroPedido: 'PED-0003',
+      status: 'BLOQUEADO',
+      valorTotal: 87300,
     },
   },
 };
@@ -110,11 +94,10 @@ export const Encerrado: Story = {
   args: {
     pedido: {
       ...pedidoBase,
-      id: 'p5',
-      numero: 'PED-0005',
-      clienteNome: 'Omega Serviços EIRELI',
+      numeroPedido: 'PED-0004',
       status: 'ENCERRADO',
-      valor: 4500,
+      valorTotal: 4500,
+      itens: [],
     },
   },
 };

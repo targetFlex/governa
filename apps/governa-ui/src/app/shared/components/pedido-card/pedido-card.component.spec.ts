@@ -4,54 +4,64 @@
 // Testes unitários + a11y (WCAG 2.1 AA via jest-axe)
 //
 // Cobertura:
-//   - Renderização de número e cliente
-//   - Badge de status com texto e aria-label corretos
-//   - Exibição condicional de dataEntregaPrevista
-//   - Classe CSS para pedido cancelado
+//   - Renderização de número e revelação sob demanda do cliente
+//   - Badge de status com texto e aria-label corretos (4 status reais)
+//   - Classe CSS para pedido bloqueado
 //   - Zero violações axe-core (WCAG 2.1 AA)
 // ============================================================
 import { LOCALE_ID } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
 import { axe, toHaveNoViolations } from 'jest-axe';
 import { PedidoCardComponent } from './pedido-card.component';
 import type { Pedido } from '../../models/pedido.model';
+import type { ClientePii } from '../../models/cliente.model';
+import { environment } from '@env/environment';
 
 expect.extend(toHaveNoViolations);
 
 // ── Fixtures ─────────────────────────────────────────────────
 
 const pedidoAberto: Pedido = {
-  id: 'p1',
-  numero: 'PED-0001',
-  clienteId: 'c1',
-  clienteNome: 'Acme Tecnologia Ltda',
+  numeroPedido: 'PED-0001',
+  clienteId: 'CLI001',
+  loja: '01',
   status: 'ABERTO',
-  valor: 15000,
-  moeda: 'BRL',
+  valorTotal: 15000,
   dataEmissao: '2026-01-15T00:00:00Z',
-  dataEntregaPrevista: '2026-02-01T00:00:00Z',
   itens: [
-    { codigo: 'PROD01', descricao: 'Produto A', quantidade: 2, valorUnitario: 5000, valorTotal: 10000 },
-    { codigo: 'PROD02', descricao: 'Produto B', quantidade: 1, valorUnitario: 5000, valorTotal: 5000 },
+    { codigoProduto: 'PROD01', quantidade: 2, precoUnitario: 5000 },
+    { codigoProduto: 'PROD02', quantidade: 1, precoUnitario: 5000 },
   ],
 };
 
-const pedidoCancelado: Pedido = {
+const pedidoBloqueado: Pedido = {
   ...pedidoAberto,
-  id: 'p2',
-  numero: 'PED-0002',
-  clienteNome: 'Beta Comércio SA',
-  status: 'CANCELADO',
-  dataEntregaPrevista: null,
+  numeroPedido: 'PED-0002',
+  status: 'BLOQUEADO',
   itens: [],
 };
 
-const pedidoEmAprovacao: Pedido = {
+const pedidoLiberado: Pedido = {
   ...pedidoAberto,
-  id: 'p3',
-  numero: 'PED-0003',
-  status: 'EM_APROVACAO',
-  dataEntregaPrevista: null,
+  numeroPedido: 'PED-0003',
+  status: 'LIBERADO',
+};
+
+const pedidoEncerrado: Pedido = {
+  ...pedidoAberto,
+  numeroPedido: 'PED-0004',
+  status: 'ENCERRADO',
+};
+
+const piiFixture: ClientePii = {
+  clienteId: 'CLI001',
+  loja: '01',
+  nome: 'Acme Tecnologia Ltda',
+  documento: '12.345.678/0001-90',
+  email: 'contato@acme.com',
+  telefone: null,
+  endereco: 'Rua Acme, 1|São Paulo|SP|01000000',
 };
 
 // ── Helper ────────────────────────────────────────────────────
@@ -66,12 +76,19 @@ function mountComponent(pedido: Pedido): ComponentFixture<PedidoCardComponent> {
 // ── Suite ─────────────────────────────────────────────────────
 
 describe('PedidoCardComponent', () => {
+  let httpMock: HttpTestingController;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [PedidoCardComponent],
+      imports: [PedidoCardComponent, HttpClientTestingModule],
       providers: [{ provide: LOCALE_ID, useValue: 'en' }],
     }).compileComponents();
+
+    httpMock = TestBed.inject(HttpTestingController);
+  });
+
+  afterEach(() => {
+    httpMock.verify();
   });
 
   // ── Pedido aberto ─────────────────────────────────────────
@@ -89,8 +106,9 @@ describe('PedidoCardComponent', () => {
       expect(el.querySelector('h2')?.textContent?.trim()).toBe('PED-0001');
     });
 
-    it('When renderizado, Then exibe o nome do cliente', () => {
-      expect(el.textContent).toContain('Acme Tecnologia Ltda');
+    it('When renderizado, Then exibe o clienteId como botão de revelação (sem PII ainda)', () => {
+      const btn = el.querySelector('.pedido-card__reveal-btn');
+      expect(btn?.textContent?.trim()).toBe('CLI001');
     });
 
     it('When renderizado, Then badge exibe "Aberto"', () => {
@@ -107,18 +125,22 @@ describe('PedidoCardComponent', () => {
       expect(el.textContent).toContain('2');
     });
 
-    it('When dataEntregaPrevista preenchida, Then exibe a linha de entrega', () => {
-      expect(el.textContent).toContain('Entrega prevista');
-    });
-
     it('When renderizado, Then aria-label do article contém o número', () => {
       const article = el.querySelector('article');
       expect(article?.getAttribute('aria-label')).toContain('PED-0001');
     });
 
-    it('When renderizado, Then aria-label do article contém o cliente', () => {
-      const article = el.querySelector('article');
-      expect(article?.getAttribute('aria-label')).toContain('Acme Tecnologia Ltda');
+    it('When clica no botão de cliente, Then chama reidentificação e exibe o nome', () => {
+      (el.querySelector('.pedido-card__reveal-btn') as HTMLButtonElement).click();
+      fixture.detectChanges();
+
+      const req = httpMock.expectOne(
+        (r) => r.url === `${environment.coreBaseUrl}/clientes/CLI001/reidentificar` && r.params.get('loja') === '01',
+      );
+      req.flush({ data: piiFixture, traceId: 't1', latencyMs: 5 });
+      fixture.detectChanges();
+
+      expect(el.textContent).toContain('Acme Tecnologia Ltda');
     });
 
     it('When renderizado, Then não tem violações WCAG 2.1 AA', async () => {
@@ -129,29 +151,25 @@ describe('PedidoCardComponent', () => {
     });
   });
 
-  // ── Pedido cancelado ──────────────────────────────────────
+  // ── Pedido bloqueado ──────────────────────────────────────
 
-  describe('Given um pedido CANCELADO sem dataEntregaPrevista', () => {
+  describe('Given um pedido BLOQUEADO', () => {
     let fixture: ComponentFixture<PedidoCardComponent>;
     let el: HTMLElement;
 
     beforeEach(() => {
-      fixture = mountComponent(pedidoCancelado);
+      fixture = mountComponent(pedidoBloqueado);
       el = fixture.nativeElement;
     });
 
-    it('When renderizado, Then badge exibe "Cancelado"', () => {
+    it('When renderizado, Then badge exibe "Bloqueado" (não quebra o card)', () => {
       const badge = el.querySelector('.pedido-card__status');
-      expect(badge?.textContent?.trim()).toBe('Cancelado');
+      expect(badge?.textContent?.trim()).toBe('Bloqueado');
     });
 
-    it('When cancelado, Then article tem classe cancelado', () => {
+    it('When bloqueado, Then article tem classe de bloqueado', () => {
       const article = el.querySelector('article');
-      expect(article?.classList).toContain('pedido-card--cancelado');
-    });
-
-    it('When dataEntregaPrevista null, Then linha de entrega não é exibida', () => {
-      expect(el.textContent).not.toContain('Entrega prevista');
+      expect(article?.classList).toContain('pedido-card--bloqueado');
     });
 
     it('When renderizado, Then não tem violações WCAG 2.1 AA', async () => {
@@ -162,27 +180,25 @@ describe('PedidoCardComponent', () => {
     });
   });
 
-  // ── Pedido em aprovação ───────────────────────────────────
+  // ── Pedido liberado ───────────────────────────────────────
 
-  describe('Given um pedido EM_APROVACAO', () => {
-    let fixture: ComponentFixture<PedidoCardComponent>;
-    let el: HTMLElement;
-
-    beforeEach(() => {
-      fixture = mountComponent(pedidoEmAprovacao);
-      el = fixture.nativeElement;
-    });
-
-    it('When renderizado, Then badge exibe "Em aprovação"', () => {
+  describe('Given um pedido LIBERADO', () => {
+    it('When renderizado, Then badge exibe "Liberado" (não quebra o card)', () => {
+      const fixture = mountComponent(pedidoLiberado);
+      const el = fixture.nativeElement as HTMLElement;
       const badge = el.querySelector('.pedido-card__status');
-      expect(badge?.textContent?.trim()).toBe('Em aprovação');
+      expect(badge?.textContent?.trim()).toBe('Liberado');
     });
+  });
 
-    it('When renderizado, Then não tem violações WCAG 2.1 AA', async () => {
-      const results = await axe(el, {
-        runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21aa'] },
-      });
-      expect(results).toHaveNoViolations();
+  // ── Pedido encerrado ──────────────────────────────────────
+
+  describe('Given um pedido ENCERRADO', () => {
+    it('When renderizado, Then badge exibe "Encerrado"', () => {
+      const fixture = mountComponent(pedidoEncerrado);
+      const el = fixture.nativeElement as HTMLElement;
+      const badge = el.querySelector('.pedido-card__status');
+      expect(badge?.textContent?.trim()).toBe('Encerrado');
     });
   });
 });

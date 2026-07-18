@@ -87,7 +87,7 @@ import { ClienteCardComponent } from '../../../shared/components/cliente-card/cl
             </p>
           } @else {
             <div class="clientes-list__grid">
-              @for (cliente of store.clientes(); track cliente.id) {
+              @for (cliente of store.clientes(); track cliente.clienteId) {
                 <app-cliente-card [cliente]="cliente" />
               }
             </div>

@@ -6,7 +6,8 @@
 // ============================================================
 import type { Meta, StoryObj } from '@storybook/angular';
 import { applicationConfig } from '@storybook/angular';
-import { signal, computed } from '@angular/core';
+import { HttpClientModule } from '@angular/common/http';
+import { signal, computed, importProvidersFrom } from '@angular/core';
 
 import { ClientesListComponent } from './clientes-list.component';
 import { ClientesStore } from '../clientes.service';
@@ -16,30 +17,25 @@ import { Cliente } from '../../../shared/models/cliente.model';
 
 function makeCliente(override: Partial<Cliente> = {}): Cliente {
   return {
-    id: Math.random().toString(36).slice(2),
-    codigo: 'CLI' + Math.floor(Math.random() * 900 + 100),
-    nome: 'Empresa Exemplo Ltda',
-    tipoPessoa: 'PJ',
-    documento: '12.345.678/0001-99',
-    email: 'contato@exemplo.com',
-    telefone: '(11) 99999-9999',
-    ativo: true,
-    limiteCredito: 50000,
-    saldoDevedor: 1250,
-    moeda: 'BRL',
-    criadoEm: '2024-01-01T00:00:00Z',
-    atualizadoEm: '2024-06-01T00:00:00Z',
+    clienteId: 'CLI' + Math.floor(Math.random() * 900 + 100),
+    loja: '01',
+    nomeToken: 'a'.repeat(64),
+    documentoToken: 'b'.repeat(64),
+    enderecoToken: 'c'.repeat(64),
+    emailToken: 'd'.repeat(64),
+    telefoneToken: 'e'.repeat(64),
+    bloqueado: false,
     ...override,
   };
 }
 
 const CLIENTES_FIXTURE: Cliente[] = [
-  makeCliente({ id: '1', nome: 'Acme Tecnologia Ltda', tipoPessoa: 'PJ', codigo: 'CLI001', ativo: true }),
-  makeCliente({ id: '2', nome: 'João da Silva', tipoPessoa: 'PF', documento: '123.456.789-00', codigo: 'CLI002', ativo: true, saldoDevedor: 0 }),
-  makeCliente({ id: '3', nome: 'Beta Comércio S/A', tipoPessoa: 'PJ', codigo: 'CLI003', ativo: false, limiteCredito: 200000 }),
-  makeCliente({ id: '4', nome: 'Gama Serviços ME', tipoPessoa: 'PJ', codigo: 'CLI004', ativo: true, telefone: null }),
-  makeCliente({ id: '5', nome: 'Maria Aparecida', tipoPessoa: 'PF', documento: '987.654.321-00', codigo: 'CLI005', ativo: true, saldoDevedor: 3500 }),
-  makeCliente({ id: '6', nome: 'Delta Indústria Ltda', tipoPessoa: 'PJ', codigo: 'CLI006', ativo: true, limiteCredito: 1000000, saldoDevedor: 250000 }),
+  makeCliente({ clienteId: 'CLI001' }),
+  makeCliente({ clienteId: 'CLI002', telefoneToken: null }),
+  makeCliente({ clienteId: 'CLI003', bloqueado: true }),
+  makeCliente({ clienteId: 'CLI004', loja: '02' }),
+  makeCliente({ clienteId: 'CLI005', emailToken: null }),
+  makeCliente({ clienteId: 'CLI006', loja: '02', bloqueado: true }),
 ];
 
 function mockStore(opts: {
@@ -47,19 +43,28 @@ function mockStore(opts: {
   loading?: boolean;
   error?: string | null;
   total?: number;
+  page?: number;
+  pageSize?: number;
 }) {
   const clientes = signal<Cliente[]>(opts.clientes ?? []);
   const loading  = signal<boolean>(opts.loading ?? false);
   const error    = signal<string | null>(opts.error ?? null);
   const total    = signal<number>(opts.total ?? 0);
+  const page     = signal<number>(opts.page ?? 1);
+  const pageSize = signal<number>(opts.pageSize ?? 20);
+  const filtro   = signal<string>('');
 
   return {
     clientes,
     loading,
     error,
     total,
-    isEmpty:  computed(() => !loading() && clientes().length === 0),
-    hasError: computed(() => error() !== null),
+    page,
+    pageSize,
+    filtro,
+    isEmpty:    computed(() => !loading() && clientes().length === 0),
+    hasError:   computed(() => error() !== null),
+    totalPages: computed(() => Math.ceil(total() / pageSize())),
     loadClientes: () => {},
     clearError:   () => {},
   };
@@ -91,11 +96,11 @@ export const ComClientes: Story = {
   name: 'Com Clientes',
   decorators: [
     applicationConfig({
+      // HttpClientModule é necessário porque app-cliente-card injeta
+      // ClientePiiService — sem backend real, "Revelar dados" fica em loading.
       providers: [
-        {
-          provide: ClientesStore,
-          useValue: mockStore({ clientes: CLIENTES_FIXTURE, total: 6 }),
-        },
+        { provide: ClientesStore, useValue: mockStore({ clientes: CLIENTES_FIXTURE, total: 6 }) },
+        importProvidersFrom(HttpClientModule),
       ],
     }),
   ],
@@ -107,10 +112,8 @@ export const Carregando: Story = {
   decorators: [
     applicationConfig({
       providers: [
-        {
-          provide: ClientesStore,
-          useValue: mockStore({ loading: true }),
-        },
+        { provide: ClientesStore, useValue: mockStore({ loading: true }) },
+        importProvidersFrom(HttpClientModule),
       ],
     }),
   ],
@@ -122,10 +125,8 @@ export const ListaVazia: Story = {
   decorators: [
     applicationConfig({
       providers: [
-        {
-          provide: ClientesStore,
-          useValue: mockStore({ clientes: [], total: 0 }),
-        },
+        { provide: ClientesStore, useValue: mockStore({ clientes: [], total: 0 }) },
+        importProvidersFrom(HttpClientModule),
       ],
     }),
   ],
@@ -141,6 +142,7 @@ export const ComErro: Story = {
           provide: ClientesStore,
           useValue: mockStore({ error: 'Não foi possível conectar ao servidor. Verifique sua conexão.' }),
         },
+        importProvidersFrom(HttpClientModule),
       ],
     }),
   ],

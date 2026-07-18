@@ -2,25 +2,24 @@
 // cliente.model.ts
 //
 // Tipagem do domínio Cliente conforme contrato GET /clientes
-// do governa-gateway (Protheus adapter).
+// do governa-core (painel administrativo).
+//
+// Campos PII (nome, documento, endereço, e-mail, telefone) são
+// pseudonimizados via HMAC SHA-256 no governa-gateway (D16) — o
+// core nunca vê nem repassa o valor real, só o token. Exibição
+// em texto claro exige reidentificação explícita e auditada —
+// ver ClientePii e ClientePiiService.
 // ============================================================
 
-export type TipoPessoa = 'PF' | 'PJ';
-
 export interface Cliente {
-  id: string;
-  codigo: string;
-  nome: string;
-  tipoPessoa: TipoPessoa;
-  documento: string;          // CPF ou CNPJ
-  email: string;
-  telefone: string | null;
-  ativo: boolean;
-  limiteCredito: number;
-  saldoDevedor: number;
-  moeda: string;
-  criadoEm: string;           // ISO 8601
-  atualizadoEm: string;       // ISO 8601
+  clienteId: string;
+  loja: string;
+  nomeToken: string;
+  documentoToken: string;
+  enderecoToken: string;
+  emailToken: string | null;
+  telefoneToken: string | null;
+  bloqueado: boolean;
 }
 
 export interface ClientesResponse {
@@ -28,4 +27,25 @@ export interface ClientesResponse {
   total: number;
   page: number;
   pageSize: number;
+}
+
+/**
+ * ClientePii — PII em texto claro de um cliente, resolvida sob demanda
+ * via GET /clientes/:clienteId/reidentificar (uso restrito ao painel
+ * humano, nunca cacheado além da sessão do componente).
+ */
+export interface ClientePii {
+  clienteId: string;
+  loja: string;
+  nome: string;
+  documento: string;
+  email: string | null;
+  telefone: string | null;
+  endereco: string;
+}
+
+export interface ClientePiiResponse {
+  data: ClientePii;
+  traceId: string;
+  latencyMs: number;
 }

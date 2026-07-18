@@ -19,6 +19,7 @@ import { randomUUID } from 'crypto'
 
 import { createClientesRouter } from './clientes.router'
 import { ConsultarClienteUseCase } from '../application/consultar-cliente.use-case'
+import { ReidentificarClienteUseCase } from '../application/reidentificar-cliente.use-case'
 import { AuditService } from '../../audit/application/audit.service'
 import { AgentService } from '../../agents/application/agent.service'
 import { InMemoryGatewayClient } from '../../../../test/fixtures/in-memory-gateway-client'
@@ -26,6 +27,7 @@ import { InMemoryAuditEventRepository } from '../../../../test/fixtures/in-memor
 import { InMemoryAgentInventoryRepository } from '../../../../test/fixtures/in-memory-agent-inventory.repository'
 import { createTenantMiddleware } from '../../../shared/middleware/tenant.middleware'
 import type { ClienteInterno } from '../domain/cliente.entity'
+import type { ClientePiiView } from '../../../shared/ports/gateway-client.port'
 
 // ---------------------------------------------------------------------------
 // Setup
@@ -61,6 +63,19 @@ function makeCliente(overrides: Partial<ClienteInterno> = {}): ClienteInterno {
   }
 }
 
+function makeClientePii(overrides: Partial<ClientePiiView> = {}): ClientePiiView {
+  return {
+    clienteId: 'CLI-PII-01',
+    loja:      '01',
+    nome:      'Cliente Teste LTDA',
+    documento: '12.345.678/0001-90',
+    email:     'cliente@example.com',
+    telefone:  '(11) 4000-0000',
+    endereco:  'Rua Teste, 1|São Paulo|SP|01000000',
+    ...overrides,
+  }
+}
+
 async function req(
   path: string,
   options: {
@@ -82,9 +97,10 @@ beforeEach(() => new Promise<void>(resolve => {
   const auditRepo    = new InMemoryAuditEventRepository()
   const auditService = new AuditService(auditRepo)
   const useCase       = new ConsultarClienteUseCase(gateway, auditService)
+  const reidentificarUseCase = new ReidentificarClienteUseCase(gateway, auditService)
   agentInventoryRepo = new InMemoryAgentInventoryRepository()
   const agentService  = new AgentService(agentInventoryRepo)
-  const router        = createClientesRouter(useCase, agentService)
+  const router        = createClientesRouter(useCase, agentService, reidentificarUseCase)
 
   const app = express()
   app.use(express.json())
@@ -277,5 +293,71 @@ describe('GET /clientes?q=&page=&pageSize=', () => {
 
     expect(status).toBe(200)
     expect(body.pageSize).toBe(20)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// CL-R-15 .. CL-R-19: GET /:clienteId/reidentificar (painel humano)
+// ---------------------------------------------------------------------------
+
+describe('GET /:clienteId/reidentificar', () => {
+  it('CL-R-15 — 200 retorna PII em texto claro do cliente', async () => {
+    gateway.seedClientesPii([makeClientePii({ clienteId: 'CLI-PII-01', loja: '01' })])
+
+    const { status, body } = await req('/clientes/CLI-PII-01/reidentificar?loja=01', {
+      token: makeToken(TENANT_A),
+    })
+
+    expect(status).toBe(200)
+    const data = body.data as Record<string, unknown>
+    expect(data.nome).toBe('Cliente Teste LTDA')
+    expect(data.documento).toBe('12.345.678/0001-90')
+    expect(typeof body.traceId).toBe('string')
+  })
+
+  it('CL-R-16 — 400 quando "loja" está ausente', async () => {
+    const { status, body } = await req('/clientes/CLI-PII-01/reidentificar', {
+      token: makeToken(TENANT_A),
+    })
+
+    expect(status).toBe(400)
+    expect(body.code).toBe('MISSING_LOJA')
+  })
+
+  it('CL-R-17 — 404 cliente não encontrado', async () => {
+    const { status, body } = await req('/clientes/CLI-NAOEXISTE/reidentificar?loja=01', {
+      token: makeToken(TENANT_A),
+    })
+
+    expect(status).toBe(404)
+    expect(body.code).toBe('CLIENTE_NOT_FOUND')
+  })
+
+  it('CL-R-18 — 502 quando gateway indisponível', async () => {
+    gateway.simulateUnavailable()
+
+    const { status, body } = await req('/clientes/CLI-PII-01/reidentificar?loja=01', {
+      token: makeToken(TENANT_A),
+    })
+
+    expect(status).toBe(502)
+    expect(body.code).toBe('GATEWAY_UNAVAILABLE')
+  })
+
+  it('CL-R-19 — 401 sem token', async () => {
+    const { status } = await req('/clientes/CLI-PII-01/reidentificar?loja=01')
+    expect(status).toBe(401)
+  })
+
+  it('CL-R-20 — usa o agente sintético do tenant, nunca aceita agentId/subjectToken de query', async () => {
+    gateway.seedClientesPii([makeClientePii({ clienteId: 'CLI-PII-02', loja: '01' })])
+
+    const url = `/clientes/CLI-PII-02/reidentificar?loja=01&agentId=${AGENT_ID}&subjectToken=${SUBJECT_TOKEN}`
+    const { status } = await req(url, { token: makeToken(TENANT_A) })
+
+    expect(status).toBe(200)
+    const agents = agentInventoryRepo.all().filter(a => a.tenantId === TENANT_A)
+    expect(agents).toHaveLength(1)
+    expect(agents[0].templateId).toBe('__system_panel_access__')
   })
 })

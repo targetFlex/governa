@@ -27,3 +27,28 @@ export async function resolvePanelAccess(
 
   return { agentId: systemAgent.id, subjectToken }
 }
+
+/**
+ * resolvePanelSubjectAccess — mesma ideia de resolvePanelAccess, mas para
+ * uma consulta do painel sobre um titular ESPECÍFICO (ex: reidentificação
+ * de um cliente para exibição humana).
+ *
+ * subjectToken aqui é determinístico por (tenant, clienteId, loja) — não é
+ * o HMAC "oficial" do titular via PII_HMAC_KEY (ver shared/crypto/subject-
+ * token.ts para esse caso, usado quando um agente real já conhece o
+ * titular). Serve só para correlacionar no audit trail quem foi
+ * reidentificado, sem depender de PII_HMAC_KEY (hoje ausente em produção).
+ */
+export async function resolvePanelSubjectAccess(
+  agentService: AgentService,
+  tenantId: string,
+  clienteId: string,
+  loja: string,
+): Promise<{ agentId: string; subjectToken: string }> {
+  const systemAgent = await agentService.getOrCreateSystemAgent(tenantId)
+  const subjectToken = createHash('sha256')
+    .update(`PAINEL_REIDENTIFICACAO:${tenantId}:${clienteId}:${loja}`)
+    .digest('hex')
+
+  return { agentId: systemAgent.id, subjectToken }
+}

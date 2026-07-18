@@ -4,26 +4,28 @@
 // Storybook 8 stories para ClienteCardComponent.
 // O addon @storybook/addon-a11y executa axe-core em todas as
 // stories automaticamente — violations exibidas no painel A11y.
+//
+// HttpClientModule é necessário porque o card injeta
+// ClientePiiService (HttpClient) para a revelação sob demanda —
+// sem backend real no Storybook, o botão "Revelar dados" fica
+// em loading indefinido nas stories (comportamento esperado).
 // ============================================================
 import type { Meta, StoryObj } from '@storybook/angular';
+import { HttpClientModule } from '@angular/common/http';
+import { moduleMetadata } from '@storybook/angular';
 import { ClienteCardComponent } from './cliente-card.component';
 import type { Cliente } from '../../models/cliente.model';
 
 // ── Fixture helpers ───────────────────────────────────────────
 const clienteBase: Cliente = {
-  id: 'c1',
-  codigo: 'CLI001',
-  nome: 'Empresa Exemplo LTDA',
-  tipoPessoa: 'PJ',
-  documento: '12.345.678/0001-90',
-  email: 'contato@empresa.com',
-  telefone: '(11) 99999-9999',
-  ativo: true,
-  limiteCredito: 50000,
-  saldoDevedor: 12500,
-  moeda: 'BRL',
-  criadoEm: '2024-01-01T00:00:00Z',
-  atualizadoEm: '2024-01-15T00:00:00Z',
+  clienteId: 'CLI001',
+  loja: '01',
+  nomeToken: 'a'.repeat(64),
+  documentoToken: 'b'.repeat(64),
+  enderecoToken: 'c'.repeat(64),
+  emailToken: 'd'.repeat(64),
+  telefoneToken: 'e'.repeat(64),
+  bloqueado: false,
 };
 
 // ── Meta ─────────────────────────────────────────────────────
@@ -31,6 +33,7 @@ const meta: Meta<ClienteCardComponent> = {
   title: 'Shared/ClienteCard',
   component: ClienteCardComponent,
   tags: ['autodocs'],
+  decorators: [moduleMetadata({ imports: [HttpClientModule] })],
   parameters: {
     a11y: {
       disable: false,
@@ -51,57 +54,34 @@ type Story = StoryObj<ClienteCardComponent>;
 
 // ── Stories ───────────────────────────────────────────────────
 
-/** Cliente PJ ativo com todos os campos preenchidos */
-export const PJAtivo: Story = {
-  name: 'PJ — Ativo',
+/** Cliente ativo — PII oculta por padrão, atrás do botão "Revelar dados" */
+export const Ativo: Story = {
+  name: 'Ativo',
   args: { cliente: clienteBase },
 };
 
-/** Cliente PF ativo sem telefone */
-export const PFAtivo: Story = {
-  name: 'PF — Ativo sem telefone',
+/** Cliente ativo sem telefone cadastrado */
+export const SemTelefone: Story = {
+  name: 'Ativo — sem telefone',
   args: {
     cliente: {
       ...clienteBase,
-      id: 'c2',
-      codigo: 'CLI002',
-      nome: 'Maria Oliveira',
-      tipoPessoa: 'PF',
-      documento: '123.456.789-00',
-      email: 'maria@pessoal.com',
-      telefone: null,
-      limiteCredito: 10000,
-      saldoDevedor: 0,
+      clienteId: 'CLI002',
+      loja: '01',
+      telefoneToken: null,
     },
   },
 };
 
-/** Cliente inativo (mostra badge vermelho + card em opacidade reduzida) */
-export const Inativo: Story = {
-  name: 'PJ — Inativo',
+/** Cliente bloqueado (mostra badge vermelho + card em opacidade reduzida) */
+export const Bloqueado: Story = {
+  name: 'Bloqueado',
   args: {
     cliente: {
       ...clienteBase,
-      id: 'c3',
-      codigo: 'CLI003',
-      nome: 'Empresa Desativada SA',
-      ativo: false,
-      saldoDevedor: 75000,
-    },
-  },
-};
-
-/** Saldo devedor alto — limite de crédito atingido */
-export const SaldoAlto: Story = {
-  name: 'PJ — Saldo devedor alto',
-  args: {
-    cliente: {
-      ...clienteBase,
-      id: 'c4',
-      codigo: 'CLI004',
-      nome: 'Construtora Grande LTDA',
-      limiteCredito: 500000,
-      saldoDevedor: 498500,
+      clienteId: 'CLI003',
+      loja: '02',
+      bloqueado: true,
     },
   },
 };

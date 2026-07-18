@@ -53,12 +53,14 @@ const clienteFixture: ClienteInterno = {
 
 let pedidoExecute: jest.Mock
 let clienteExecute: jest.Mock
+let clienteExecutePii: jest.Mock = jest.fn().mockResolvedValue(null)
 
 const pedidoConnector: IPedidoConnector = {
   execute: (...args) => pedidoExecute(...args),
 }
 const clienteConnector: IClienteConnector = {
   execute: (...args) => clienteExecute(...args),
+  executePii: (...args) => clienteExecutePii(...args),
 }
 
 // ── State handlers ────────────────────────────────────────────

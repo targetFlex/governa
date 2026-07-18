@@ -16,27 +16,20 @@ import { environment } from '@env/environment';
 // ── Fixtures ─────────────────────────────────────────────────
 
 const mockClienteAtivo: Cliente = {
-  id: 'c1',
-  codigo: 'CLI-001',
-  nome: 'Empresa Alfa Ltda',
-  tipoPessoa: 'PJ',
-  documento: '12.345.678/0001-99',
-  email: 'contato@alfa.com.br',
-  telefone: '(11) 99999-0001',
-  ativo: true,
-  limiteCredito: 50000.0,
-  saldoDevedor: 12500.0,
-  moeda: 'BRL',
-  criadoEm: '2025-01-15T00:00:00.000Z',
-  atualizadoEm: '2026-05-01T00:00:00.000Z',
+  clienteId: 'CLI-001',
+  loja: '01',
+  nomeToken: 'a'.repeat(64),
+  documentoToken: 'b'.repeat(64),
+  enderecoToken: 'c'.repeat(64),
+  emailToken: 'd'.repeat(64),
+  telefoneToken: 'e'.repeat(64),
+  bloqueado: false,
 };
 
 const mockClienteInativo: Cliente = {
   ...mockClienteAtivo,
-  id: 'c2',
-  codigo: 'CLI-002',
-  nome: 'Empresa Beta ME',
-  ativo: false,
+  clienteId: 'CLI-002',
+  bloqueado: true,
 };
 
 const mockResponse: ClientesResponse = {
@@ -102,7 +95,7 @@ describe('ClientesService', () => {
     httpMock.expectOne(() => true).flush(mockResponse);
 
     expect(service.clientes()).toHaveLength(2);
-    expect(service.clientes()[0].nome).toBe('Empresa Alfa Ltda');
+    expect(service.clientes()[0].clienteId).toBe('CLI-001');
     expect(service.total()).toBe(55);
     expect(service.loading()).toBe(false);
     expect(service.error()).toBeNull();
@@ -117,12 +110,12 @@ describe('ClientesService', () => {
 
   // ── clientesAtivos (computed) ──────────────────────────────
 
-  it('clientesAtivos deve filtrar apenas clientes com ativo=true', () => {
+  it('clientesAtivos deve filtrar apenas clientes com bloqueado=false', () => {
     service.loadClientes();
     httpMock.expectOne(() => true).flush(mockResponse);
 
     expect(service.clientesAtivos()).toHaveLength(1);
-    expect(service.clientesAtivos()[0].id).toBe('c1');
+    expect(service.clientesAtivos()[0].clienteId).toBe('CLI-001');
   });
 
   it('isEmpty deve ser false após carregar clientes', () => {

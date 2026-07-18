@@ -15,23 +15,14 @@ import { environment } from '@env/environment';
 // ── Fixtures ─────────────────────────────────────────────────
 
 const mockPedido: Pedido = {
-  id: 'p1',
-  numero: 'PED-001',
-  clienteId: 'c1',
-  clienteNome: 'Empresa Alfa Ltda',
+  numeroPedido: 'PED-001',
+  clienteId: 'CLI-001',
+  loja: '01',
   status: 'ABERTO',
-  valor: 1500.0,
-  moeda: 'BRL',
+  valorTotal: 1500.0,
   dataEmissao: '2026-05-01T00:00:00.000Z',
-  dataEntregaPrevista: '2026-05-30T00:00:00.000Z',
   itens: [
-    {
-      codigo: 'SKU-001',
-      descricao: 'Produto A',
-      quantidade: 3,
-      valorUnitario: 500.0,
-      valorTotal: 1500.0,
-    },
+    { codigoProduto: 'SKU-001', quantidade: 3, precoUnitario: 500.0 },
   ],
 };
 
@@ -104,7 +95,7 @@ describe('PedidosService', () => {
     req.flush(mockResponse);
 
     expect(service.pedidos()).toHaveLength(1);
-    expect(service.pedidos()[0].numero).toBe('PED-001');
+    expect(service.pedidos()[0].numeroPedido).toBe('PED-001');
     expect(service.total()).toBe(42);
     expect(service.loading()).toBe(false);
     expect(service.error()).toBeNull();

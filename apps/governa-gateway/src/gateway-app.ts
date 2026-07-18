@@ -8,6 +8,7 @@
 //   POST /auth/login               → 200 { token, expiresIn } | 400 | 401 | 502
 //   GET  /pedidos?numeroPedido=xxx → 200 { data: PedidoInterno[] } | 404
 //   GET  /clientes?codigoCliente=xxx → 200 { data: ClienteInterno[] } | 404
+//   GET  /clientes/pii?codigoCliente=xxx&loja=yyy → 200 { data: ClientePiiView } | 400 | 404
 //
 // Porta padrão: 3100 (sobrescrita via GATEWAY_PORT ou listen(port))
 //
@@ -18,7 +19,7 @@
 import express, { Application, Request, Response } from 'express'
 import { Server } from 'http'
 import { ReadPedidoParams } from './connectors/pedido/read-protheus-pedido.connector'
-import { ReadClienteParams } from './connectors/cliente/read-protheus-cliente.connector'
+import { ReadClienteParams, ReadClientePiiParams } from './connectors/cliente/read-protheus-cliente.connector'
 import { IAuthLoginConnector, LoginResult } from './connectors/auth/auth-login.connector'
 import { UpstreamError } from './connectors/shared/upstream-error.handler'
 
@@ -30,6 +31,7 @@ export interface IPedidoConnector {
 
 export interface IClienteConnector {
   execute(params: ReadClienteParams): Promise<import('./connectors/cliente/cliente.schema').ClienteInterno[]>
+  executePii(params: ReadClientePiiParams): Promise<import('./connectors/cliente/cliente.schema').ClientePiiView | null>
 }
 
 export { IAuthLoginConnector }
@@ -61,9 +63,10 @@ export class GatewayHttpServer {
 
   private setupRoutes(): void {
     this.app.get('/health', (_req, res) => { res.json({ status: 'ok' }) })
-    this.app.post('/auth/login', this.handleLogin.bind(this))
-    this.app.get('/pedidos',     this.handlePedidos.bind(this))
-    this.app.get('/clientes',    this.handleClientes.bind(this))
+    this.app.post('/auth/login',  this.handleLogin.bind(this))
+    this.app.get('/pedidos',      this.handlePedidos.bind(this))
+    this.app.get('/clientes/pii', this.handleClientePii.bind(this))
+    this.app.get('/clientes',     this.handleClientes.bind(this))
   }
 
   /**
@@ -148,6 +151,44 @@ export class GatewayHttpServer {
       }
 
       res.status(200).json({ data: clientes })
+    } catch (err) {
+      this.sendError(res, err)
+    }
+  }
+
+  /**
+   * GET /clientes/pii
+   *
+   * Query params: codigoCliente (obrigatório), loja (obrigatório)
+   *
+   * Reidentificação — retorna PII em texto claro de um único cliente.
+   * Uso restrito: governa-core, exibição no painel humano (nunca
+   * repassado a um agente de IA — ver ClientePiiView).
+   *
+   * CP1: codigoCliente+loja existem     → 200 { data: ClientePiiView }
+   * CP2: parâmetros ausentes            → 400 { code, message }
+   * CP3: codigoCliente+loja não encontrados → 404 { code, message }
+   */
+  private async handleClientePii(req: Request, res: Response): Promise<void> {
+    const { codigoCliente, loja } = req.query as Record<string, string | undefined>
+
+    if (!codigoCliente || !loja) {
+      res.status(400).json({
+        code:    'VALIDATION_ERROR',
+        message: 'Parâmetros "codigoCliente" e "loja" são obrigatórios',
+      })
+      return
+    }
+
+    try {
+      const cliente = await this.clienteConnector.executePii({ codigoCliente, loja })
+
+      if (!cliente) {
+        res.status(404).json(this.notFound())
+        return
+      }
+
+      res.status(200).json({ data: cliente })
     } catch (err) {
       this.sendError(res, err)
     }

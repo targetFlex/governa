@@ -1,4 +1,10 @@
-import type { IGatewayClient, ConsultarPedidosParams, ConsultarClientesParams } from '../../src/shared/ports/gateway-client.port'
+import type {
+  IGatewayClient,
+  ConsultarPedidosParams,
+  ConsultarClientesParams,
+  ReidentificarClienteParams,
+  ClientePiiView,
+} from '../../src/shared/ports/gateway-client.port'
 import type { PedidoInterno } from '../../src/modules/pedidos/domain/pedido.entity'
 import type { ClienteInterno } from '../../src/modules/clientes/domain/cliente.entity'
 import { GatewayUnavailableError } from '../../src/modules/pedidos/domain/pedido.errors'
@@ -12,17 +18,20 @@ import { GatewayUnavailableError } from '../../src/modules/pedidos/domain/pedido
  *   - inspeção de chamadas realizadas via calls
  */
 export class InMemoryGatewayClient implements IGatewayClient {
-  private pedidosStore: PedidoInterno[]   = []
-  private clientesStore: ClienteInterno[] = []
+  private pedidosStore: PedidoInterno[]     = []
+  private clientesStore: ClienteInterno[]   = []
+  private clientesPiiStore: ClientePiiView[] = []
   private unavailable = false
 
   /** Calls registradas para inspeção nos testes */
   readonly calls: {
     consultarPedidos: ConsultarPedidosParams[]
     consultarClientes: ConsultarClientesParams[]
+    reidentificarCliente: ReidentificarClienteParams[]
   } = {
-    consultarPedidos:  [],
-    consultarClientes: [],
+    consultarPedidos:     [],
+    consultarClientes:    [],
+    reidentificarCliente: [],
   }
 
   /** Adiciona pedidos ao store */
@@ -35,6 +44,11 @@ export class InMemoryGatewayClient implements IGatewayClient {
     this.clientesStore.push(...clientes)
   }
 
+  /** Adiciona views de reidentificação (PII em claro) ao store */
+  seedClientesPii(clientes: ClientePiiView[]): void {
+    this.clientesPiiStore.push(...clientes)
+  }
+
   /** Faz o próximo call lançar GatewayUnavailableError */
   simulateUnavailable(value = true): void {
     this.unavailable = value
@@ -42,11 +56,13 @@ export class InMemoryGatewayClient implements IGatewayClient {
 
   /** Limpa todo estado */
   clear(): void {
-    this.pedidosStore   = []
-    this.clientesStore  = []
-    this.unavailable    = false
-    this.calls.consultarPedidos  = []
-    this.calls.consultarClientes = []
+    this.pedidosStore     = []
+    this.clientesStore    = []
+    this.clientesPiiStore = []
+    this.unavailable      = false
+    this.calls.consultarPedidos     = []
+    this.calls.consultarClientes    = []
+    this.calls.reidentificarCliente = []
   }
 
   async consultarPedidos(params: ConsultarPedidosParams): Promise<PedidoInterno[]> {
@@ -85,5 +101,18 @@ export class InMemoryGatewayClient implements IGatewayClient {
     }
 
     return result
+  }
+
+  async reidentificarCliente(params: ReidentificarClienteParams): Promise<ClientePiiView | null> {
+    this.calls.reidentificarCliente.push(params)
+
+    if (this.unavailable) {
+      throw new GatewayUnavailableError('InMemoryGatewayClient')
+    }
+
+    const found = this.clientesPiiStore.find(
+      c => c.clienteId === params.clienteId && c.loja === params.loja,
+    )
+    return found ?? null
   }
 }

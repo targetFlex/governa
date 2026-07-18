@@ -2,35 +2,29 @@
 // pedido.model.ts
 //
 // Tipagem do domínio Pedido conforme contrato GET /pedidos
-// do governa-gateway (Protheus adapter).
+// do governa-core (painel administrativo).
+//
+// PedidoInterno nunca carrega nome de cliente em texto claro —
+// só clienteId/loja (chave de negócio, não PII). Para exibir o
+// nome do cliente, use ClientePiiService com (clienteId, loja).
 // ============================================================
 
-export type StatusPedido =
-  | 'ABERTO'
-  | 'EM_APROVACAO'
-  | 'APROVADO'
-  | 'CANCELADO'
-  | 'ENCERRADO';
+export type StatusPedido = 'ABERTO' | 'BLOQUEADO' | 'ENCERRADO' | 'LIBERADO';
 
-export interface Pedido {
-  id: string;
-  numero: string;
-  clienteId: string;
-  clienteNome: string;
-  status: StatusPedido;
-  valor: number;
-  moeda: string;
-  dataEmissao: string;       // ISO 8601
-  dataEntregaPrevista: string | null;
-  itens: PedidoItem[];
+export interface ItemPedido {
+  codigoProduto: string;
+  quantidade: number;
+  precoUnitario: number;
 }
 
-export interface PedidoItem {
-  codigo: string;
-  descricao: string;
-  quantidade: number;
-  valorUnitario: number;
+export interface Pedido {
+  numeroPedido: string;
+  clienteId: string;
+  loja: string;
+  dataEmissao: string;       // ISO 8601
   valorTotal: number;
+  status: StatusPedido;
+  itens: ItemPedido[];
 }
 
 export interface PedidosResponse {

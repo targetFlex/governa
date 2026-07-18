@@ -35,6 +35,7 @@ import { AuthService }                                  from './modules/auth/app
 import type { AgentService }                            from './modules/agents/application/agent.service'
 import type { ConsultarPedidoUseCase }                  from './modules/pedidos/application/consultar-pedido.use-case'
 import type { ConsultarClienteUseCase }                 from './modules/clientes/application/consultar-cliente.use-case'
+import type { ReidentificarClienteUseCase }             from './modules/clientes/application/reidentificar-cliente.use-case'
 import type { PolicyService }                           from './modules/policies/application/policy.service'
 import type { PolicyEngine }                            from './modules/policies/application/policy.engine'
 import type { AuditQueryService }                       from './modules/audit/application/audit.query.service'
@@ -51,6 +52,7 @@ export interface AppDependencies {
   agentService:                 AgentService
   consultarPedidoUseCase:       ConsultarPedidoUseCase
   consultarClienteUseCase:      ConsultarClienteUseCase
+  reidentificarClienteUseCase:  ReidentificarClienteUseCase
   policyService:                PolicyService
   /** E5.3 — PolicyEngine com assertToolAllowed() wired com policyViolationAlertService */
   policyEngine?:                PolicyEngine
@@ -111,7 +113,7 @@ export function createApp(deps: AppDependencies): Application {
   // ── Routers ─────────────────────────────────────────────────────────────────
   app.use('/agents',        createAgentRouter(deps.agentService))
   app.use('/pedidos',       createPedidosRouter(deps.consultarPedidoUseCase, deps.agentService))
-  app.use('/clientes',      createClientesRouter(deps.consultarClienteUseCase, deps.agentService))
+  app.use('/clientes',      createClientesRouter(deps.consultarClienteUseCase, deps.agentService, deps.reidentificarClienteUseCase))
   app.use('/policies',      createPolicyRouter(deps.policyService))
   app.use('/audit-events',  createAuditRouter(deps.auditQueryService))
   app.use('/alerts',        createAlertRouter(deps.alertService))

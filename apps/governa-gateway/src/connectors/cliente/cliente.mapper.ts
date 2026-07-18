@@ -11,6 +11,7 @@
 
 import {
   ClienteInterno,
+  ClientePiiView,
   ProtheusCilenteRaw,
   TIPO_MAP,
 } from './cliente.schema'
@@ -38,6 +39,25 @@ export class ClienteMapper {
       emailPseudo:     this.pseudonymizer.pseudonymizeIfPresent(raw.A1_EMAIL),
       telefonePseudo:  this.pseudonymizer.pseudonymizeIfPresent(raw.A1_TEL),
       enderecoPseudo:  this.pseudonymizer.pseudonymize(this.canonicalEndereco(raw)),
+    }
+  }
+
+  /**
+   * Converte um cliente raw para a view de reidentificação — PII em
+   * texto claro. Uso restrito: exibição no painel humano, nunca
+   * repassado a um agente de IA (ver ClientePiiView).
+   */
+  toPlaintextView(raw: ProtheusCilenteRaw): ClientePiiView {
+    return {
+      codigoCliente: raw.A1_COD,
+      loja:          raw.A1_LOJA,
+      nome:          raw.A1_NOME,
+      tipo:          TIPO_MAP[raw.A1_TIPO],
+      ativo:         raw.A1_ATIVO === 'S',
+      documento:     raw.A1_CGC,
+      email:         raw.A1_EMAIL.trim() || null,
+      telefone:      raw.A1_TEL.trim() || null,
+      endereco:      this.canonicalEndereco(raw),
     }
   }
 

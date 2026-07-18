@@ -59,6 +59,25 @@ describe('Conectores sintéticos (piloto sandbox Target Flex)', () => {
       const result = await connector.execute({ documentoToken: 'hash-que-nao-existe' })
       expect(result).toHaveLength(0)
     })
+
+    describe('executePii', () => {
+      it('retorna ClientePiiView para codigoCliente+loja existentes', async () => {
+        const result = await connector.executePii({ codigoCliente: 'CLI-002', loja: '01' })
+        expect(result).not.toBeNull()
+        expect(result?.codigoCliente).toBe('CLI-002')
+        expect(result?.nome).toBeTruthy()
+      })
+
+      it('retorna null para codigoCliente inexistente', async () => {
+        const result = await connector.executePii({ codigoCliente: 'CLI-999', loja: '01' })
+        expect(result).toBeNull()
+      })
+
+      it('retorna null quando loja não bate', async () => {
+        const result = await connector.executePii({ codigoCliente: 'CLI-002', loja: '99' })
+        expect(result).toBeNull()
+      })
+    })
   })
 
   describe('SyntheticAuthConnector', () => {

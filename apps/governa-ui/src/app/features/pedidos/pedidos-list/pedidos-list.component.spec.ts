@@ -7,6 +7,7 @@
 // ============================================================
 import { LOCALE_ID } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { HttpClientTestingModule } from '@angular/common/http/testing';
 import { signal, WritableSignal, computed } from '@angular/core';
 import { axe, toHaveNoViolations } from 'jest-axe';
 
@@ -20,15 +21,12 @@ expect.extend(toHaveNoViolations);
 
 function makePedido(override: Partial<Pedido> = {}): Pedido {
   return {
-    id: '1',
-    numero: 'PED-0001',
-    clienteId: 'c1',
-    clienteNome: 'Acme Ltda',
+    numeroPedido: 'PED-0001',
+    clienteId: 'CLI001',
+    loja: '01',
     status: 'ABERTO',
-    valor: 10000,
-    moeda: 'BRL',
+    valorTotal: 10000,
     dataEmissao: '2026-01-01T00:00:00Z',
-    dataEntregaPrevista: null,
     itens: [],
     ...override,
   };
@@ -76,7 +74,7 @@ describe('PedidosListComponent', () => {
     };
 
     TestBed.configureTestingModule({
-      imports: [PedidosListComponent],
+      imports: [PedidosListComponent, HttpClientTestingModule],
       providers: [
         { provide: PedidosStore, useValue: mockStore },
         { provide: LOCALE_ID, useValue: 'en' },
@@ -176,9 +174,9 @@ describe('PedidosListComponent', () => {
   describe('list state', () => {
     beforeEach(() => {
       pedidos.set([
-        makePedido({ id: '1', numero: 'PED-0001' }),
-        makePedido({ id: '2', numero: 'PED-0002' }),
-        makePedido({ id: '3', numero: 'PED-0003' }),
+        makePedido({ numeroPedido: 'PED-0001' }),
+        makePedido({ numeroPedido: 'PED-0002' }),
+        makePedido({ numeroPedido: 'PED-0003' }),
       ]);
       total.set(3);
     });
@@ -241,7 +239,7 @@ describe('PedidosListComponent', () => {
 
   describe('paginação', () => {
     beforeEach(() => {
-      pedidos.set([makePedido({ id: '1' }), makePedido({ id: '2' })]);
+      pedidos.set([makePedido({ numeroPedido: 'PED-0001' }), makePedido({ numeroPedido: 'PED-0002' })]);
       total.set(50);
     });
 

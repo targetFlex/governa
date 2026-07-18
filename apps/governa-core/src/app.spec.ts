@@ -15,6 +15,7 @@ import { createApp }        from './app'
 import type { AgentService }                from './modules/agents/application/agent.service'
 import type { ConsultarPedidoUseCase }      from './modules/pedidos/application/consultar-pedido.use-case'
 import type { ConsultarClienteUseCase }     from './modules/clientes/application/consultar-cliente.use-case'
+import type { ReidentificarClienteUseCase } from './modules/clientes/application/reidentificar-cliente.use-case'
 import type { PolicyService }               from './modules/policies/application/policy.service'
 import type { AuditQueryService }           from './modules/audit/application/audit.query.service'
 import type { AlertService }               from './modules/alerts/application/alert.service'
@@ -63,6 +64,10 @@ const mockClienteUseCase = {
   execute: jest.fn(),
 } as unknown as ConsultarClienteUseCase
 
+const mockReidentificarClienteUseCase = {
+  execute: jest.fn(),
+} as unknown as ReidentificarClienteUseCase
+
 const mockPolicyService = {
   getPolicy:     jest.fn(),
   listPolicies:  jest.fn().mockResolvedValue([]),
@@ -98,6 +103,7 @@ describe('App — wiring', () => {
     agentService:                mockAgentService,
     consultarPedidoUseCase:      mockPedidoUseCase,
     consultarClienteUseCase:     mockClienteUseCase,
+    reidentificarClienteUseCase: mockReidentificarClienteUseCase,
     policyService:               mockPolicyService,
     auditQueryService:           mockAuditQueryService,
     alertService:                mockAlertService,

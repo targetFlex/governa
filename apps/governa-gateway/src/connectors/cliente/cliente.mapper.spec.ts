@@ -155,4 +155,35 @@ describe('ClienteMapper', () => {
     const r2 = mapper.toInterno(makeRaw())
     expect(r1.enderecoPseudo).toBe(r2.enderecoPseudo)
   })
+
+  // ── toPlaintextView — reidentificação (PII em texto claro) ──
+
+  describe('toPlaintextView', () => {
+    it('mapeia campos de identidade e PII em texto claro (sem pseudonimizar)', () => {
+      const result = mapper.toPlaintextView(makeRaw())
+      expect(result.codigoCliente).toBe('CLI001')
+      expect(result.loja).toBe('01')
+      expect(result.nome).toBe('Empresa Teste LTDA')
+      expect(result.documento).toBe('12345678000195')
+      expect(result.email).toBe('contato@empresa.com.br')
+      expect(result.telefone).toBe('11999887766')
+      expect(result.endereco).toBe('Av. Paulista, 1000|São Paulo|SP|01310100')
+    })
+
+    it('mapeia tipo e ativo igual a toInterno', () => {
+      const result = mapper.toPlaintextView(makeRaw({ A1_TIPO: 'F', A1_ATIVO: 'N' }))
+      expect(result.tipo).toBe('FISICA')
+      expect(result.ativo).toBe(false)
+    })
+
+    it('email null para A1_EMAIL vazio', () => {
+      const result = mapper.toPlaintextView(makeRaw({ A1_EMAIL: '' }))
+      expect(result.email).toBeNull()
+    })
+
+    it('telefone null para A1_TEL vazio', () => {
+      const result = mapper.toPlaintextView(makeRaw({ A1_TEL: '' }))
+      expect(result.telefone).toBeNull()
+    })
+  })
 })

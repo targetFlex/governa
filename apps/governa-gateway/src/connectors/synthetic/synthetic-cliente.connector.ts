@@ -7,9 +7,9 @@
 // sandbox Target Flex, antes do DPA e de credenciais Protheus reais.
 // ============================================================
 
-import { ReadClienteParams } from '../cliente/read-protheus-cliente.connector'
-import { ClienteInterno } from '../cliente/cliente.schema'
-import { SYNTHETIC_CLIENTES } from './synthetic-fixtures'
+import { ReadClienteParams, ReadClientePiiParams } from '../cliente/read-protheus-cliente.connector'
+import { ClienteInterno, ClientePiiView } from '../cliente/cliente.schema'
+import { SYNTHETIC_CLIENTES, SYNTHETIC_CLIENTES_PII } from './synthetic-fixtures'
 
 export class SyntheticClienteConnector {
   async execute(params: ReadClienteParams): Promise<ClienteInterno[]> {
@@ -20,5 +20,12 @@ export class SyntheticClienteConnector {
       if (params.documentoToken && c.documentoPseudo !== params.documentoToken) return false
       return true
     })
+  }
+
+  async executePii(params: ReadClientePiiParams): Promise<ClientePiiView | null> {
+    const found = SYNTHETIC_CLIENTES_PII.find(
+      (c) => c.codigoCliente === params.codigoCliente && c.loja === params.loja,
+    )
+    return found ?? null
   }
 }

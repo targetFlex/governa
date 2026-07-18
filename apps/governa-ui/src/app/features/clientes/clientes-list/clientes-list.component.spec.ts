@@ -7,6 +7,7 @@
 // ============================================================
 import { LOCALE_ID } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { HttpClientTestingModule } from '@angular/common/http/testing';
 import { signal, WritableSignal, computed } from '@angular/core';
 import { axe, toHaveNoViolations } from 'jest-axe';
 
@@ -20,11 +21,10 @@ expect.extend(toHaveNoViolations);
 
 function makeCliente(override: Partial<Cliente> = {}): Cliente {
   return {
-    id: '1', codigo: 'CLI001', nome: 'Acme Ltda', tipoPessoa: 'PJ',
-    documento: '12.345.678/0001-99', email: 'contato@acme.com',
-    telefone: '(11) 99999-9999', ativo: true,
-    limiteCredito: 50000, saldoDevedor: 1000, moeda: 'BRL',
-    criadoEm: '2024-01-01T00:00:00Z', atualizadoEm: '2024-01-01T00:00:00Z',
+    clienteId: 'CLI001', loja: '01',
+    nomeToken: 'a'.repeat(64), documentoToken: 'b'.repeat(64),
+    enderecoToken: 'c'.repeat(64), emailToken: 'd'.repeat(64),
+    telefoneToken: 'e'.repeat(64), bloqueado: false,
     ...override,
   };
 }
@@ -72,7 +72,7 @@ describe('ClientesListComponent', () => {
     };
 
     TestBed.configureTestingModule({
-      imports: [ClientesListComponent],
+      imports: [ClientesListComponent, HttpClientTestingModule],
       providers: [
         { provide: ClientesStore, useValue: mockStore },
         { provide: LOCALE_ID, useValue: 'en' },
@@ -172,9 +172,9 @@ describe('ClientesListComponent', () => {
   describe('list state', () => {
     beforeEach(() => {
       clientes.set([
-        makeCliente({ id: '1', nome: 'Acme' }),
-        makeCliente({ id: '2', nome: 'Beta' }),
-        makeCliente({ id: '3', nome: 'Gama' }),
+        makeCliente({ clienteId: 'CLI001' }),
+        makeCliente({ clienteId: 'CLI002' }),
+        makeCliente({ clienteId: 'CLI003' }),
       ]);
       total.set(3);
     });
@@ -237,7 +237,7 @@ describe('ClientesListComponent', () => {
 
   describe('paginação', () => {
     beforeEach(() => {
-      clientes.set([makeCliente({ id: '1' }), makeCliente({ id: '2' })]);
+      clientes.set([makeCliente({ clienteId: 'CLI001' }), makeCliente({ clienteId: 'CLI002' })]);
       total.set(50);
     });
 

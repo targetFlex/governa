@@ -15,6 +15,8 @@ import type {
   IGatewayClient,
   ConsultarPedidosParams,
   ConsultarClientesParams,
+  ReidentificarClienteParams,
+  ClientePiiView,
 } from '../ports/gateway-client.port'
 import type { PedidoInterno, ItemPedido, StatusPedido } from '../../modules/pedidos/domain/pedido.entity'
 import type { ClienteInterno } from '../../modules/clientes/domain/cliente.entity'
@@ -47,6 +49,16 @@ interface RawCliente {
   emailPseudo:     string | null
   telefonePseudo:  string | null
   ativo:           boolean
+}
+
+interface RawClientePii {
+  codigoCliente: string
+  loja:          string
+  nome:          string
+  documento:     string
+  email:         string | null
+  telefone:      string | null
+  endereco:      string
 }
 
 // ─── Mapper ───────────────────────────────────────────────────────────────────
@@ -84,6 +96,18 @@ function mapCliente(raw: RawCliente): ClienteInterno {
   }
 }
 
+function mapClientePii(raw: RawClientePii): ClientePiiView {
+  return {
+    clienteId: raw.codigoCliente,
+    loja:      raw.loja,
+    nome:      raw.nome,
+    documento: raw.documento,
+    email:     raw.email,
+    telefone:  raw.telefone,
+    endereco:  raw.endereco,
+  }
+}
+
 // ─── Adaptador ────────────────────────────────────────────────────────────────
 
 export class HttpGatewayClient implements IGatewayClient {
@@ -105,6 +129,15 @@ export class HttpGatewayClient implements IGatewayClient {
     const url = this.buildUrl('/clientes', gatewayParams)
     const { data } = await this.get<{ data: RawCliente[] }>(url)
     return data.map(mapCliente)
+  }
+
+  async reidentificarCliente(params: ReidentificarClienteParams): Promise<ClientePiiView | null> {
+    const url = this.buildUrl('/clientes/pii', {
+      codigoCliente: params.clienteId,
+      loja:          params.loja,
+    })
+    const result = await this.getSingle<{ data: RawClientePii }>(url)
+    return result ? mapClientePii(result.data) : null
   }
 
   // ─── Helpers privados ──────────────────────────────────────────────────────
@@ -131,6 +164,24 @@ export class HttpGatewayClient implements IGatewayClient {
     if (res.status === 404) {
       return { data: [] } as T
     }
+
+    if (!res.ok) {
+      throw new GatewayUnavailableError(`${this.baseUrl} → HTTP ${res.status}`)
+    }
+
+    return res.json() as Promise<T>
+  }
+
+  /** Busca de registro único — 404 vira `null` (contrato "não encontrado"). */
+  private async getSingle<T>(url: string): Promise<T | null> {
+    let res: Response
+    try {
+      res = await fetch(url, { headers: { Accept: 'application/json' } })
+    } catch {
+      throw new GatewayUnavailableError(this.baseUrl)
+    }
+
+    if (res.status === 404) return null
 
     if (!res.ok) {
       throw new GatewayUnavailableError(`${this.baseUrl} → HTTP ${res.status}`)

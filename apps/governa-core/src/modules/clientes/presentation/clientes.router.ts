@@ -1,11 +1,12 @@
 import { Router, type Request, type Response } from 'express'
 
 import type { ConsultarClienteUseCase } from '../application/consultar-cliente.use-case'
+import type { ReidentificarClienteUseCase } from '../application/reidentificar-cliente.use-case'
 import { ClienteNotFoundError } from '../domain/cliente.errors'
 import { GatewayUnavailableError } from '../../pedidos/domain/pedido.errors'
 import type { AuthenticatedRequest } from '../../../shared/middleware/tenant.middleware'
 import type { AgentService } from '../../agents/application/agent.service'
-import { resolvePanelAccess } from '../../agents/application/panel-access.resolver'
+import { resolvePanelAccess, resolvePanelSubjectAccess } from '../../agents/application/panel-access.resolver'
 import { parsePagination } from '../../../shared/http/pagination'
 
 /**
@@ -29,8 +30,16 @@ import { parsePagination } from '../../../shared/http/pagination'
  * Painel (uso humano):
  *  - q: busca livre em memória (clienteId/loja — nunca PII, ver use-case)
  *  - page, pageSize: paginação em memória (default 1/20, pageSize máx. 100)
+ *
+ * GET /:clienteId/reidentificar?loja=xxx — reidentificação (PII em claro),
+ *  exclusiva do painel humano — nunca aceita agentId/subjectToken de agente
+ *  de IA (ver ReidentificarClienteUseCase).
  */
-export function createClientesRouter(useCase: ConsultarClienteUseCase, agentService: AgentService): Router {
+export function createClientesRouter(
+  useCase: ConsultarClienteUseCase,
+  agentService: AgentService,
+  reidentificarUseCase: ReidentificarClienteUseCase,
+): Router {
   const router = Router()
 
   /** GET /clientes — consulta clientes do tenant autenticado */
@@ -73,6 +82,54 @@ export function createClientesRouter(useCase: ConsultarClienteUseCase, agentServ
         total:     output.total,
         page,
         pageSize,
+        traceId:   output.traceId,
+        latencyMs: output.latencyMs,
+      })
+    } catch (err) {
+      if (err instanceof ClienteNotFoundError) {
+        res.status(404).json({ error: err.message, code: err.code })
+        return
+      }
+      if (err instanceof GatewayUnavailableError) {
+        res.status(502).json({ error: err.message, code: err.code })
+        return
+      }
+      throw err
+    }
+  })
+
+  /**
+   * GET /:clienteId/reidentificar — resolve PII em texto claro de um
+   * cliente específico, para exibição no painel humano.
+   *
+   * Sempre resolve agentId/subjectToken via resolvePanelSubjectAccess —
+   * rota exclusiva do painel, nunca aceita credenciais de agente vindas
+   * do query string (diferente de "/").
+   */
+  router.get('/:clienteId/reidentificar', async (req: Request, res: Response): Promise<void> => {
+    const { tenantId } = req as AuthenticatedRequest
+    const { clienteId } = req.params
+    const { loja, spanId } = req.query as Record<string, string | undefined>
+
+    if (!loja) {
+      res.status(400).json({ error: 'loja obrigatória', code: 'MISSING_LOJA' })
+      return
+    }
+
+    const { agentId, subjectToken } = await resolvePanelSubjectAccess(agentService, tenantId, clienteId, loja)
+
+    try {
+      const output = await reidentificarUseCase.execute({
+        tenantId,
+        agentId,
+        subjectToken,
+        clienteId,
+        loja,
+        spanId,
+      })
+
+      res.json({
+        data:      output.cliente,
         traceId:   output.traceId,
         latencyMs: output.latencyMs,
       })

@@ -21,6 +21,30 @@ export interface ConsultarClientesParams {
 }
 
 /**
+ * ReidentificarClienteParams — chave composta para reidentificação.
+ */
+export interface ReidentificarClienteParams {
+  clienteId: string
+  loja:      string
+}
+
+/**
+ * ClientePiiView — PII em texto claro de um cliente.
+ *
+ * Uso restrito: exibição no painel humano (uso humano, nunca repassado
+ * a um agente de IA). Ver ReidentificarClienteUseCase.
+ */
+export interface ClientePiiView {
+  readonly clienteId: string
+  readonly loja:      string
+  readonly nome:      string
+  readonly documento: string
+  readonly email:     string | null
+  readonly telefone:  string | null
+  readonly endereco:  string
+}
+
+/**
  * IGatewayClient — PORTA (hexagonal).
  *
  * Contrato que o governa-core declara para acessar dados externos.
@@ -38,4 +62,6 @@ export interface ConsultarClientesParams {
 export interface IGatewayClient {
   consultarPedidos(params: ConsultarPedidosParams): Promise<PedidoInterno[]>
   consultarClientes(params: ConsultarClientesParams): Promise<ClienteInterno[]>
+  /** @returns null se o cliente não existir (nunca lança NotFound) */
+  reidentificarCliente(params: ReidentificarClienteParams): Promise<ClientePiiView | null>
 }

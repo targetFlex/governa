@@ -71,3 +71,21 @@ export const TIPO_MAP: Record<string, TipoCliente> = {
   F: 'FISICA',
   J: 'JURIDICA',
 }
+
+// ── View de reidentificação (PII em texto claro) ─────────────
+//
+// Usada SOMENTE pelo fluxo de exibição no painel humano
+// (governa-core resolve nomeToken/documentoToken → aqui, sob
+// audit trail dedicado). Nunca repassada a um agente de IA.
+
+export interface ClientePiiView {
+  codigoCliente: string
+  loja:          string
+  nome:          string
+  tipo:          TipoCliente
+  ativo:         boolean
+  documento:     string
+  email:         string | null
+  telefone:      string | null
+  endereco:      string
+}

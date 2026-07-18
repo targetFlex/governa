@@ -20,6 +20,10 @@
  *   HG-8  rede indisponível (porta fechada) → GatewayUnavailableError
  *   HG-9  consultarClientes happy path — retorna ClienteInterno[]
  *   HG-10 filtro documentoToken propagado na querystring
+ *   HG-11 reidentificarCliente happy path — retorna ClientePiiView traduzido
+ *   HG-12 reidentificarCliente — gateway 404 → null
+ *   HG-13 reidentificarCliente — clienteId/loja propagados como codigoCliente/loja
+ *   HG-14 reidentificarCliente — gateway 500 → GatewayUnavailableError
  */
 
 import http   from 'http'
@@ -58,6 +62,16 @@ const RAW_CLIENTE = {
   ativo:           true,
 }
 
+const RAW_CLIENTE_PII = {
+  codigoCliente: 'CLI-001',
+  loja:          '01',
+  nome:          'Empresa Exemplo LTDA',
+  documento:     '12.345.678/0001-90',
+  email:         'contato@exemplo.com',
+  telefone:      '(11) 4000-0000',
+  endereco:      'Rua Exemplo, 1|São Paulo|SP|01000000',
+}
+
 // ─── Setup do servidor mock ───────────────────────────────────────────────────
 
 let server:  http.Server
@@ -68,22 +82,31 @@ let baseUrl: string
  *  { code: 'NOT_FOUND', message } em 404 quando a lista é vazia. */
 let mockPedidosResponse: { status: number; body: unknown } = { status: 200, body: { data: [RAW_PEDIDO] } }
 let mockClientesResponse: { status: number; body: unknown } = { status: 200, body: { data: [RAW_CLIENTE] } }
+let mockClientePiiResponse: { status: number; body: unknown } = { status: 200, body: { data: RAW_CLIENTE_PII } }
 
 /** Query params capturados pela última chamada */
-let lastPedidosQuery:  Record<string, string> = {}
-let lastClientesQuery: Record<string, string> = {}
+let lastPedidosQuery:     Record<string, string> = {}
+let lastClientesQuery:    Record<string, string> = {}
+let lastClientePiiQuery:  Record<string, string> = {}
 
 beforeEach(() => new Promise<void>(resolve => {
-  mockPedidosResponse  = { status: 200, body: { data: [RAW_PEDIDO] } }
-  mockClientesResponse = { status: 200, body: { data: [RAW_CLIENTE] } }
-  lastPedidosQuery     = {}
-  lastClientesQuery    = {}
+  mockPedidosResponse    = { status: 200, body: { data: [RAW_PEDIDO] } }
+  mockClientesResponse   = { status: 200, body: { data: [RAW_CLIENTE] } }
+  mockClientePiiResponse = { status: 200, body: { data: RAW_CLIENTE_PII } }
+  lastPedidosQuery       = {}
+  lastClientesQuery      = {}
+  lastClientePiiQuery    = {}
 
   const app = express()
 
   app.get('/pedidos', (req: Request, res: Response) => {
     lastPedidosQuery = req.query as Record<string, string>
     res.status(mockPedidosResponse.status).json(mockPedidosResponse.body)
+  })
+
+  app.get('/clientes/pii', (req: Request, res: Response) => {
+    lastClientePiiQuery = req.query as Record<string, string>
+    res.status(mockClientePiiResponse.status).json(mockClientePiiResponse.body)
   })
 
   app.get('/clientes', (req: Request, res: Response) => {
@@ -201,5 +224,45 @@ describe('HttpGatewayClient — consultarClientes', () => {
     await client.consultarClientes({ documentoToken: 'hmac-doc-xyz' })
 
     expect(lastClientesQuery['documentoToken']).toBe('hmac-doc-xyz')
+  })
+})
+
+// ─── reidentificarCliente ─────────────────────────────────────────────────────
+
+describe('HttpGatewayClient — reidentificarCliente', () => {
+  it('HG-11: happy path — retorna ClientePiiView traduzido do shape do gateway', async () => {
+    const client  = new HttpGatewayClient(baseUrl)
+    const cliente = await client.reidentificarCliente({ clienteId: 'CLI-001', loja: '01' })
+
+    expect(cliente).not.toBeNull()
+    expect(cliente?.clienteId).toBe('CLI-001')
+    expect(cliente?.nome).toBe('Empresa Exemplo LTDA')
+    expect(cliente?.documento).toBe('12.345.678/0001-90')
+    expect(cliente?.email).toBe('contato@exemplo.com')
+  })
+
+  it('HG-12: gateway 404 → null', async () => {
+    mockClientePiiResponse = { status: 404, body: { code: 'NOT_FOUND', message: 'Recurso não encontrado' } }
+
+    const client  = new HttpGatewayClient(baseUrl)
+    const cliente = await client.reidentificarCliente({ clienteId: 'CLI-XXX', loja: '01' })
+
+    expect(cliente).toBeNull()
+  })
+
+  it('HG-13: clienteId/loja propagados como codigoCliente/loja na querystring', async () => {
+    const client = new HttpGatewayClient(baseUrl)
+    await client.reidentificarCliente({ clienteId: 'CLI-999', loja: '02' })
+
+    expect(lastClientePiiQuery['codigoCliente']).toBe('CLI-999')
+    expect(lastClientePiiQuery['loja']).toBe('02')
+  })
+
+  it('HG-14: gateway 500 → GatewayUnavailableError', async () => {
+    mockClientePiiResponse = { status: 500, body: { error: 'internal' } }
+
+    const client = new HttpGatewayClient(baseUrl)
+    await expect(client.reidentificarCliente({ clienteId: 'CLI-001', loja: '01' }))
+      .rejects.toThrow(GatewayUnavailableError)
   })
 })
