@@ -1,5 +1,6 @@
 import type { AgentRepository }              from '../domain/agent-repository.port'
 import type { ToolScope }                     from '../domain/tool-scope.types'
+import type { Tool }                          from '../domain/tool.types'
 import {
   AgentNotFoundError,
   AgentWithoutPolicyError,
@@ -28,7 +29,15 @@ export class PolicyEngine {
     private readonly policyViolationAlertSvc?: PolicyViolationAlertService,
   ) {}
 
-  async buildScope(agentId: string, tenantId: string): Promise<ToolScope> {
+  /**
+   * @param mcpCatalog Tools MCP resolvidas para esta chamada pelo caller
+   *                   (D34, sessão 2.81 — `AnchorAgentService` resolve os
+   *                   conectores do agente via `McpClientAdapter` antes de
+   *                   chamar `buildScope`; `PolicyEngine` não conhece MCP
+   *                   nem repositório de inventário, só repassa o catálogo
+   *                   já resolvido para o `ToolScopeBuilder`).
+   */
+  async buildScope(agentId: string, tenantId: string, mcpCatalog?: readonly Tool[]): Promise<ToolScope> {
     const agent = await this.agents.findActiveForTenant(agentId, tenantId)
 
     if (!agent) {
@@ -46,6 +55,7 @@ export class PolicyEngine {
       allowedActions: agent.policy.allowedActions,
       policyId:       agent.policy.id,
       policyVersion:  agent.policy.version,
+      mcpCatalog,
     })
   }
 

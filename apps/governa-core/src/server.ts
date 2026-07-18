@@ -160,6 +160,7 @@ async function bootstrap(): Promise<void> {
         buildProtheusHandlers(consultarPedidoUseCase, consultarClienteUseCase),
         PROTHEUS_TOOL_DEFS,
         new AnthropicLlmAdapter(new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })),
+        agentInventoryRepo,
       )
     : undefined
 

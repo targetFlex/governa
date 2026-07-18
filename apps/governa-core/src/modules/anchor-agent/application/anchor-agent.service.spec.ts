@@ -1,3 +1,13 @@
+const mockMcpListTools         = jest.fn()
+const mockMcpBuildToolHandlers = jest.fn()
+
+jest.mock('../infrastructure/mcp-client-adapter', () => ({
+  McpClientAdapter: jest.fn().mockImplementation((server: { id: string }) => ({
+    listTools:         () => mockMcpListTools(server),
+    buildToolHandlers: () => mockMcpBuildToolHandlers(server),
+  })),
+}))
+
 import { AnchorAgentService }          from './anchor-agent.service'
 import { ESCALATE_TOOL_NAME }           from './escalation-tool'
 import { AnchorAgentNotConfiguredError, AnchorAgentMaxTurnsError } from '../domain/anchor-agent.types'
@@ -6,6 +16,9 @@ import type { PolicyEngine }            from '../../policies/application/policy.
 import type { LlmClient, LlmChatResult } from '../../../shared/ports/llm-client.port'
 import type { ToolHandler }             from './protheus-tool-handlers'
 import { PROTHEUS_TOOL_DEFS }           from './protheus-tool-handlers'
+import { InMemoryAgentInventoryRepository } from '../../../../test/fixtures/in-memory-agent-inventory.repository'
+import type { AgentInventoryEntity }    from '../../agents/domain/agent-inventory.entity'
+import type { Tool }                    from '../../policies/domain/tool.types'
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -19,7 +32,7 @@ const mockScope = {
   tools:         [
     { name: 'read_protheus_pedido',  description: 'd', isWrite: false, source: 'native' as const, execute: jest.fn() },
     { name: 'read_protheus_cliente', description: 'd', isWrite: false, source: 'native' as const, execute: jest.fn() },
-  ],
+  ] as Tool[],
   policyId:      'pol-1',
   policyVersion: '1',
 }
@@ -285,6 +298,95 @@ describe('AnchorAgentService', () => {
       expect(toolNames).toContain('read_protheus_pedido')
       expect(toolNames).not.toContain('read_protheus_cliente')
       expect(toolNames).toContain(ESCALATE_TOOL_NAME)
+    })
+  })
+
+  // ── D34, sessão 2.81: wiring de conectores MCP ───────────────────────────
+
+  describe('Given agent has MCP connectors configured', () => {
+    const AGENT_INVENTORY: AgentInventoryEntity = {
+      id: AGENT, tenantId: TENANT, name: 'Agente com MCP', description: '', ownerId: 'owner-1',
+      policyId: 'pol-1', status: 'ACTIVE', modelId: 'claude-sonnet-5', tools: [],
+      systemPrompt: null, skills: [], templateId: null,
+      createdAt: new Date(), updatedAt: new Date(), lastActiveAt: null,
+      mcpServers: [{ id: 'crm-1', name: 'CRM', url: 'https://mcp.example.com/crm' }],
+    }
+
+    function makeInventoryRepo(): InMemoryAgentInventoryRepository {
+      const repo = new InMemoryAgentInventoryRepository()
+      repo.seed([AGENT_INVENTORY])
+      return repo
+    }
+
+    beforeEach(() => jest.clearAllMocks())
+
+    it('When policy allows the MCP tool, Then it is sent to the llm and its handler executes', async () => {
+      mockMcpListTools.mockResolvedValue([{
+        name: 'mcp__crm-1__buscar_lead', description: 'Busca lead',
+        input_schema: { type: 'object', properties: {}, required: [] },
+      }])
+      const mcpHandler = jest.fn().mockResolvedValue({ lead: 'ok' })
+      mockMcpBuildToolHandlers.mockResolvedValue(new Map([['mcp__crm-1__buscar_lead', mcpHandler]]))
+
+      const scopeComMcp = {
+        ...mockScope,
+        tools: [...mockScope.tools, { name: 'mcp__crm-1__buscar_lead', description: 'd', isWrite: false, source: 'mcp' as const, serverId: 'crm-1', execute: jest.fn() }],
+      }
+      const policyEngine = makePolicyEngine({ scope: scopeComMcp })
+
+      const llm: LlmClient = {
+        chat: jest.fn()
+          .mockResolvedValueOnce(makeToolUseResult('tu-1', 'mcp__crm-1__buscar_lead', {}))
+          .mockResolvedValueOnce(makeTextResult('Lead encontrado.')),
+      }
+
+      const svc = new AnchorAgentService(policyEngine, new Map(), PROTHEUS_TOOL_DEFS, llm, makeInventoryRepo())
+      const result = await svc.chat(BASE_INPUT)
+
+      expect(mcpHandler).toHaveBeenCalled()
+      expect(result.reply).toBe('Lead encontrado.')
+      expect(policyEngine.buildScope).toHaveBeenCalledWith(
+        AGENT, TENANT,
+        [expect.objectContaining({ name: 'mcp__crm-1__buscar_lead', source: 'mcp', serverId: 'crm-1', isWrite: true })],
+      )
+    })
+
+    it('When policy scope (CONSULTIVO) excludes the MCP tool, Then it is not sent to the llm', async () => {
+      mockMcpListTools.mockResolvedValue([{
+        name: 'mcp__crm-1__buscar_lead', description: 'Busca lead',
+        input_schema: { type: 'object', properties: {}, required: [] },
+      }])
+      mockMcpBuildToolHandlers.mockResolvedValue(new Map())
+
+      const llm: LlmClient = { chat: jest.fn().mockResolvedValue(makeTextResult('ok')) }
+      // makePolicyEngine() usa mockScope (sem a tool MCP) — simula CONSULTIVO bloqueando isWrite:true
+      const svc = new AnchorAgentService(makePolicyEngine(), new Map(), PROTHEUS_TOOL_DEFS, llm, makeInventoryRepo())
+      await svc.chat(BASE_INPUT)
+
+      const callArgs = (llm.chat as jest.Mock).mock.calls[0][0]
+      const toolNames = callArgs.tools.map((t: { name: string }) => t.name)
+      expect(toolNames).not.toContain('mcp__crm-1__buscar_lead')
+    })
+
+    it('When agentInventoryRepo is not provided, Then chat works without attempting MCP resolution', async () => {
+      const llm: LlmClient = { chat: jest.fn().mockResolvedValue(makeTextResult('ok')) }
+      const svc = new AnchorAgentService(makePolicyEngine(), new Map(), PROTHEUS_TOOL_DEFS, llm)
+
+      await svc.chat(BASE_INPUT)
+
+      expect(mockMcpListTools).not.toHaveBeenCalled()
+    })
+
+    it('When agent has no MCP connectors, Then chat works without connecting to any adapter', async () => {
+      const repo = new InMemoryAgentInventoryRepository()
+      repo.seed([{ ...AGENT_INVENTORY, mcpServers: [] }])
+
+      const llm: LlmClient = { chat: jest.fn().mockResolvedValue(makeTextResult('ok')) }
+      const svc = new AnchorAgentService(makePolicyEngine(), new Map(), PROTHEUS_TOOL_DEFS, llm, repo)
+
+      await svc.chat(BASE_INPUT)
+
+      expect(mockMcpListTools).not.toHaveBeenCalled()
     })
   })
 })

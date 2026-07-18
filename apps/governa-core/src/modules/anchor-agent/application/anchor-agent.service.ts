@@ -4,6 +4,8 @@ import type { PolicyEngine }   from '../../policies/application/policy.engine'
 import { ToolBlockedError }    from '../../policies/application/policy.errors'
 import type { LlmClient, LlmMessage, LlmContentBlock, LlmToolDef } from '../../../shared/ports/llm-client.port'
 import type { ToolHandler }    from './protheus-tool-handlers'
+import type { AgentInventoryRepository } from '../../agents/domain/agent-inventory-repository.port'
+import { resolveMcpCatalog, EMPTY_MCP_CATALOG } from './mcp-catalog-resolver'
 import { ESCALATE_TOOL_DEF, ESCALATE_TOOL_NAME, type EscalateToolInput } from './escalation-tool'
 import {
   AnchorAgentNotConfiguredError,
@@ -38,10 +40,11 @@ const TOOL_ERROR_THRESHOLD = 2
 
 export class AnchorAgentService {
   constructor(
-    private readonly policyEngine: PolicyEngine,
-    private readonly handlers:     Map<string, ToolHandler>,
-    private readonly toolDefs:     readonly LlmToolDef[],
-    private readonly llm?:         LlmClient,
+    private readonly policyEngine:       PolicyEngine,
+    private readonly handlers:           Map<string, ToolHandler>,
+    private readonly toolDefs:           readonly LlmToolDef[],
+    private readonly llm?:               LlmClient,
+    private readonly agentInventoryRepo?: AgentInventoryRepository,
   ) {}
 
   async chat(input: ChatInput): Promise<ChatOutput> {
@@ -49,12 +52,23 @@ export class AnchorAgentService {
 
     const sessionId = input.sessionId ?? uuidv4()
 
-    // 1. Montar ToolScope e filtrar tool defs disponíveis para este agente
-    const scope        = await this.policyEngine.buildScope(input.agentId, input.tenantId)
+    // 1. Resolver catálogo MCP dos conectores do agente (D34, sessão 2.81) —
+    //    dinâmico por chamada, ao contrário de this.toolDefs/this.handlers
+    //    (nativo, fixo, injetado no construtor).
+    const agentInventory = await this.agentInventoryRepo?.findByIdForTenant(input.agentId, input.tenantId)
+    const mcpCatalog = agentInventory
+      ? await resolveMcpCatalog(agentInventory.mcpServers)
+      : EMPTY_MCP_CATALOG
+    const activeHandlers = mcpCatalog.handlers.size > 0
+      ? new Map([...this.handlers, ...mcpCatalog.handlers])
+      : this.handlers
+
+    // 2. Montar ToolScope e filtrar tool defs disponíveis para este agente
+    const scope        = await this.policyEngine.buildScope(input.agentId, input.tenantId, mcpCatalog.policyTools)
     const allowedNames = new Set(scope.tools.map(t => t.name))
     // escalate_to_human é sempre disponível — não passa pelo filtro de governança
     const activeDefs: LlmToolDef[] = [
-      ...this.toolDefs.filter(d => allowedNames.has(d.name)),
+      ...[...this.toolDefs, ...mcpCatalog.toolDefs].filter(d => allowedNames.has(d.name)),
       ESCALATE_TOOL_DEF,
     ]
 
@@ -111,7 +125,7 @@ export class AnchorAgentService {
         }
 
         // ── Execução do handler ──────────────────────────────────────────────
-        const handler = this.handlers.get(block.name)
+        const handler = activeHandlers.get(block.name)
         if (!handler) {
           toolResults.push({
             type:        'tool_result',

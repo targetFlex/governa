@@ -140,6 +140,28 @@ describe('PolicyEngine', () => {
     })
   })
 
+  // ── D34, sessão 2.81: mcpCatalog repassado ao ToolScopeBuilder ─────────────
+
+  describe('Given mcpCatalog is passed to buildScope', () => {
+    beforeEach(() => repo.add(agentConsultivo))
+
+    it('When agent is CONSULTIVO, Then MCP tools are merged and filtered like native tools', async () => {
+      const mcpTool = tool('mcp__crm-1__read_lead', false)
+      const scope = await engine.buildScope('agent-consultivo', 'tenant-1', [mcpTool])
+
+      expect(scope.tools.map(t => t.name)).toContain('mcp__crm-1__read_lead')
+    })
+
+    it('When mcpCatalog is omitted, Then behaves exactly as before (native catalog only)', async () => {
+      const scope = await engine.buildScope('agent-consultivo', 'tenant-1')
+
+      expect(scope.tools.map(t => t.name).sort()).toEqual([
+        'read_protheus_cliente',
+        'read_protheus_pedido',
+      ])
+    })
+  })
+
   // ── E5.3: assertToolAllowed ───────────────────────────────────────────────
 
   describe('E5.3 — assertToolAllowed', () => {
